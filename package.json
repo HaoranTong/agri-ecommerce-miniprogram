@@ -2,6 +2,9 @@
   "name": "agri-ecommerce-miniprogram",
   "version": "1.0.0",
   "private": true,
+   "taro": {
+    "configPath": "config/index.ts"
+  },
   "description": "",
   "templateInfo": {
     "name": "default",

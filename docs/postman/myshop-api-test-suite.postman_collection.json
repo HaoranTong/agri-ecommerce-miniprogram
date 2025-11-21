@@ -1,0 +1,233 @@
+{
+  "info": {
+    "name": "MyShop API Test Suite",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (WeChat Code)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{test_user_openid}}\"\n}"
+            },
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "user", "profile"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "products"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "products", "{{variation_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Cart",
+      "item": [
+        {
+          "name": "Get Cart Items",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "cart"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add to Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variation_id\": {{variation_id}},\n  \"quantity\": 1\n}"
+            },
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "cart"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variation_id\": {{variation_id}},\n  \"quantity\": 1,\n  \"shipping_address\": {\n    \"name\": \"张三\",\n    \"phone\": \"13800138000\",\n    \"province\": \"广东省\",\n    \"city\": \"深圳市\",\n    \"district\": \"南山区\",\n    \"address\": \"科技园科兴科学园\"\n  }\n}"
+            },
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "orders"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List My Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "orders"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Gift Cards",
+      "item": [
+        {
+          "name": "Redeem Gift Card",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"card_number\": \"{{card_number}}\",\n  \"pin\": \"{{card_pin}}\"\n}"
+            },
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "gift-cards", "redeem"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List My Gift Cards",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "gift-cards"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Referral & Commissions",
+      "item": [
+        {
+          "name": "Get Referral Code",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "referral", "code"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Commissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "commissions"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

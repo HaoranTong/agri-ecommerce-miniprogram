@@ -1,61 +1,56 @@
 import { View, Button, Text } from '@tarojs/components';
-import { useState } from 'react'; // ✅ 关键修正
+import { useState } from 'react';
 import Taro from '@tarojs/taro';
+
+import { authService } from '../../services/api';
+import { getToken } from '../../utils/storage';
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
 
-  const onGetUserInfo = async (e: any) => {
-    if (!e.detail.userInfo) {
-      Taro.showToast({ title: '请授权获取头像和昵称', icon: 'none' });
-      return;
-    }
+  const handleLogin = async () => {
+    if (loading) return;
 
     try {
       setLoading(true);
-      
-      // 获取微信登录 code
-      const loginRes = await Taro.login();
-      const code = loginRes.code;
+      const { code } = await Taro.login();
 
-      // 模拟调用后端 API
-      const res = await Taro.request({
-        url: 'https://your-api.com/api/login',
-        method: 'POST',
-        data: {
-          code,
-          encryptedData: e.detail.encryptedData,
-          iv: e.detail.iv,
-          rawData: e.detail.rawData,
-          signature: e.detail.signature,
-        },
-      });
+      if (!code) {
+        Taro.showToast({ title: '获取登录凭证失败', icon: 'none' });
+        return;
+      }
 
-      const token = res.data.token;
-      Taro.setStorageSync('token', token);
-      Taro.switchTab({ url: '/pages/home/index' });
-
+      await authService.login(code);
+      Taro.switchTab({ url: '/pages/index/index' });
     } catch (error) {
+      console.error('登录失败', error);
       Taro.showToast({ title: '登录失败，请重试', icon: 'none' });
     } finally {
       setLoading(false);
     }
   };
 
+  const hasToken = !!getToken();
+
   return (
     <View className="login-container">
       <View className="logo">
         <Text className="title">常香米坊</Text>
+        <Text className="subtitle">精选五常好米，直供到家</Text>
       </View>
 
-      <Button
-        className="btn-login"
-        openType="getUserInfo"
-        onGetUserInfo={onGetUserInfo}
-        loading={loading}
-      >
-        <Text className="btn-text">微信登录</Text>
+      <Button className="btn-login" loading={loading} onClick={handleLogin} type="primary">
+        <Text className="btn-text">微信快捷登录</Text>
       </Button>
+
+      {hasToken && (
+        <Button
+          className="btn-skip"
+          onClick={() => Taro.switchTab({ url: '/pages/index/index' })}
+        >
+          已登录，返回商城
+        </Button>
+      )}
 
       <View className="footer">
         <Text className="text">登录即表示同意</Text>

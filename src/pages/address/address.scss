@@ -1,0 +1,72 @@
+.address-page {
+  padding: 24px;
+  background: #f7f7f7;
+  min-height: 100vh;
+}
+
+.address-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.address-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.address-main {
+  display: flex;
+  justify-content: space-between;
+  font-size: 32rpx;
+  margin-bottom: 8px;
+}
+
+.address-name {
+  font-weight: 600;
+}
+
+.address-phone {
+  color: #666666;
+}
+
+.address-detail {
+  font-size: 28rpx;
+  color: #666666;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.address-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.empty {
+  text-align: center;
+  color: #999999;
+}
+
+.add-btn {
+  margin-top: 24px;
+  background: #2f7a3d;
+  color: #ffffff;
+  border-radius: 8px;
+}
+
+.picker-value {
+  color: #333333;
+}
