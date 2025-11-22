@@ -14,7 +14,7 @@ const ProductCard = ({ product, onSelect, onChooseVariant }: ProductCardProps) =
     onSelect?.(product);
   };
 
-  const firstVariation = product.variations[0];
+  const firstVariation = Array.isArray(product.variations) ? product.variations[0] : undefined;
 
   return (
     <View className={styles.card} onClick={handleClick} hoverClass={styles.cardHover}>

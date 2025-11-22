@@ -1,16 +1,14 @@
-明白！以下是根据你提供的原始规范文档，**全面修正为 Taro 4 + React + TypeScript 技术栈**后的完整新版技术规范。所有原生小程序（`.js`/`.wxml`/`.json`/`.wxss`）相关内容均已替换为 Taro 项目结构、React 组件写法、Hooks 状态管理、TypeScript 类型定义等，并保留原有格式与语义层级，确保可在 Typora 中正确渲染。
 
-你可以**直接全文复制替换原文件**。
 
 ------
 
 # 📱 微信小程序工程结构规范
 
-## `myshop-miniprogram` 工程（V2.0 - 基于 Taro 4 + React + API 契约 V2.4）
+## `myshop-miniprogram` 工程（V2.0 - 基于 Taro 4 + React + API 契约 V2.3）
 
-> **适用项目**：微信小程序 × WordPress 无头电商系统（一期 + 二期）
+> **适用项目**：微信小程序 × WordPress 无头电商系统（一期 + 二期：购物卡 / 积分 / 分销 / 代理商）
 > **目标**：统一代码组织、提升可维护性、支持多人协作、便于后续迭代
-> **原则**：轻量、清晰、类型安全、与 API 契约 V2.4 严格对齐（含中国地址模型、商品 description、order_number 等）
+> **原则**：轻量、清晰、类型安全、与 API 契约 V2.3 严格对齐（含中国地址模型、商品 description、订单号、积分与购物卡字段等）
 
 ------
 
@@ -64,11 +62,17 @@ myshop-miniprogram/
 │   │   ├── giftcard/         # 虚拟购物卡
 │   │   │   ├── redeem.tsx
 │   │   │   ├── mine.tsx
-│   │   │   └── reset-pin.tsx
+│   │   │   ├── reset-pin.tsx
+│   │   │   ├── share.tsx          # 数字赠礼 / 打印包生成
+│   │   │   └── claim.tsx          # 受赠人领取
 │   │   │
 │   │   ├── referral/         # 分销裂变
 │   │   │   ├── downlines.tsx
 │   │   │   └── commissions.tsx
+│   │   │
+│   │   ├── points/           # 积分中心
+│   │   │   ├── summary.tsx
+│   │   │   └── ledger.tsx
 │   │   │
 │   │   └── agent/            # 代理商专区（二期）
 │   │       ├── dashboard.tsx
@@ -82,12 +86,14 @@ myshop-miniprogram/
 │   │   └── AddressForm/      # 地址表单组件（含省市区 picker）
 │   │
 │   ├── services/             # 网络服务层
-│   │   └── api.ts            # 核心：API 请求封装（带泛型响应）
+│   │   ├── api.ts            # 核心：API 请求封装（带泛型响应）
+│   │   └── endpoints.ts      # 各业务域请求封装（giftCardService、pointsService 等）
 │   │
 │   ├── utils/                # 工具模块
 │   │   ├── constants.ts      # 常量定义（如 API 路径、枚举）
 │   │   ├── storage.ts        # 本地缓存封装（Taro.setStorageSync）
-│   │   └── helpers.ts        # 通用函数（如 formatPrice）
+│   │   ├── helpers.ts        # 通用函数（如 formatPrice）
+│   │   └── error-map.ts      # error_code 与前端文案映射
 │   │
 │   ├── assets/               # 静态资源
 │   │   ├── icons/            # SVG / PNG 图标（建议转为 React Component）
@@ -268,7 +274,7 @@ const OrderCreate = () => {
       data: {
         variation_id: variationId,
         quantity: 1,
-        shipping_address: selectedAddress, // 符合 V2.4 地址结构
+        shipping_address: selectedAddress, // 符合 V2.3 地址结构
       },
     });
 
@@ -340,6 +346,87 @@ export interface Address {
 
 ------
 
+### 3. **虚拟购物卡赠礼（`src/pages/giftcard/share.tsx`）**
+
+- 入口位于 `giftcard/mine.tsx`，在卡片操作区提供「赠礼/打印礼包」按钮
+- 分享前必须调用 `giftCardService.createShareToken` 生成一次性口令，再触发微信分享或生成二维码
+- 成功生成后需展示包含模板名称、面值、口令有效期的确认弹窗，并可复制分享口令
+
+```ts
+// src/pages/giftcard/share.tsx
+const handleShare = async (cardId: number) => {
+  const token = await giftCardService.createShareToken({ card_id: cardId });
+  await Taro.showShareImageMenu({
+    path: `/pages/giftcard/claim?token=${token}`,
+  });
+  Taro.showToast({ title: '已生成分享口令' });
+};
+```
+
+> 分享日志需写入 `giftcard/share_logs`，撤销接口 `giftCardService.revokeShare` 成功后刷新列表
+
+------
+
+### 4. **虚拟购物卡领取（`src/pages/giftcard/claim.tsx`）**
+
+- 受赠人需输入分享口令与手机号，前端做基础格式校验后再调用接口
+- 成功领取后调用 `giftCardService.claimSharedCard`，并在结果页提示设置 PIN
+- 失败时需结合 `error-map.ts` 映射错误码（如 `GIFT_CARD_TOKEN_EXPIRED`）展示友好提示
+
+```ts
+const handleClaim = async () => {
+  try {
+    await giftCardService.claimSharedCard({ token: form.token, phone: form.phone });
+    Taro.redirectTo({ url: '/pages/giftcard/mine' });
+  } catch (error) {
+    const message = resolveErrorMessage(errorCodeOf(error));
+    Taro.showToast({ title: message, icon: 'none' });
+  }
+};
+```
+
+------
+
+### 5. **积分中心（`src/pages/points/summary.tsx` & `ledger.tsx`）**
+
+- `summary.tsx` 初次进入需并发请求 `pointsService.getSummary` 和 `pointsService.getLeaderboard`
+- `ledger.tsx` 必须实现分页加载（`page=1,size=20`），并在前端对 `credit`/`debit` 分类渲染
+- 「积分兑换」需先在本地验证可兑换额度，再调用 `pointsService.redeemReward`，成功后刷新概览
+
+```ts
+// src/pages/points/ledger.tsx
+const { list, loadMore, loading } = usePointsLedger();
+
+const handleRedeem = async (ruleId: number) => {
+  await pointsService.redeemReward({ rule_id: ruleId });
+  await pointsService.prefetchSummary();
+  Taro.showToast({ title: '兑换成功' });
+};
+```
+
+> 需增加预占提示：连续兑换失败 ≥3 次时提示联系客服，避免误触发风控
+
+------
+
+### 6. **代理商仪表盘（`src/pages/agent/dashboard.tsx`）**
+
+- `useDidShow` 中并发请求 `agentService.getDashboard` 与 `agentService.getSalesTrend({ period: '30d' })`
+- 页面包含 KPI 卡片、趋势图（`echarts-for-weapp`）、待办事项（审核状态、下级提醒）
+- 对无权限用户跳转 `referral/downlines.tsx` 并弹窗提示「请先申请代理商」
+
+```ts
+const hydrateDashboard = async () => {
+  const [dashboard, trend] = await Promise.all([
+    agentService.getDashboard(),
+    agentService.getSalesTrend({ period: '30d' }),
+  ]);
+  setSummary(dashboard);
+  setTrend(trend);
+};
+```
+
+------
+
 ## 五、样式与 UI 规范
 
 ### 1. **CSS Modules（`.scss`）**
@@ -369,9 +456,10 @@ import styles from './detail.scss';
 
 ### 1. **安全**
 
-- 不在前端存储敏感信息（如 PIN）
-- 所有 API 调用走 HTTPS
+- 不在前端存储敏感信息（如 PIN），PIN 重置仅通过 `giftCardService.resetPin`
+- 所有 API 调用走 HTTPS，并附带 `Authorization` 头（除公开接口外）
 - 用户输入做长度/格式校验（使用 Zod 或自定义 validator）
+- 分享口令必须在领取或撤销后立即失效，前端收到成功响应需主动刷新
 - **不得使用英文地址字段（如 first_name/state）作为用户输入界面**
 
 ### 2. **性能**
@@ -379,10 +467,29 @@ import styles from './detail.scss';
 - 图片使用 CDN 并指定宽高
 - 列表使用 `ScrollView` + 虚拟滚动（未来扩展）
 - 避免在渲染函数中创建新对象/函数（useCallback/useMemo）
+- 积分流水、代理商趋势等长列表需实现骨架屏或 Loading 态，防止白屏
 
 ------
 
-## 七、环境配置（`src/utils/constants.ts`）
+## 七、错误映射与提示（`src/utils/error-map.ts`）
+
+- `error-map.ts` 必须维护与 `docs/API_CONTRACT_V2.3.md` 一致的错误码映射
+- 页面捕获接口异常后调用 `resolveErrorMessage(error_code)`，默认兜底为「系统繁忙，请稍后再试」
+- 分享、积分、代理模块新增错误码需同步：`GIFT_CARD_TOKEN_EXPIRED`、`POINTS_REDEEM_QUOTA_EXCEEDED`、`AGENT_NOT_APPROVED`
+
+```ts
+export const ERROR_MAP: Record<string, string> = {
+  GIFT_CARD_TOKEN_EXPIRED: '分享口令已失效，请重新索取',
+  POINTS_REDEEM_QUOTA_EXCEEDED: '当日积分兑换额度已达上限',
+  AGENT_NOT_APPROVED: '代理商申请审核中，请耐心等待',
+};
+```
+
+> 所有新增错误码必须同步更新到 `docs/DATA_DICTIONARY.md` 与 `src/services/endpoints.ts`
+
+------
+
+## 八、环境配置（`src/utils/constants.ts`）
 
 ```ts
 // src/utils/constants.ts
@@ -396,20 +503,20 @@ export const API_BASE =
 
 ------
 
-## 八、禁止事项（红线）
+## 九、禁止事项（红线）
 
 - ❌ 在页面中直接调用 `Taro.request`（必须走 `services/api.ts`）
 - ❌ 使用 `any` 类型（必须定义或复用接口）
 - ❌ 组件逻辑超过 300 行（应拆分为子组件或自定义 Hook）
-- ❌ 硬编码 API 路径（应集中定义在 `constants.ts`）
+- ❌ 硬编码 API 路径（应集中定义在 `constants.ts` 或 `services/endpoints.ts`）
 - ❌ 忽略 `shipping_address` 的完整性校验（前端需确保五要素齐全）
 - ❌ 商品详情页不展示 `description` 字段
 - ❌ 使用全局 CSS（必须用 CSS Modules）
 
 ------
 
-**文档版本**：V2.0（基于 Taro 4 + React + TypeScript，与 API 契约 V2.4 对齐）
-**最后更新**：2025年11月21日
+**文档版本**：V2.0（基于 Taro 4 + React + TypeScript，与 API 契约 V2.3 对齐）
+**最后更新**：2025年11月22日
 **输出格式**：Markdown（可直接保存为 `MINIPROGRAM_SPEC.md`）
 
 ------

@@ -18,8 +18,14 @@ const Index = () => {
         productService.getProducts(),
         configService.getPublicConfig()
       ]);
-      setProducts(productList);
-      setBanner(config);
+      setProducts(Array.isArray(productList) ? productList : []);
+      const normalizedConfig = config
+        ? {
+            ...config,
+            home_slider: Array.isArray(config.home_slider) ? config.home_slider : []
+          }
+        : null;
+      setBanner(normalizedConfig);
     } catch (error) {
       console.error('加载首页数据失败', error);
       Taro.showToast({ title: '加载失败，请稍后重试', icon: 'none' });
@@ -38,11 +44,13 @@ const Index = () => {
     });
   };
 
+  const slides = Array.isArray(banner?.home_slider) ? banner.home_slider : [];
+
   return (
     <View className="index-page">
-      {banner?.home_slider?.length && (
+      {slides.length > 0 && (
         <Swiper className="hero-swiper" circular autoplay>
-          {banner.home_slider.map((slide) => (
+          {slides.map((slide) => (
             <SwiperItem key={slide.img}>
               <View
                 className="hero-slide"

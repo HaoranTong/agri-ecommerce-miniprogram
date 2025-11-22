@@ -1,20 +1,20 @@
-当然可以。以下是完整、独立、可直接保存为标准技术文档的 **《完整数据模型定义 V2.0》**，涵盖用户体系、商品订单、虚拟购物卡、分销代理、扩展配置等全部核心模块，结构清晰、语义明确、面向未来，且完全兼容免费版 WordPress + WooCommerce。
+
 
 ------
 
 # 🗂️ 微信小程序 × WordPress 无头电商系统
 
-## **完整数据模型定义（V2.0 - 企业级基线标准）**
+## **完整数据模型定义（V2.1 - 企业级基线标准）**
 
 > **文档状态**：冻结基线（Baseline Frozen）
-> **适用阶段**：一期（MVP） + 二期（虚拟购物卡 + 社交裂变） + 三期（私域自动化）
+> **适用阶段**：一期（MVP） + 二期（虚拟购物卡 / 积分 / 分销 / 代理商） + 三期（私域自动化）
 > **核心原则**：
 >
 > - ✅ 所有业务扩展字段通过 WordPress Meta 机制实现（`usermeta` / `postmeta`）
 > - ✅ 自定义表仅用于需高效查询、事务控制或多对多关系场景
 > - ✅ 字段命名全局唯一、不可变更、语义清晰
 > - ✅ 100% 兼容免费版 WordPress 6.x + WooCommerce 8.x
-> - ✅ 支持未来扩展：多级分销、代理商体系、会员等级、卡类型泛化
+- ✅ 支持未来扩展：多级分销、代理商体系、积分有效期、卡类型泛化
 
 ------
 
@@ -58,9 +58,9 @@
 | `total_points`     | integer     | 二期 | ❌    | 积分余额（≥0）                      | `280`                                                  |
 | `cart_items`       | JSON string | 一期 | ❌    | 购物车内容（见下文结构）            | `[{"product_id":101,"variation_id":205,"quantity":2}]` |
 | `membership_level` | string      | 三期 | ❌    | 会员等级（如 `"bronze"`, `"gold"`） | `"silver"`                                             |
-| `is_agent`         | string      | 三期 | ❌    | 是否为代理商（`"1"` / `"0"`）       | `"1"`                                                  |
-| `agent_code`       | string      | 三期 | ❌    | 代理商编码（如 `"AGT001"`）         | `"AGT105"`                                             |
-| `agent_parent_id`  | integer     | 三期 | ❌    | 上级代理商 user_id                  | `201`                                                  |
+| `is_agent`         | string      | 二期 | ❌    | 是否为代理商（`"1"` / `"0"`）       | `"1"`                                                  |
+| `agent_code`       | string      | 二期 | ❌    | 代理商编码（如 `"AGT001"`）         | `"AGT105"`                                             |
+| `agent_parent_id`  | integer     | 二期 | ❌    | 上级代理商 user_id                  | `201`                                                  |
 
 #### 📦 `cart_items` 结构规范（JSON）
 
@@ -125,16 +125,18 @@
 CREATE TABLE wp_myshop_gift_card_templates (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   name VARCHAR(100) NOT NULL COMMENT '模板名称，如“200元通用卡”',
-  type ENUM('fixed_amount', 'product_voucher', 'product_bundle') NOT NULL,
-  -- 面值卡
-  fixed_amount DECIMAL(10,2) NULL COMMENT '面额（仅 type=fixed_amount 有效）',
+  type ENUM('fixed_amount', 'product_bundle') NOT NULL COMMENT '储值卡或商品兑换卡',
+  fixed_amount DECIMAL(10,2) NULL COMMENT '面额（type=fixed_amount 时必填）',
   currency CHAR(3) DEFAULT 'CNY',
-  -- 商品券
-  product_id BIGINT UNSIGNED NULL COMMENT '指定商品ID（仅 type=product_voucher 有效）',
-  -- 组合礼包
-  bundle_items JSON NULL COMMENT '商品组合：[{"product_id":101,"qty":1},...]',
+  product_id BIGINT UNSIGNED NULL COMMENT '兑换商品ID（商品卡可选）',
+  variation_ids JSON NULL COMMENT '可兑换的变体ID数组',
+  bundle_items JSON NULL COMMENT '组合礼包：[{"product_id":101,"quantity":1}]',
+  delivery_modes JSON NOT NULL COMMENT '允许的发放形态，如 ["digital_share","printable"]',
+  share_template_config JSON NULL COMMENT '数字分享海报/文案模板配置',
+  print_template_url VARCHAR(255) NULL COMMENT '默认打印模板 PDF 地址',
   valid_days INT DEFAULT 365 COMMENT '自购卡日起有效期天数',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
@@ -146,22 +148,37 @@ CREATE TABLE wp_myshop_gift_card_templates (
 ```sql
 CREATE TABLE wp_myshop_gift_cards (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  card_number VARCHAR(32) NOT NULL COMMENT '格式：GC + YYYYMMDD + 6位序号',
-  pin_code VARCHAR(255) NULL COMMENT 'bcrypt 加密密码，可为空（延迟生成）',
-  pin_status ENUM('not_generated', 'generated', 'reset') NOT NULL DEFAULT 'not_generated',
-  template_id BIGINT UNSIGNED NOT NULL COMMENT '关联模板ID',
+  card_number VARCHAR(32) NOT NULL COMMENT '格式：GC + YYYYMMDD + 序号',
+  template_id BIGINT UNSIGNED NOT NULL,
+  template_type ENUM('fixed_amount','product_bundle') NOT NULL,
+  initial_amount DECIMAL(10,2) DEFAULT 0 COMMENT '初始额度（储值卡使用）',
+  balance DECIMAL(10,2) DEFAULT 0 COMMENT '当前余额（储值卡使用）',
+  currency CHAR(3) DEFAULT 'CNY',
+  linked_product_id BIGINT UNSIGNED NULL COMMENT '商品兑换卡：主商品ID',
+  linked_variation_ids JSON NULL COMMENT '商品兑换卡：变体ID列表',
+  bundle_config JSON NULL COMMENT '礼包配置，冗余模板数据',
   purchaser_id BIGINT UNSIGNED NOT NULL COMMENT '购卡人 user_id',
-  redeemer_id BIGINT UNSIGNED NULL COMMENT '兑换人 user_id（初始为NULL）',
+  redeemer_id BIGINT UNSIGNED NULL COMMENT '受赠人 user_id',
   order_id BIGINT UNSIGNED NOT NULL COMMENT '购卡订单ID',
-  status ENUM('active','used','expired','cancelled') NOT NULL DEFAULT 'active',
-  expires_at DATETIME NOT NULL COMMENT '过期时间 = 购卡日 + valid_days',
+  bind_status ENUM('unbound','bound') NOT NULL DEFAULT 'unbound',
+  status ENUM('active','redeemed','locked','expired','cancelled') NOT NULL DEFAULT 'active',
+  share_token VARCHAR(64) NULL COMMENT '当前分享令牌',
+  share_channel VARCHAR(32) NULL COMMENT '最近一次分享渠道',
+  share_token_expires_at DATETIME NULL COMMENT '分享令牌过期时间',
+  print_package_url VARCHAR(255) NULL COMMENT '打印包下载地址',
+  pin_code_hash VARCHAR(255) NULL COMMENT 'bcrypt 密码哈希',
+  pin_revealed_at DATETIME NULL COMMENT 'PIN 最近一次展示时间',
+  pin_reveal_limit TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '剩余可查看次数',
+  expires_at DATETIME NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY unique_card_number (card_number),
+  KEY idx_template (template_id),
   KEY idx_purchaser (purchaser_id),
   KEY idx_redeemer (redeemer_id),
-  KEY idx_template (template_id),
-  KEY idx_status (status)
+  KEY idx_status (status),
+  KEY idx_share_token (share_token)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
@@ -178,12 +195,15 @@ CREATE TABLE wp_myshop_gift_cards (
 CREATE TABLE wp_myshop_gift_card_redemptions (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   card_id BIGINT UNSIGNED NOT NULL,
-  template_id BIGINT UNSIGNED NOT NULL COMMENT '冗余字段，便于统计',
+  template_id BIGINT UNSIGNED NOT NULL,
   redeemer_id BIGINT UNSIGNED NOT NULL,
-  redeemed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  redeem_type ENUM('deduct','exchange') NOT NULL COMMENT '抵扣储值或兑换商品',
+  channel VARCHAR(32) NOT NULL DEFAULT 'miniprogram',
+  operator_id BIGINT UNSIGNED NULL COMMENT '人工核销时记录操作人',
   used_amount DECIMAL(10,2) NOT NULL,
   balance_after DECIMAL(10,2) NOT NULL,
-  target_order_id BIGINT UNSIGNED NULL COMMENT '抵扣的订单ID',
+  target_order_id BIGINT UNSIGNED NULL COMMENT '抵扣/兑换的订单ID',
+  redeemed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_card (card_id),
   KEY idx_redeemer (redeemer_id),
@@ -193,23 +213,59 @@ CREATE TABLE wp_myshop_gift_card_redemptions (
 
 ------
 
-### 表 4：购物卡下载记录（审计）
+### 表 4：购物卡分享 / 打印审计（Share Logs）
 
 ```sql
-CREATE TABLE wp_myshop_gift_card_downloads (
+CREATE TABLE wp_myshop_gift_card_share_logs (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   card_id BIGINT UNSIGNED NOT NULL,
-  downloader_id BIGINT UNSIGNED NOT NULL COMMENT '操作人 user_id（通常为 purchaser_id）',
-  downloaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  ip_address VARCHAR(45) COMMENT 'IPv4/IPv6',
+  operator_id BIGINT UNSIGNED NOT NULL COMMENT '生成分享包的用户（通常为购卡人）',
+  delivery_mode ENUM('digital_share','printable') NOT NULL,
+  channel VARCHAR(32) NOT NULL COMMENT 'wechat / dingding / email / custom',
+  share_token VARCHAR(64) NULL COMMENT '生成的新令牌',
+  print_package_url VARCHAR(255) NULL COMMENT '生成的打印包地址',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  ip_address VARCHAR(45) NULL,
   PRIMARY KEY (id),
-  KEY idx_card (card_id)
+  KEY idx_card (card_id),
+  KEY idx_operator (operator_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
 ------
 
-## 四、分销与代理商体系
+## 四、积分体系
+
+### 表 1：积分流水（Point Ledger）
+
+```sql
+CREATE TABLE wp_myshop_point_ledger (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED NOT NULL,
+  type ENUM('earn','spend','adjust','expire') NOT NULL,
+  delta INT NOT NULL COMMENT '积分增减，负数为抵扣',
+  balance_after INT NOT NULL COMMENT '变化后的可用积分',
+  reference_order_id BIGINT UNSIGNED NULL COMMENT '关联订单ID（如有）',
+  reservation_id VARCHAR(64) NULL COMMENT '预占标识，用于 reserve/confirm 流程',
+  status ENUM('pending','confirmed','released') NOT NULL DEFAULT 'confirmed',
+  channel VARCHAR(32) NOT NULL DEFAULT 'order',
+  operator_id BIGINT UNSIGNED NULL COMMENT '人工操作时记录后台操作人',
+  expire_at DATETIME NULL COMMENT '积分过期时间（earn 类型）',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_user (user_id),
+  KEY idx_type (type),
+  KEY idx_status (status),
+  KEY idx_reservation (reservation_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+> ✅ `status=pending` 用于订单预占积分，支付成功后更新为 `confirmed`，超时释放改为 `released`。
+
+------
+
+## 五、分销与代理商体系
 
 ### 表 1：消费者推广关系（支持 N 级）
 
@@ -241,7 +297,13 @@ CREATE TABLE wp_myshop_agents (
   parent_agent_id BIGINT UNSIGNED NULL COMMENT '上级代理商',
   agent_code VARCHAR(20) NOT NULL COMMENT '唯一编码，如 AGT001',
   level TINYINT NOT NULL DEFAULT 1,
+  region VARCHAR(50) NULL COMMENT '大区/城市，如 黑龙江-哈尔滨',
+  status ENUM('active','frozen','terminated') NOT NULL DEFAULT 'active',
+  joined_at DATETIME NOT NULL,
+  invite_qr VARCHAR(255) NULL COMMENT '面向客户的招生二维码',
+  team_target JSON NULL COMMENT '团队目标配置，如销售额/新客目标',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY unique_agent_user (agent_user_id),
   UNIQUE KEY unique_agent_code (agent_code),
@@ -268,9 +330,13 @@ CREATE TABLE wp_myshop_commissions (
   commission_type ENUM('referral', 'agent') NOT NULL COMMENT '来源类型',
   referrer_id BIGINT UNSIGNED NULL COMMENT '若为 referral，记录直接邀请人',
   agent_id BIGINT UNSIGNED NULL COMMENT '若为 agent，记录代理商ID',
-  status ENUM('pending', 'paid', 'cancelled') NOT NULL DEFAULT 'pending',
+  settlement_batch VARCHAR(50) NULL COMMENT '财务批次号，如 2025-11-W3',
+  status ENUM('pending','approved','rejected','paid') NOT NULL DEFAULT 'pending',
+  expected_payout_at DATETIME NULL,
   paid_at DATETIME NULL COMMENT '实际打款时间',
+  note VARCHAR(255) NULL COMMENT '运营备注',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_order (order_id),
   KEY idx_earner (earner_id),
@@ -283,13 +349,33 @@ CREATE TABLE wp_myshop_commissions (
 >
 > - `commission_type` 区分消费者裂变（`referral`）与代理商销售（`agent`）
 > - `referrer_id` 和 `agent_id` 互斥，便于财务分类统计
-> - 支持手动标记为 `paid`（一期人工打款），三期可对接自动结算
+> - 状态流转：`pending → approved → paid` 或 `pending → rejected`
+> - 支持手动标记为 `paid`（一期人工打款），后续可接入自动结算
+
+------
+
+### 表 4：代理商操作审计（Agent Audit Logs）
+
+```sql
+CREATE TABLE wp_myshop_agent_audit_logs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  agent_user_id BIGINT UNSIGNED NOT NULL,
+  action VARCHAR(50) NOT NULL COMMENT '如 freeze / upgrade_level / reset_invite_code',
+  reason VARCHAR(255) NULL,
+  operator_id BIGINT UNSIGNED NOT NULL COMMENT '后台操作人',
+  payload JSON NULL COMMENT '操作前后数据快照',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_agent (agent_user_id),
+  KEY idx_operator (operator_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
 
 
 
 
 
-## 五、系统配置（Options）
+## 六、系统配置（Options）
 
 - **存储表**：`wp_options`
 - **用途**：全局配置项
@@ -302,7 +388,7 @@ CREATE TABLE wp_myshop_commissions (
 
 ------
 
-## 六、版本演进与约束规则
+## 七、版本演进与约束规则
 
 | 变更类型        | 是否允许 | 操作方式                                  |
 | --------------- | -------- | ----------------------------------------- |
@@ -315,15 +401,7 @@ CREATE TABLE wp_myshop_commissions (
 
 ------
 
-你提出了一个**极其关键且精准的质疑**——这确实是我的严重疏忽。
 
-在上一版《完整数据模型定义 V2.0》中，我**错误地删除了佣金流水表（`wp_myshop_commissions`）**，而该表是支撑分销返佣、代理商结算、财务对账的核心实体，**绝不能缺失**。这是典型的“过度重构导致遗漏”，非常不应该。
-
-感谢你的严格把关！作为“超级工程师”，我必须确保模型**完整、闭环、可落地**。
-
-------
-
-现在，我立即为你补全并重新输出 **真正完整无遗漏的《完整数据模型定义 V2.1》**，包含此前所有自定义表，并明确其业务作用。
 
 ------
 
