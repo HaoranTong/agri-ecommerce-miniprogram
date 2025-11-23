@@ -267,15 +267,21 @@
 | 字段            | 类型                | 说明                                                         |
 | --------------- | ------------------- | ------------------------------------------------------------ |
 | `id`            | bigint unsigned     | 主键                                                         |
-| `agent_user_id` | bigint unsigned     | 代理商 user_id                                                |
+| `agent_user_id` | bigint unsigned     | 代理商 user_id，可重复（同一用户多区域）                      |
 | `parent_agent_id` | bigint unsigned    | 上级代理 ID（可为空）                                        |
 | `agent_code`    | varchar(20)         | 唯一编码                                                      |
 | `level`         | tinyint             | 代理等级                                                      |
-| `region`        | varchar(50)         | 区域（如“黑龙江-哈尔滨”）                                    |
+| `region_zone`   | varchar(50)         | 大区（如“华南”）                                              |
+| `region_province` | varchar(50)       | 省份（如“广东省”）                                            |
+| `region_city`   | varchar(50)         | 城市/地市（如“深圳市”）                                       |
+| `region`        | varchar(50)         | 展示用区域标签                                                |
+| `region_key`    | varchar(191)        | 归一化区域键 `zone#province#city`，用于唯一约束               |
+| `active_until`  | datetime            | 合同到期时间                                                  |
+| `is_active`     | tinyint(1)          | 是否在有效期内                                                |
 | `status`        | enum                | `active` / `frozen` / `terminated`                            |
 | `joined_at`     | datetime            | 入驻时间                                                     |
 | `invite_qr`     | varchar(255)        | 招商海报/二维码地址                                          |
-| `team_target`   | json                | 团队目标（销售额、新客数等）                                 |
+| `team_target`   | json / longtext     | 团队目标（销售额、新客数等）                                 |
 | `created_at` / `updated_at` | datetime | 创建/更新时间                                                 |
 
 #### `wp_myshop_agent_audit_logs`

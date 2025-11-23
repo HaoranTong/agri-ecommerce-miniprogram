@@ -713,6 +713,27 @@
               "path": ["wp-json", "myshop", "v1", "referral", "code"]
             }
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('返回邀请码', function () {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(json.data).to.have.property('referral_code');",
+                  "});",
+                  "if (json && json.data) {",
+                  "  pm.environment.set('referral_code', json.data.referral_code || '');",
+                  "}"
+                ]
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -732,6 +753,25 @@
               ]
             }
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('返回成员列表', function () {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(Array.isArray(json.data)).to.be.true;",
+                  "});",
+                  "pm.environment.set('referral_members_count', Array.isArray(json.data) ? json.data.length : 0);"
+                ]
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -747,6 +787,29 @@
               "path": ["wp-json", "myshop", "v1", "referral", "summary"]
             }
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('返回邀请统计', function () {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(json.data).to.have.property('referral_code');",
+                  "});",
+                  "if (json && json.data) {",
+                  "  pm.environment.set('referral_code', json.data.referral_code || '');",
+                  "  pm.environment.set('referral_total_invitees', json.data.total_invitees || 0);",
+                  "  pm.environment.set('referral_last_summary', JSON.stringify(json.data));",
+                  "}"
+                ]
+              }
+            }
+          ],
           "response": []
         }
       ]
@@ -803,7 +866,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"region\": \"华南\",\n  \"level\": 1,\n  \"parent_agent_code\": \"{{parent_agent_code}}\"\n}"
+              "raw": "{\n  \"region_zone\": \"{{agent_region_zone}}\",\n  \"region_province\": \"{{agent_region_province}}\",\n  \"region_city\": \"{{agent_region_city}}\",\n  \"level\": 1,\n  \"parent_agent_code\": \"{{parent_agent_code}}\"\n}"
             },
             "url": {
               "protocol": "https",
@@ -811,6 +874,70 @@
               "path": ["wp-json", "myshop", "v1", "agents", "apply"]
             }
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('返回代理编号', function () {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(json.data).to.have.property('agent_code');",
+                  "  pm.expect(json.data).to.have.property('active_until');",
+                  "  pm.expect(json.data).to.have.property('is_active');",
+                  "});",
+                  "if (json && json.data) {",
+                  "  pm.environment.set('agent_code_last', json.data.agent_code || '');",
+                  "}",
+                  "if (!pm.environment.get('parent_agent_code')) {",
+                  "  pm.environment.set('parent_agent_code', json.data.agent_code || '');",
+                  "}",
+                  "pm.environment.set('agent_status_last', json.data.status || '');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Apply As Agent (Duplicate Region)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"region_zone\": \"{{agent_region_zone}}\",\n  \"region_province\": \"{{agent_region_province}}\",\n  \"region_city\": \"{{agent_region_city}}\",\n  \"level\": 1\n}"
+            },
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "agents", "apply"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('状态码为409', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('区域占用错误码', function () {",
+                  "  pm.expect(json.code || json.error_code).to.eql('region_occupied');",
+                  "});"
+                ]
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -826,6 +953,32 @@
               "path": ["wp-json", "myshop", "v1", "agents", "profile"]
             }
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('返回代理档案', function () {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(json.data).to.have.property('region_zone');",
+                  "  pm.expect(json.data).to.have.property('is_active');",
+                  "  pm.expect(json.data).to.have.property('active_until');",
+                  "});",
+                  "if (json && json.data) {",
+                  "  pm.environment.set('agent_profile_region_zone', json.data.region_zone || '');",
+                  "  pm.environment.set('agent_profile_region_province', json.data.region_province || '');",
+                  "  pm.environment.set('agent_profile_region_city', json.data.region_city || '');",
+                  "}",
+                  "pm.environment.set('agent_status_last', json.data ? json.data.status : '');"
+                ]
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -841,6 +994,26 @@
               "path": ["wp-json", "myshop", "v1", "agents", "team-stats"]
             }
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('返回团队统计', function () {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(json.data).to.have.property('direct_agents');",
+                  "  pm.expect(json.data).to.have.property('team_total_agents');",
+                  "});",
+                  "pm.environment.set('agent_direct_team_size', json && json.data ? json.data.direct_agents : '');"
+                ]
+              }
+            }
+          ],
           "response": []
         }
       ]

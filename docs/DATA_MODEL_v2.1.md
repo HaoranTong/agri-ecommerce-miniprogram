@@ -293,21 +293,32 @@ CREATE TABLE wp_myshop_referrals (
 ```sql
 CREATE TABLE wp_myshop_agents (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  agent_user_id BIGINT UNSIGNED NOT NULL COMMENT '代理商 user_id',
+  agent_user_id BIGINT UNSIGNED NOT NULL COMMENT '代理商 user_id，可重复出现（多区域持有）',
   parent_agent_id BIGINT UNSIGNED NULL COMMENT '上级代理商',
   agent_code VARCHAR(20) NOT NULL COMMENT '唯一编码，如 AGT001',
   level TINYINT NOT NULL DEFAULT 1,
-  region VARCHAR(50) NULL COMMENT '大区/城市，如 黑龙江-哈尔滨',
+  region_zone VARCHAR(50) NULL COMMENT '大区，如 华南',
+  region_province VARCHAR(50) NULL COMMENT '省份，如 广东省',
+  region_city VARCHAR(50) NULL COMMENT '城市/地市，如 深圳市',
+  region VARCHAR(50) NULL COMMENT '冗余的展示用文案',
+  region_key VARCHAR(191) NOT NULL COMMENT '归一化后的区域唯一键 zone#province#city',
+  active_until DATETIME NULL COMMENT '合同到期时间',
+  is_active TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否在合同期内',
   status ENUM('active','frozen','terminated') NOT NULL DEFAULT 'active',
   joined_at DATETIME NOT NULL,
   invite_qr VARCHAR(255) NULL COMMENT '面向客户的招生二维码',
-  team_target JSON NULL COMMENT '团队目标配置，如销售额/新客目标',
+  team_target LONGTEXT NULL COMMENT '团队目标配置，如销售额/新客目标',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY unique_agent_user (agent_user_id),
   UNIQUE KEY unique_agent_code (agent_code),
-  KEY idx_parent (parent_agent_id)
+  KEY idx_agent_user (agent_user_id),
+  KEY idx_parent (parent_agent_id),
+  KEY idx_region_zone (region_zone),
+  KEY idx_region_province (region_province),
+  KEY idx_region_key (region_key),
+  KEY idx_region_combo (region_zone, region_province, region_city),
+  KEY idx_active_until (active_until)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 

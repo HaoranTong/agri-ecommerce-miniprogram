@@ -999,6 +999,52 @@
 
 ## 九、代理商体系（二期）
 
+### POST `/agents/apply`
+
+**用途**：现有用户提交代理申请，按“大区 → 省 → 市”归档，并可指定上级。
+
+**请求体**：
+
+```json
+{
+  "region_zone": "华南大区",
+  "region_province": "广东省",
+  "region_city": "深圳市",
+  "level": 1,
+  "parent_agent_code": "AGT001",
+  "team_target": {
+    "monthly_gmv": 100000
+  }
+}
+```
+
+- `region_zone` **必填**；`region_province` 通常必填（申报“大区代理”时可留空，但此时 `region_city` 也必须为空），`region_city` 可按城市/地市/区县精确到三级；用于区域统计与排重。
+- `parent_agent_code` 仅二级代理填写；若为空默认直属总部。
+- 同一区域组合（`region_zone + region_province + region_city`，city 为空则精确到省）仅允许一个处于 `active/pending/frozen` 状态的代理；若被占用返回 `409` + `region_occupied`。
+- 同一用户可以在不同地区拥有多条代理记录，系统会生成唯一 `region_key` 并在 `GET /agents/profile` 的 `assignments` 字段中返回所有持有区域。
+- 每次签约默认有效期 365 天（可由运营在后台重置 `active_until`），接口返回 `is_active` + `active_until` 用于前端倒计时。
+- 城市级代理未传 `parent_agent_code` 时，系统会自动查找所属省级（`region_city` 为空的记录）并建立上下级；省级代理更换后会自动重绑该省的所有城市代理。
+
+**成功响应（201）**：
+
+```json
+{
+  "agent_code": "AGT210",
+  "status": "active",
+  "region_zone": "华南大区",
+  "region_province": "广东省",
+  "region_city": "深圳市",
+  "level": 1,
+  "parent_agent_id": 8,
+  "active_until": "2026-11-25T10:00:00+08:00",
+  "is_active": true
+}
+```
+
+`status` 枚举：`"pending" | "active" | "rejected" | "frozen"`
+
+------
+
 ### GET `/agents/me`
 
 **成功响应（200）**：
@@ -1007,9 +1053,14 @@
 {
   "is_agent": true,
   "agent_code": "AGT105",
+  "is_active": true,
+  "active_until": "2026-06-01T10:00:00+08:00",
   "level": 1,
   "parent_agent_id": 42,
-  "region": "黑龙江-哈尔滨",
+  "region_zone": "东北大区",
+  "region_province": "黑龙江省",
+  "region_city": "哈尔滨市",
+  "region_label": "东北大区 / 黑龙江省 / 哈尔滨市",
   "status": "active",
   "joined_at": "2025-06-01T10:00:00+08:00",
   "total_downline_agents": 3,
@@ -1030,6 +1081,19 @@
       "order_amount": "680.00",
       "commission_estimate": "68.00",
       "created_at": "2025-11-21T16:30:00+08:00"
+    }
+  ],
+  "assignments": [
+    {
+      "agent_code": "AGT105",
+      "level": 1,
+      "region_zone": "东北大区",
+      "region_province": "黑龙江省",
+      "region_city": "哈尔滨市",
+      "status": "active",
+      "is_active": true,
+      "active_until": "2026-06-01T10:00:00+08:00",
+      "joined_at": "2025-06-01T10:00:00+08:00"
     }
   ]
 }
@@ -1052,7 +1116,10 @@
       "registered_at": "2025-11-10T10:00:00+08:00",
       "level": 2,
       "status": "active",
-      "region": "辽宁-沈阳",
+      "region_zone": "东北大区",
+      "region_province": "辽宁省",
+      "region_city": "沈阳市",
+      "region_label": "东北大区 / 辽宁省 / 沈阳市",
       "sales_amount": "5600.00",
       "team_sales_amount": "8200.00",
       "active_clients": 12,
@@ -1105,6 +1172,49 @@
 
 ------
 
+### GET `/agents/team-stats`
+
+**查询参数**：
+
+| 字段 | 说明 |
+| --- | --- |
+| `agent_code` | 可选，当用户持有多条代理记录时用于指定要查看的区域，缺省时按等级/入驻时间倒序取第一条 |
+
+**用途**：代理商查看直属 + 间接团队规模、近期入驻情况与佣金汇总。
+
+**成功响应（200）**：
+
+```json
+{
+  "agent_code": "AGT210",
+  "direct_agents": 2,
+  "indirect_agents": 5,
+  "team_total_agents": 7,
+  "pending_commission": "1680.00",
+  "paid_commission": "820.00",
+  "recent_team_members": [
+    {
+      "user_id": 201,
+      "nickname": "广州城市合伙人",
+      "level": 2,
+      "depth": 1,
+      "joined_at": "2025-11-20T10:00:00+08:00"
+    },
+    {
+      "user_id": 302,
+      "nickname": "深圳旗舰店",
+      "level": 2,
+      "depth": 2,
+      "joined_at": "2025-11-18T09:30:00+08:00"
+    }
+  ]
+}
+```
+
+`depth` 表示与当前代理的层级距离：1=直属城市代理，2=城市代理的直属队员，以此类推。
+
+------
+
 ## 十、错误响应规范（全局统一）
 
 所有错误返回 JSON，HTTP 状态码 + 结构化错误：
@@ -1142,6 +1252,7 @@
 | `poster_not_found`     | 404       | "未找到可用的海报模板"       | `template_code` 无效或已下线 |
 | `order_not_found`      | 404       | "订单不存在"                   | 订单ID无效               |
 | `not_authorized_agent` | 403       | "您不是代理商，无权访问此接口" | 非代理商调用 `/agents/*` |
+| `region_occupied`      | 409       | "该区域已有代理，请选择其他区域" | 重复申请相同区域的代理 |
 | `upload_failed`        | 422       | "图片上传失败"                 | 付款截图上传异常         |
 | `payout_in_progress`   | 409       | "佣金正在处理，请稍后重试"     | 佣金批次锁定             |
 | `out_of_stock`         | 409       | "商品库存不足"                 | 下单或加购时库存不足     |
