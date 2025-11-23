@@ -111,6 +111,21 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Clear Cart",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "cart"]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -127,7 +142,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"variation_id\": {{variation_id}},\n  \"quantity\": 1,\n  \"shipping_address\": {\n    \"name\": \"张三\",\n    \"phone\": \"13800138000\",\n    \"province\": \"广东省\",\n    \"city\": \"深圳市\",\n    \"district\": \"南山区\",\n    \"address\": \"科技园科兴科学园\"\n  }\n}"
+              "raw": "{\n  \"variation_id\": {{variation_id}},\n  \"quantity\": 1,\n  \"shipping_address\": {\n    \"name\": \"张三\",\n    \"phone\": \"13800138000\",\n    \"province\": \"广东省\",\n    \"city\": \"深圳市\",\n    \"district\": \"南山区\",\n    \"detail_address\": \"科技园科兴科学园A4栋\",\n    \"postcode\": \"518000\"\n  }\n}"
             },
             "url": {
               "protocol": "https",
@@ -151,12 +166,225 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Upload Payment Proof",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "order_id",
+                  "value": "{{order_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "proof_image",
+                  "src": "{{payment_image_path}}",
+                  "type": "file"
+                }
+              ]
+            },
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "orders", "upload-payment-proof"]
+            }
+          },
+          "response": []
         }
       ]
     },
     {
       "name": "Gift Cards",
       "item": [
+        {
+          "name": "List Gift Card Templates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "gift-cards", "templates"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Gift Card Template Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "gift-cards", "templates", "{{gift_card_template_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Purchase Gift Card",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"template_id\": {{gift_card_template_id}},\n  \"delivery_mode\": \"digital_share\"\n}"
+            },
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "gift-cards", "purchase"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"状态码为200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"成功返回礼品卡号和密码\", function () {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(json.data).to.have.property('card_number');",
+                  "  pm.expect(json.data).to.have.property('card_pin');",
+                  "});",
+                  "if (json && json.data) {",
+                  "  pm.environment.set('card_number', json.data.card_number || '');",
+                  "  pm.environment.set('card_pin', json.data.card_pin || '');",
+                  "  pm.environment.set('gift_card_template_id', json.data.template ? json.data.template.id : pm.environment.get('gift_card_template_id'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Share Gift Card",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"card_number\": \"{{card_number}}\",\n  \"delivery_mode\": \"digital_share\",\n  \"channel\": \"miniprogram\"\n}"
+            },
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "gift-cards", "share"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"状态码为200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"生成分享令牌\", function () {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(json.data).to.have.property('share_token');",
+                  "});",
+                  "if (json && json.data) {",
+                  "  pm.environment.set('gift_card_share_token', json.data.share_token || '');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Get Gift Card Share Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "gift-cards", "share", "{{gift_card_share_token}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"状态码为200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"返回分享详情\", function () {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(json.data).to.have.property('card_number');",
+                  "});",
+                  "if (json && json.data) {",
+                  "  pm.test(\"卡号与环境变量一致\", function () {",
+                  "    pm.expect(json.data.card_number).to.eql(pm.environment.get('card_number'));",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Claim Shared Gift Card",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "gift-cards", "share", "{{gift_card_share_token}}", "claim"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"状态码为200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"领取状态为bound\", function () {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(json.data).to.have.property('status', 'bound');",
+                  "});",
+                  "if (json && json.data && json.data.card_number) {",
+                  "  pm.environment.set('card_number', json.data.card_number);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
         {
           "name": "Redeem Gift Card",
           "request": {
@@ -167,7 +395,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"card_number\": \"{{card_number}}\",\n  \"pin\": \"{{card_pin}}\"\n}"
+              "raw": "{\n  \"card_number\": \"{{card_number}}\",\n  \"card_pin\": \"{{card_pin}}\"\n}"
             },
             "url": {
               "protocol": "https",
@@ -175,6 +403,25 @@
               "path": ["wp-json", "myshop", "v1", "gift-cards", "redeem"]
             }
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"状态码为200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"礼品卡兑换成功\", function () {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(json.data).to.have.property('status', 'redeemed');",
+                  "});",
+                  "pm.environment.set('gift_card_last_redeem_status', json && json.data ? json.data.status : '');"
+                ]
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -190,12 +437,268 @@
               "path": ["wp-json", "myshop", "v1", "gift-cards"]
             }
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"状态码为200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"返回礼品卡列表\", function () {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(Array.isArray(json.data)).to.eql(true);",
+                  "});",
+                  "if (json && Array.isArray(json.data)) {",
+                  "  const target = json.data.find(item => item.card_number === pm.environment.get('card_number'));",
+                  "  if (target) {",
+                  "    pm.environment.set('gift_card_last_known_status', target.status || '');",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
           "response": []
         }
       ]
     },
     {
-      "name": "Referral & Commissions",
+      "name": "Points",
+      "item": [
+        {
+          "name": "Get Points Balance",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "points", "balance"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('返回积分数据', function () {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(json.data).to.have.property('available');",
+                  "});",
+                  "if (json && json.data) {",
+                  "  pm.environment.set('points_available', json.data.available || 0);",
+                  "}",
+                  "pm.environment.set('points_balance_after_spend', '');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "List Points Ledger",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "points", "ledger"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "20" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('返回积分流水数组', function () {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(Array.isArray(json.data)).to.be.true;",
+                  "});",
+                  "if (json && Array.isArray(json.data) && json.data.length > 0) {",
+                  "  const latest = json.data[0];",
+                  "  pm.environment.set('points_last_entry_id', latest.id || '');",
+                  "  pm.environment.set('points_last_entry_delta', latest.delta || '');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Grant Points",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "X-MyShop-Admin-Key", "value": "{{admin_key}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"points\": {{points_seed_amount}},\n  \"reason\": \"{{points_seed_reason}}\",\n  \"target_openid\": \"{{points_seed_target_openid}}\"\n}"
+            },
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "points", "grant"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('发放成功', function () {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(json.data).to.have.property('new_balance');",
+                  "});",
+                  "if (json && json.data) {",
+                  "  pm.environment.set('points_last_granted', json.data.granted || 0);",
+                  "  pm.environment.set('points_balance_after_grant', json.data.new_balance || 0);",
+                  "  pm.environment.set('points_available', json.data.new_balance || 0);",
+                  "}",
+                  "pm.environment.set('points_balance_after_spend', '');"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Spend Points",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"points\": {{points_spend_amount}},\n  \"reason\": \"{{points_spend_reason}}\"\n}"
+            },
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "points", "spend"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test('扣减成功', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "    pm.expect(json.data).to.have.property('new_balance');",
+                  "  });",
+                  "  pm.environment.set('points_balance_after_spend', json.data.new_balance || 0);",
+                  "  pm.environment.set('points_available', json.data.new_balance || 0);",
+                  "} else {",
+                  "  const json = pm.response.json();",
+                  "  pm.test('余额不足提示', function () {",
+                  "    pm.expect(pm.response.code).to.eql(400);",
+                  "    pm.expect(json.code).to.be.oneOf(['insufficient_points','invalid_points']);",
+                  "  });",
+                  "}",
+                  "pm.environment.set('points_last_spend_code', pm.response.code);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Config",
+      "item": [
+        {
+          "name": "Get Public Config",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "config", "public"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Invitations",
+      "item": [
+        {
+          "name": "Get Invitation Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "invitations", "summary"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Track Invitation Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inviter_id\": {{user_id}},\n  \"channel\": \"wechat_moments\",\n  \"scene\": \"poster\",\n  \"landing_page\": \"/pages/index/index\",\n  \"extra\": {\n    \"campaign\": \"double11\"\n  }\n}"
+            },
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "invitations", "track"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Referrals",
       "item": [
         {
           "name": "Get Referral Code",
@@ -213,7 +716,7 @@
           "response": []
         },
         {
-          "name": "List Commissions",
+          "name": "List Referral Members",
           "request": {
             "method": "GET",
             "header": [
@@ -222,7 +725,144 @@
             "url": {
               "protocol": "https",
               "host": ["agri-ecommerce", "test"],
-              "path": ["wp-json", "myshop", "v1", "commissions"]
+              "path": ["wp-json", "myshop", "v1", "referral", "members"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "20" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Referral Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "referral", "summary"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Commissions",
+      "item": [
+        {
+          "name": "List My Commissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "commissions"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "20" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Commission Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "commissions", "summary"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Agents",
+      "item": [
+        {
+          "name": "Apply As Agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"region\": \"华南\",\n  \"level\": 1,\n  \"parent_agent_code\": \"{{parent_agent_code}}\"\n}"
+            },
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "agents", "apply"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Agent Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "agents", "profile"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Agent Team Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "agents", "team-stats"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Channel Overview",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "analytics", "channel"],
+              "query": [
+                { "key": "from", "value": "{{range_from}}" },
+                { "key": "to", "value": "{{range_to}}" }
+              ]
             }
           },
           "response": []
