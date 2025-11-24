@@ -26,6 +26,9 @@ export interface Product {
   description?: string;
   is_gift_card: boolean;
   image_url: string;
+  price?: string; // 基础价格（兼容旧数据）
+  min_price?: number; // 最低价格
+  max_price?: number; // 最高价格
   variations: ProductVariation[];
 }
 
@@ -116,6 +119,22 @@ export interface GiftCard {
   can_reset_pin: boolean;
 }
 
+export interface GiftCardShareResult {
+  share_token: string;
+  share_url: string;
+  expires_at: string;
+}
+
+export interface GiftCardShareDetail {
+  card_number: string;
+  balance: string;
+  template_name: string;
+  sender_nickname?: string;
+  delivery_mode: 'link' | 'qrcode' | 'passcode';
+  status: 'active' | 'claimed' | 'expired';
+  expires_at: string;
+}
+
 export interface CommissionRecord {
   id: number;
   order_id: number;
@@ -147,6 +166,25 @@ export interface AgentDownline {
   registered_at: string;
   level: number;
   sales_amount: string;
+}
+
+export interface PointsBalance {
+  available: number;
+  pending: number;
+  expiring_soon: number;
+  expiring_date?: string;
+}
+
+export interface PointsLedgerItem {
+  id: number;
+  user_id: number;
+  points: number;
+  type: 'earn' | 'spend' | 'expire' | 'refund';
+  source: string;
+  source_id?: number;
+  balance_after: number;
+  expires_at?: string;
+  created_at: string;
 }
 
 export interface AddressFormState extends ShippingAddress {

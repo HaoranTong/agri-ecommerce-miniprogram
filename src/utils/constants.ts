@@ -14,12 +14,19 @@ export const API_ENDPOINTS = {
   cart: '/cart',
   orders: '/orders',
   uploadPaymentProof: (orderId: number | string) => `/orders/${orderId}/upload-payment-proof`,
-  giftCards: '/gift-cards/mine',
+  giftCards: '/gift-cards',
+  giftCardsMine: '/gift-cards/mine',
   redeemGiftCard: '/gift-cards/redeem',
+  shareGiftCard: '/gift-cards/share',
+  getShareDetail: (token: string) => `/gift-cards/share/${token}`,
+  claimGiftCard: (token: string) => `/gift-cards/share/${token}/claim`,
   resetGiftCardPin: (cardId: number | string) => `/gift-cards/${cardId}/reset-pin`,
   referrals: '/referrals/my-downlines',
   commissions: '/commissions',
   agentsMe: '/agents/me',
   agentDownlines: '/agents/downlines',
-  agentCommissions: '/agents/commissions'
+  agentCommissions: '/agents/commissions',
+  pointsBalance: '/points/balance',
+  pointsLedger: '/points/ledger',
+  pointsSpend: '/points/spend'
 } as const;

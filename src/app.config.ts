@@ -11,9 +11,18 @@ export default defineAppConfig({
     'pages/address/select',
     'pages/giftcard/mine',
     'pages/giftcard/redeem',
+    'pages/giftcard/share',
+    'pages/giftcard/claim',
+    'pages/giftcard/detail',
     'pages/referral/index',
     'pages/agent/dashboard',
-    'pages/auth/login'
+    'pages/agent/apply',
+    'pages/commission/list',
+    'pages/auth/login',
+    'pages/user/profile',
+    'pages/points/summary',
+    'pages/points/ledger',
+    'pages/cart/index'
   ],
   window: {
     navigationBarBackgroundColor: '#ffffff',
@@ -36,6 +45,12 @@ export default defineAppConfig({
         text: '订单',
         iconPath: 'assets/icons/order.png',
         selectedIconPath: 'assets/icons/order-active.png'
+      },
+      {
+        pagePath: 'pages/user/profile',
+        text: '我的',
+        iconPath: 'assets/icons/user.png',
+        selectedIconPath: 'assets/icons/user-active.png'
       }
     ],
     color: '#999999',

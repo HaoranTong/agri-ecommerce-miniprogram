@@ -16,9 +16,13 @@ import type {
   CommissionRecord,
   CreateOrderPayload,
   GiftCard,
+  GiftCardShareDetail,
+  GiftCardShareResult,
   LoginResponse,
   OrderCreated,
   OrderDetail,
+  PointsBalance,
+  PointsLedgerItem,
   Product,
   PublicConfig,
   ReferralDownline,
@@ -182,15 +186,29 @@ export const userService = {
 
 export const cartService = {
   getCart: () =>
-    request<CartSummary>({
+    request<CartItem[]>({
       url: API_ENDPOINTS.cart,
       method: 'GET'
     }),
-  updateCart: (payload: { product_id: number; variation_id?: number; quantity: number }) =>
-    request<CartSummary>({
+  addToCart: (variation_id: number, quantity: number) =>
+    request<{ success: boolean }>({
       url: API_ENDPOINTS.cart,
       method: 'POST',
-      data: payload
+      data: { variation_id, quantity },
+      showLoading: true
+    }),
+  updateCart: (variation_id: number, quantity: number) =>
+    request<{ success: boolean }>({
+      url: API_ENDPOINTS.cart,
+      method: 'POST',
+      data: { variation_id, quantity },
+      showLoading: true
+    }),
+  removeFromCart: (variation_id: number) =>
+    request<{ success: boolean }>({
+      url: API_ENDPOINTS.cart,
+      method: 'POST',
+      data: { variation_id, quantity: 0 }
     }),
   clearCart: () =>
     request<void>({
@@ -246,7 +264,7 @@ export const orderService = {
 export const giftCardService = {
   listMine: () =>
     request<{ cards: GiftCard[] }>({
-      url: API_ENDPOINTS.giftCards,
+      url: API_ENDPOINTS.giftCardsMine,
       method: 'GET',
       showLoading: true
     }).then(res => res.cards),
@@ -255,6 +273,25 @@ export const giftCardService = {
       url: API_ENDPOINTS.redeemGiftCard,
       method: 'POST',
       data: { card_number, pin_code },
+      showLoading: true
+    }),
+  share: (card_number: string, delivery_mode: 'link' | 'qrcode' | 'passcode', channel?: string) =>
+    request<GiftCardShareResult>({
+      url: API_ENDPOINTS.shareGiftCard,
+      method: 'POST',
+      data: { card_number, delivery_mode, channel },
+      showLoading: true
+    }),
+  getShareDetail: (token: string) =>
+    request<GiftCardShareDetail>({
+      url: API_ENDPOINTS.getShareDetail(token),
+      method: 'GET'
+    }),
+  claim: (token: string, pin_code?: string) =>
+    request<{ card_number: string; balance: string }>({
+      url: API_ENDPOINTS.claimGiftCard(token),
+      method: 'POST',
+      data: pin_code ? { pin_code } : {},
       showLoading: true
     }),
   resetPin: (cardId: number | string, newPin: string) =>
@@ -294,4 +331,25 @@ export const agentService = {
       url: API_ENDPOINTS.agentCommissions,
       method: 'GET'
     }).then(res => res.commissions)
+};
+
+export const pointsService = {
+  getBalance: () =>
+    request<PointsBalance>({
+      url: API_ENDPOINTS.pointsBalance,
+      method: 'GET'
+    }),
+  getLedger: (params?: { page?: number; per_page?: number; type?: string }) =>
+    request<{ items: PointsLedgerItem[]; total: number }>({
+      url: API_ENDPOINTS.pointsLedger,
+      method: 'GET',
+      data: params
+    }),
+  spend: (points: number, purpose: string) =>
+    request<{ success: boolean; new_balance: number }>({
+      url: API_ENDPOINTS.pointsSpend,
+      method: 'POST',
+      data: { points, purpose },
+      showLoading: true
+    })
 };

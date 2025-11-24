@@ -1,0 +1,179 @@
+.gift-card-detail-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #9c27b0 0%, #8e24aa 30%, #f5f5f5 30%);
+  padding: 20px;
+
+  .loading-state,
+  .empty {
+    text-align: center;
+    padding: 100px 0;
+    color: #fff;
+    font-size: 28px;
+  }
+
+  /* 主卡片 */
+  .card-main {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9));
+    border-radius: 24px;
+    padding: 50px 40px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+
+      .card-template {
+        font-size: 32px;
+        color: #333;
+        font-weight: 700;
+      }
+
+      .status-badge {
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-size: 24px;
+        font-weight: 600;
+
+        &.green {
+          background: rgba(76, 175, 80, 0.15);
+          color: #4caf50;
+        }
+
+        &.gray {
+          background: rgba(158, 158, 158, 0.15);
+          color: #9e9e9e;
+        }
+
+        &.red {
+          background: rgba(244, 67, 54, 0.15);
+          color: #f44336;
+        }
+
+        &.default {
+          background: rgba(0, 0, 0, 0.05);
+          color: #666;
+        }
+      }
+    }
+
+    .card-balance {
+      text-align: center;
+      padding: 40px 0;
+      border-top: 2px dashed #e0e0e0;
+      border-bottom: 2px dashed #e0e0e0;
+      margin-bottom: 30px;
+
+      .balance-label {
+        display: block;
+        font-size: 26px;
+        color: #999;
+        margin-bottom: 15px;
+      }
+
+      .balance-value {
+        display: block;
+        font-size: 88px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #9c27b0 0%, #8e24aa 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+    }
+
+    .card-sender {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+
+      .sender-label {
+        font-size: 26px;
+        color: #999;
+      }
+
+      .sender-name {
+        font-size: 28px;
+        color: #9c27b0;
+        font-weight: 600;
+      }
+    }
+  }
+
+  /* 详情卡片 */
+  .detail-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 30px 40px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 25px 0;
+      border-bottom: 1px solid #f0f0f0;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .detail-label {
+        font-size: 28px;
+        color: #666;
+      }
+
+      .detail-value {
+        font-size: 28px;
+        color: #333;
+        font-weight: 500;
+
+        &.expire {
+          color: #ff9800;
+          font-size: 24px;
+        }
+      }
+    }
+  }
+
+  /* 操作按钮 */
+  .action-section {
+    margin-top: 40px;
+
+    .claim-btn {
+      width: 100%;
+      height: 88px;
+      background: linear-gradient(135deg, #9c27b0 0%, #8e24aa 100%);
+      color: #fff;
+      border: none;
+      border-radius: 16px;
+      font-size: 32px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(156, 39, 176, 0.4);
+
+      &::after {
+        border: none;
+      }
+    }
+  }
+
+  /* 提示信息 */
+  .tip-section {
+    background: #fff;
+    border-radius: 16px;
+    padding: 40px;
+    margin-top: 40px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+    .tip-text {
+      font-size: 28px;
+      color: #999;
+    }
+  }
+}

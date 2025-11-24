@@ -47,7 +47,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: auto;
+  margin-bottom: 12px;
 }
 
 .price {
@@ -62,4 +62,29 @@
   background: rgba(76, 175, 80, 0.12);
   padding: 4px 10px;
   border-radius: 999px;
+}
+
+.tagContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: auto;
+}
+
+.tag {
+  padding: 8rpx 20rpx;
+  background: #f5f5f5;
+  border-radius: 999px;
+  border: 1px solid #e0e0e0;
+  transition: all 0.2s;
+}
+
+.tagHover {
+  background: #e8f5e9;
+  border-color: #4caf50;
+}
+
+.tagText {
+  font-size: 24rpx;
+  color: #666666;
 }

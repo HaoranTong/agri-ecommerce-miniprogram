@@ -1,49 +1,73 @@
-import { Button, Picker, Text, View } from '@tarojs/components';
+import { Button, Image, Swiper, SwiperItem, Text, Video, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useEffect, useMemo, useState } from 'react';
 
-import { productService } from '../../services/api';
+import { cartService, productService } from '../../services/api';
 import type { Product, ProductVariation } from '../../types';
 import './detail.scss';
 
 const ProductDetail = () => {
-  const productId = useMemo(() => {
-    const params = Taro.getCurrentInstance().router?.params ?? {};
-    return Number(params.id || params.productId || 0);
+  const params = useMemo(() => {
+    const routerParams = Taro.getCurrentInstance().router?.params ?? {};
+    return {
+      productId: Number(routerParams.id || routerParams.productId || 0),
+      variationId: routerParams.variation_id ? Number(routerParams.variation_id) : null
+    };
   }, []);
+
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
-  const [variationOptions, setVariationOptions] = useState<string[]>([]);
-  const [selectedIndex, setSelectedIndex] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadProduct = async () => {
       try {
         const products = await productService.getProducts();
-        const found = products.find((item) => item.id === productId) || null;
+        const found = products.find((item) => item.id === params.productId) || null;
         setProduct(found);
+
         if (found?.variations?.length) {
-          setVariationOptions(found.variations.map((variation) => variation.variation_id.toString()));
-          setSelectedVariation(found.variations[0]);
+          // 如果 URL 带了 variation_id，预选该规格
+          const preselected = params.variationId
+            ? found.variations.find(v => v.variation_id === params.variationId)
+            : found.variations[0];
+          setSelectedVariation(preselected || found.variations[0]);
         }
       } catch (error) {
         console.error('获取商品详情失败', error);
         Taro.showToast({ title: '获取商品失败', icon: 'none' });
+      } finally {
+        setLoading(false);
       }
     };
 
     loadProduct();
-  }, [productId]);
+  }, [params.productId, params.variationId]);
 
-  const handleVariationChange = (event: any) => {
-    const index = Number(event.detail.value);
-    setSelectedIndex(index);
-    if (product?.variations?.[index]) {
-      setSelectedVariation(product.variations[index]);
+  const handleVariationSelect = (variation: ProductVariation) => {
+    setSelectedVariation(variation);
+  };
+
+  const handleAddToCart = async () => {
+    if (!selectedVariation) {
+      Taro.showToast({ title: '请选择规格', icon: 'none' });
+      return;
+    }
+
+    try {
+      await cartService.addToCart({
+        product_id: product!.id,
+        variation_id: selectedVariation.variation_id,
+        quantity: 1
+      });
+      Taro.showToast({ title: '已加入购物车', icon: 'success' });
+    } catch (error) {
+      console.error('加入购物车失败', error);
+      Taro.showToast({ title: '加入购物车失败', icon: 'none' });
     }
   };
 
-  const handleCreateOrder = () => {
+  const handleBuyNow = () => {
     if (!selectedVariation) {
       Taro.showToast({ title: '请选择规格', icon: 'none' });
       return;
@@ -54,36 +78,197 @@ const ProductDetail = () => {
     });
   };
 
-  if (!product) {
-    return <View className="loading">商品加载中...</View>;
+  if (loading) {
+    return <View className="loading-container">商品加载中...</View>;
   }
+
+  if (!product) {
+    return <View className="error-container">商品不存在</View>;
+  }
+
+  // 构建图片列表
+  const images = [
+    selectedVariation?.image_url || product.image_url,
+    product.image_url
+  ].filter((img, index, self) => img && self.indexOf(img) === index);
+
+  // 提取规格属性信息（修复版）
+  const getSpecInfo = () => {
+    if (!selectedVariation) {
+      return {
+        packaging: '-',
+        weight: '-',
+        quality: '-',
+        isVacuum: '-'
+      };
+    }
+
+    const attrs = selectedVariation.attributes; // { "真空袋装": "vacuum", "5千克": "5kg", "有机认证": "organic" }
+    let packaging = '-';
+    let weight = '-';
+    let quality = '普通种植';
+    let isVacuum = '否';
+
+    // 遍历所有属性
+    Object.keys(attrs).forEach(key => {
+      const lowerKey = key.toLowerCase();
+      
+      // 包装方式
+      if (key.includes('袋装') || key.includes('礼盒')) {
+        packaging = key;
+      }
+      
+      // 重量规格
+      if (key.includes('kg') || key.includes('千克') || key.includes('斤')) {
+        weight = key;
+      }
+      
+      // 品质（有机认证）
+      if (key.includes('有机')) {
+        quality = '有机认证';
+      }
+      
+      // 真空包装
+      if (key.includes('真空')) {
+        isVacuum = '是';
+      }
+    });
+
+    return { packaging, weight, quality, isVacuum };
+  };
+
+  const specInfo = getSpecInfo();
+
+  // 商品详情表数据（参考京东）
+  const specs = [
+    { label: '商品名称', value: product.name },
+    { label: '商品编号', value: selectedVariation?.variation_id.toString() || product.id.toString() },
+    { label: '包装', value: specInfo.packaging },
+    { label: '规格', value: specInfo.weight },
+    { label: '品质', value: specInfo.quality },
+    { label: '保质期', value: '12个月（365天）' },
+    { label: '原料产地', value: '黑龙江五常' },
+    { label: '是否真空包装', value: specInfo.isVacuum },
+    { label: '库存状态', value: selectedVariation?.in_stock ? '现货' : '缺货' }
+  ];
 
   return (
     <View className="product-detail-page">
-      <View className="card">
-        <Text className="section-title">{product.name}</Text>
-        {product.description && (
-          <Text className="product-description">{product.description}</Text>
+      {/* 图片/视频轮播 */}
+      <View className="media-section">
+        {images.length > 0 ? (
+          <Swiper className="media-swiper" indicatorDots circular>
+            {images.map((img, index) => (
+              <SwiperItem key={index}>
+                <Image className="product-image" src={img} mode="aspectFill" />
+              </SwiperItem>
+            ))}
+          </Swiper>
+        ) : (
+          <View className="placeholder-image">
+            <Text className="placeholder-text">暂无图片</Text>
+          </View>
         )}
-        <View className="info-row">
-          <Text>规格选择</Text>
-          <Picker mode="selector" range={variationOptions} value={selectedIndex} onChange={handleVariationChange}>
-            <View className="picker-value">
-              {selectedVariation?.attributes
-                ? Object.values(selectedVariation.attributes).join(' / ')
-                : '请选择规格'}
-            </View>
-          </Picker>
+      </View>
+
+      {/* 商品基本信息 */}
+      <View className="info-section">
+        <View className="price-section">
+          <Text className="price-symbol">¥</Text>
+          <Text className="price-value">{selectedVariation?.price || product.min_price || '--'}</Text>
         </View>
-        <View className="info-row">
-          <Text>价格</Text>
-          <Text>¥{selectedVariation?.price ?? '--'}</Text>
+        <Text className="product-name">{product.name}</Text>
+        <Text className="product-desc">
+          {product.description && product.description.length > 80
+            ? `${product.description.slice(0, 80)}...`
+            : product.description || '优质农产品，产地直供'}
+        </Text>
+      </View>
+
+      {/* 规格选择 */}
+      <View className="spec-section">
+        <Text className="section-title">选择规格</Text>
+        <View className="spec-options">
+          {product.variations?.map((variation) => (
+            <View
+              key={variation.variation_id}
+              className={`spec-option ${selectedVariation?.variation_id === variation.variation_id ? 'active' : ''} ${!variation.in_stock ? 'disabled' : ''}`}
+              onClick={() => variation.in_stock && handleVariationSelect(variation)}
+            >
+              <Text className="spec-text">
+                {Object.keys(variation.attributes).join(' ')}
+              </Text>
+              {!variation.in_stock && <Text className="spec-badge">缺货</Text>}
+            </View>
+          ))}
         </View>
       </View>
 
-      <Button className="pay-btn" onClick={handleCreateOrder}>
-        立即下单
-      </Button>
+      {/* 规格参数 */}
+      <View className="section-block">
+        <View className="section-header">
+          <Text className="section-icon">📋</Text>
+          <Text className="section-title">规格参数</Text>
+        </View>
+        <View className="specs-table">
+          {specs.map((spec, index) => (
+            <View key={index} className="spec-row">
+              <Text className="spec-label">{spec.label}</Text>
+              <Text className="spec-value">{spec.value}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* 商品详情 */}
+      <View className="section-block">
+        <View className="section-header">
+          <Text className="section-icon">📖</Text>
+          <Text className="section-title">商品介绍</Text>
+        </View>
+        <View className="detail-content">
+          <Text className="content-text">{product.description || '暂无详细介绍'}</Text>
+          {images.length > 0 && (
+            <View className="detail-images">
+              {images.map((img, index) => (
+                <Image key={index} className="detail-img" src={img} mode="widthFix" />
+              ))}
+            </View>
+          )}
+        </View>
+      </View>
+
+      {/* 用户评价 */}
+      <View className="section-block">
+        <View className="section-header">
+          <Text className="section-icon">💬</Text>
+          <Text className="section-title">用户评价</Text>
+        </View>
+        <View className="reviews-content">
+          <View className="empty-reviews">
+            <Text className="empty-text">暂无评价</Text>
+            <Text className="empty-hint">快来成为第一个评价的人吧~</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* 底部操作栏 */}
+      <View className="action-bar">
+        <View className="action-left">
+          <View className="action-icon-btn" onClick={() => Taro.switchTab({ url: '/pages/index/index' })}>
+            <Text className="icon-text">🏠</Text>
+            <Text className="icon-label">首页</Text>
+          </View>
+          <View className="action-icon-btn" onClick={() => Taro.switchTab({ url: '/pages/cart/index' })}>
+            <Text className="icon-text">🛒</Text>
+            <Text className="icon-label">购物车</Text>
+          </View>
+        </View>
+        <View className="action-buttons">
+          <Button className="btn-cart" onClick={handleAddToCart}>加入购物车</Button>
+          <Button className="btn-buy" onClick={handleBuyNow}>立即购买</Button>
+        </View>
+      </View>
     </View>
   );
 };

@@ -1,8 +1,7 @@
-import { Swiper, SwiperItem, Text, View } from '@tarojs/components';
+import { Image, Swiper, SwiperItem, Text, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useEffect, useState } from 'react';
 
-import ProductCard from '../../components/ProductCard';
 import { configService, productService } from '../../services/api';
 import type { Product, PublicConfig } from '../../types';
 import './index.scss';
@@ -44,17 +43,26 @@ const Index = () => {
     });
   };
 
+  const handleVariantSelect = (product: Product, variation: any) => {
+    // 跳转到详情页并预选规格
+    Taro.navigateTo({
+      url: `/pages/product/detail?id=${product.id}&variation_id=${variation.variation_id}`
+    });
+  };
+
   const slides = Array.isArray(banner?.home_slider) ? banner.home_slider : [];
 
   return (
     <View className="index-page">
+      {/* 轮播图 */}
       {slides.length > 0 && (
-        <Swiper className="hero-swiper" circular autoplay>
-          {slides.map((slide) => (
-            <SwiperItem key={slide.img}>
-              <View
-                className="hero-slide"
-                style={{ backgroundImage: `url(${slide.img})` }}
+        <Swiper className="hero-swiper" circular autoplay indicatorDots>
+          {slides.map((slide, index) => (
+            <SwiperItem key={index}>
+              <Image
+                className="hero-image"
+                src={slide.img}
+                mode="aspectFill"
                 onClick={() => slide.link && Taro.navigateTo({ url: slide.link })}
               />
             </SwiperItem>
@@ -62,21 +70,58 @@ const Index = () => {
         </Swiper>
       )}
 
-      <View className="section-header">
-        <Text className="section-title">精选好米</Text>
-        <Text className="section-subtitle">源自五常产区，现磨现发</Text>
-      </View>
-
       {loading && <View className="loading">加载中...</View>}
 
       {!loading && products.length === 0 && (
         <View className="empty">暂无商品，敬请期待</View>
       )}
 
+      {/* 商品列表 */}
       <View className="product-list">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} onSelect={handleProductSelect} />
-        ))}
+        {products.map((product) => {
+          const recommendedVariation = product.variations?.[0]; // 推荐第一个变体
+          return (
+            <View key={product.id} className="product-item">
+              {/* 商品图片（满屏宽） */}
+              <Image
+                className="product-main-image"
+                src={recommendedVariation?.image_url || product.image_url}
+                mode="widthFix"
+                onClick={() => handleProductSelect(product)}
+              />
+              
+              {/* 商品信息 */}
+              <View className="product-info">
+                <Text className="product-name">{product.name}</Text>
+                <View className="price-row">
+                  <Text className="price-range">
+                    ¥{product.min_price} - ¥{product.max_price}
+                  </Text>
+                </View>
+                
+                {/* 推荐规格 */}
+                {recommendedVariation && (
+                  <View 
+                    className="recommended-spec"
+                    onClick={() => handleVariantSelect(product, recommendedVariation)}
+                  >
+                    <Text className="spec-label">推荐：</Text>
+                    <Text className="spec-value">
+                      {Object.keys(recommendedVariation.attributes).join(' ')} 🔥
+                    </Text>
+                  </View>
+                )}
+                
+                {/* 更多规格提示 */}
+                {product.variations && product.variations.length > 1 && (
+                  <Text className="more-specs" onClick={() => handleProductSelect(product)}>
+                    更多规格 ({product.variations.length}个) →
+                  </Text>
+                )}
+              </View>
+            </View>
+          );
+        })}
       </View>
     </View>
   );

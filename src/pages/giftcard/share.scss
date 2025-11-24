@@ -1,0 +1,309 @@
+.gift-card-share-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #ff6b6b 0%, #ee5a6f 30%, #f5f5f5 30%);
+  padding: 20px;
+
+  .loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: #fff;
+  }
+
+  .empty-state {
+    background: #fff;
+    border-radius: 16px;
+    padding: 80px 40px;
+    text-align: center;
+    margin-top: 100px;
+
+    .empty-text {
+      display: block;
+      font-size: 30px;
+      color: #999;
+      margin-bottom: 40px;
+    }
+
+    .back-btn {
+      width: 200px;
+      height: 80px;
+      background: #ff6b6b;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 28px;
+
+      &::after {
+        border: none;
+      }
+    }
+  }
+
+  .section {
+    margin-bottom: 30px;
+
+    .section-title {
+      display: block;
+      font-size: 28px;
+      color: #333;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+  }
+
+  /* 礼品卡列表 */
+  .card-list {
+    .card-item {
+      background: #fff;
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      position: relative;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      border: 2px solid transparent;
+      transition: all 0.3s;
+
+      &.selected {
+        border-color: #ff6b6b;
+        box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+      }
+
+      .card-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+
+        .card-name {
+          font-size: 30px;
+          color: #333;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+
+        .card-number {
+          font-size: 24px;
+          color: #999;
+          font-family: monospace;
+        }
+      }
+
+      .card-balance {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        margin-right: 20px;
+
+        .balance-label {
+          font-size: 22px;
+          color: #999;
+          margin-bottom: 5px;
+        }
+
+        .balance-value {
+          font-size: 36px;
+          color: #ff6b6b;
+          font-weight: 700;
+        }
+      }
+
+      .check-icon {
+        position: absolute;
+        right: 20px;
+        top: 20px;
+        width: 40px;
+        height: 40px;
+        background: #ff6b6b;
+        color: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+      }
+    }
+  }
+
+  /* 分享方式 */
+  .mode-list {
+    display: flex;
+    gap: 20px;
+
+    .mode-item {
+      flex: 1;
+      background: #fff;
+      border-radius: 16px;
+      padding: 30px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      border: 2px solid transparent;
+      transition: all 0.3s;
+
+      &.selected {
+        border-color: #ff6b6b;
+        box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+      }
+
+      .mode-icon {
+        font-size: 56px;
+        margin-bottom: 15px;
+      }
+
+      .mode-label {
+        font-size: 26px;
+        color: #333;
+      }
+
+      .check-icon {
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        width: 36px;
+        height: 36px;
+        background: #ff6b6b;
+        color: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: bold;
+      }
+    }
+  }
+
+  /* 操作按钮 */
+  .action-section {
+    margin-top: 60px;
+
+    .share-btn {
+      width: 100%;
+      height: 88px;
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+      color: #fff;
+      border: none;
+      border-radius: 16px;
+      font-size: 32px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+
+      &::after {
+        border: none;
+      }
+    }
+  }
+
+  /* 分享结果 */
+  .result-section {
+    background: #fff;
+    border-radius: 24px;
+    padding: 50px 40px;
+    text-align: center;
+
+    .result-title {
+      display: block;
+      font-size: 36px;
+      color: #333;
+      font-weight: 700;
+      margin-bottom: 40px;
+    }
+
+    .result-card {
+      margin-bottom: 30px;
+
+      .result-label {
+        display: block;
+        font-size: 26px;
+        color: #666;
+        margin-bottom: 20px;
+      }
+
+      .result-content {
+        background: #f5f5f5;
+        border-radius: 12px;
+        padding: 30px 20px;
+        margin-bottom: 20px;
+        word-break: break-all;
+
+        &.passcode {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+          .result-text {
+            color: #fff;
+            font-size: 40px;
+            font-weight: 700;
+            letter-spacing: 4px;
+          }
+        }
+
+        .result-text {
+          font-size: 26px;
+          color: #333;
+          line-height: 1.6;
+        }
+      }
+
+      .qrcode-placeholder {
+        width: 400px;
+        height: 400px;
+        margin: 0 auto 20px;
+        background: #f5f5f5;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        color: #999;
+      }
+
+      .copy-btn {
+        width: 100%;
+        height: 72px;
+        background: #ff6b6b;
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        font-size: 28px;
+        margin-bottom: 10px;
+
+        &::after {
+          border: none;
+        }
+      }
+
+      .result-tip {
+        display: block;
+        font-size: 22px;
+        color: #999;
+        line-height: 1.6;
+      }
+    }
+
+    .expire-tip {
+      display: block;
+      font-size: 24px;
+      color: #ff9800;
+      margin: 30px 0;
+    }
+
+    .done-btn {
+      width: 100%;
+      height: 88px;
+      background: #fff;
+      color: #ff6b6b;
+      border: 2px solid #ff6b6b;
+      border-radius: 16px;
+      font-size: 32px;
+      font-weight: 600;
+
+      &::after {
+        border: none;
+      }
+    }
+  }
+}

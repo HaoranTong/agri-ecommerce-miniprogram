@@ -34,9 +34,14 @@ const GiftCardMine = () => {
     return (
       <View className="address-page">
         <View className="empty">暂无绑定购物卡</View>
-        <Button className="add-btn" onClick={() => Taro.navigateTo({ url: '/pages/giftcard/redeem' })}>
-          兑换购物卡
-        </Button>
+        <View className="action-buttons">
+          <Button className="add-btn" onClick={() => Taro.navigateTo({ url: '/pages/giftcard/redeem' })}>
+            兑换购物卡
+          </Button>
+          <Button className="add-btn secondary" onClick={() => Taro.navigateTo({ url: '/pages/giftcard/claim' })}>
+            领取礼品卡
+          </Button>
+        </View>
       </View>
     );
   }
@@ -53,25 +58,40 @@ const GiftCardMine = () => {
             <Text className="address-detail">卡号：{card.card_number}</Text>
             <Text className="address-detail">有效期至：{card.expires_at}</Text>
             <Text className="address-detail">状态：{card.status}</Text>
-            {card.can_reset_pin && (
-              <Button
-                className="add-btn"
-                onClick={() =>
-                  Taro.navigateTo({
-                    url: `/pages/giftcard/redeem?card=${card.card_number}`
-                  })
-                }
-              >
-                重置密码
-              </Button>
-            )}
+            <View className="card-actions">
+              {card.status === 'active' && parseFloat(card.balance) > 0 && (
+                <Button
+                  className="action-btn"
+                  onClick={() => Taro.navigateTo({ url: '/pages/giftcard/share' })}
+                >
+                  分享
+                </Button>
+              )}
+              {card.can_reset_pin && (
+                <Button
+                  className="action-btn"
+                  onClick={() =>
+                    Taro.navigateTo({
+                      url: `/pages/giftcard/redeem?card=${card.card_number}`
+                    })
+                  }
+                >
+                  重置密码
+                </Button>
+              )}
+            </View>
           </View>
         ))}
       </View>
 
-      <Button className="add-btn" onClick={() => Taro.navigateTo({ url: '/pages/giftcard/redeem' })}>
-        兑换新购物卡
-      </Button>
+      <View className="action-buttons">
+        <Button className="add-btn" onClick={() => Taro.navigateTo({ url: '/pages/giftcard/redeem' })}>
+          兑换新购物卡
+        </Button>
+        <Button className="add-btn secondary" onClick={() => Taro.navigateTo({ url: '/pages/giftcard/claim' })}>
+          领取礼品卡
+        </Button>
+      </View>
     </View>
   );
 };
