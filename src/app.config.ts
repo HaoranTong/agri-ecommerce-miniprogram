@@ -3,7 +3,9 @@ export default defineAppConfig({
     'pages/index/index',
     'pages/product/detail',
     'pages/order/create',
-    'pages/order/confirm',
+    'pages/order/order-confirm',
+    'pages/order/payment',
+    'pages/order/payment-success',
     'pages/order/detail',
     'pages/order/list',
     'pages/address/list',
@@ -36,13 +38,13 @@ export default defineAppConfig({
     list: [
       {
         pagePath: 'pages/index/index',
-        text: '商城',
+        text: '首页',
         iconPath: 'assets/icons/home.png',
         selectedIconPath: 'assets/icons/home-active.png'
       },
       {
-        pagePath: 'pages/order/list',
-        text: '订单',
+        pagePath: 'pages/cart/index',
+        text: '购物车',
         iconPath: 'assets/icons/order.png',
         selectedIconPath: 'assets/icons/order-active.png'
       },

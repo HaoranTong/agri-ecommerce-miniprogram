@@ -124,7 +124,7 @@ const UserProfile = () => {
         </View>
 
         <View className="menu-item" onClick={() => handleNavigate('/pages/address/list')}>
-          <Text className="menu-label">📍 收货地址</Text>
+          <Text className="menu-label">📍 收货信息</Text>
           <Text className="menu-arrow">›</Text>
         </View>
 

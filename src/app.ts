@@ -8,15 +8,9 @@ function App({ children }: PropsWithChildren) {
     console.log('App launched');
   });
 
-  useEffect(() => {
-    const token = getToken();
-    if (!token) {
-      // 初次进入没有 token 时，默认停留在首页，由页面自行处理跳转
-      return;
-    }
-
-    // 预加载用户信息等关键数据可在这里扩展
-  }, []);
+  Taro.useDidShow(() => {
+    // App 显示时的逻辑
+  });
 
   return React.createElement(React.Fragment, null, children);
 }

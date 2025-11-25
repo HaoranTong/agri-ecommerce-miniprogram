@@ -1,0 +1,314 @@
+/* 支付页面样式 */
+.payment-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding: 12px;
+  padding-bottom: 100px;
+}
+
+/* 支付说明卡片 */
+.notice-card {
+  background: linear-gradient(135deg, #fff9f0 0%, #fff5e6 100%);
+  padding: 20px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  border: 2px solid #ffe0b2;
+  
+  .notice-title {
+    font-size: 30px;
+    font-weight: bold;
+    color: #ff8c00;
+    margin-bottom: 16px;
+    display: block;
+  }
+  
+  .notice-step {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    .step-num {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #ff9800 0%, #ff6b6b 100%);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+      flex-shrink: 0;
+      margin-right: 12px;
+    }
+    
+    .step-text {
+      font-size: 26px;
+      color: #333;
+      line-height: 1.5;
+      flex: 1;
+    }
+  }
+}
+
+/* 二维码卡片 */
+.qr-card {
+  background: white;
+  padding: 20px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  
+  .qr-title {
+    font-size: 30px;
+    font-weight: bold;
+    color: #07c160;
+    margin-bottom: 16px;
+    display: block;
+  }
+  
+  .qr-image {
+    width: 100%;
+    max-width: 400px;
+    border: 3px solid #07c160;
+    border-radius: 12px;
+    padding: 12px;
+    background: white;
+  }
+  
+  .qr-placeholder {
+    width: 400px;
+    height: 400px;
+    border: 2px dashed #ddd;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    font-size: 28px;
+    margin: 0 auto;
+  }
+}
+
+/* 上传凭证按钮 */
+.upload-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 12px;
+  right: 12px;
+  height: 88px !important;
+  background: linear-gradient(135deg, #07c160 0%, #06ae56 100%) !important;
+  color: white !important;
+  font-size: 34px !important;
+  font-weight: bold !important;
+  border-radius: 44px !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(7, 193, 96, 0.4) !important;
+  letter-spacing: 2px !important;
+  
+  &::after {
+    border: none !important;
+  }
+  
+  &:active {
+    opacity: 0.85;
+    transform: scale(0.98);
+  }
+}
+
+/* 加载和空状态 */
+.loading,
+.empty-state {
+  text-align: center;
+  padding: 100px 40px;
+  color: #999;
+  font-size: 32px;
+}
+
+/* 旧样式保留用于其他页面 */
+.order-info-card {
+  background: white !important;
+  padding: 40px 32px !important;
+  margin-bottom: 32px !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+  
+  .card-title {
+    display: block !important;
+    font-size: 36px !important;
+    font-weight: bold !important;
+    color: #ff6b6b !important;
+    margin-bottom: 32px !important;
+    padding-bottom: 20px !important;
+    border-bottom: 2px solid #e8e8e8 !important;
+    text-align: center !important;
+  }
+  
+  .info-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 20px 0 !important;
+    border-bottom: 1px dashed #f0f0f0 !important;
+    
+    &:last-child {
+      border-bottom: none !important;
+    }
+    
+    &.total {
+      margin-top: 20px !important;
+      padding-top: 24px !important;
+      border-top: 2px solid #e8e8e8 !important;
+      border-bottom: none !important;
+      background: linear-gradient(to right, #fff5f5, #ffffff) !important;
+      padding: 24px 16px !important;
+      margin: 20px -16px 0 -16px !important;
+      border-radius: 8px !important;
+    }
+    
+    .label {
+      font-size: 30px !important;
+      color: #666 !important;
+      font-weight: 500 !important;
+    }
+    
+    .value {
+      font-size: 30px !important;
+      color: #333 !important;
+      font-weight: 500 !important;
+      
+      &.status-pending {
+        color: #ff9800 !important;
+        font-weight: bold !important;
+        font-size: 32px !important;
+      }
+      
+      &.amount {
+        font-size: 44px !important;
+        color: #ff6b6b !important;
+        font-weight: bold !important;
+      }
+    }
+  }
+}
+
+/* 立即支付按钮容器 */
+.pay-button-wrapper {
+  margin-bottom: 32px !important;
+  
+  .primary-btn {
+    width: 100% !important;
+    height: 100px !important;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%) !important;
+    color: #fff !important;
+    font-size: 38px !important;
+    font-weight: bold !important;
+    border-radius: 50px !important;
+    border: none !important;
+    box-shadow: 0 8px 24px rgba(255, 107, 107, 0.5) !important;
+    letter-spacing: 4px !important;
+    
+    &::after {
+      border: none !important;
+    }
+    
+    &:active {
+      opacity: 0.85;
+      transform: scale(0.98);
+    }
+  }
+}
+
+/* 支付说明卡片 */
+.payment-notice-card {
+  background: linear-gradient(135deg, #fff9f0 0%, #fff5e6 100%) !important;
+  padding: 40px 32px !important;
+  margin-bottom: 32px !important;
+  border-radius: 16px !important;
+  border: 3px solid #ffe0b2 !important;
+  box-shadow: 0 4px 16px rgba(255, 152, 0, 0.15) !important;
+  
+  .card-title {
+    display: block !important;
+    font-size: 36px !important;
+    font-weight: bold !important;
+    color: #ff8c00 !important;
+    margin-bottom: 36px !important;
+    padding-bottom: 20px !important;
+    border-bottom: 2px solid #ffd699 !important;
+    letter-spacing: 2px !important;
+  }
+  
+  .notice-content {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 28px;
+  }
+  
+  .notice-step {
+    display: flex !important;
+    align-items: center !important;
+    padding: 20px !important;
+    background: white !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+    
+    .step-number {
+      width: 52px !important;
+      height: 52px !important;
+      background: linear-gradient(135deg, #ff9800 0%, #ff6b6b 100%) !important;
+      color: white !important;
+      border-radius: 50% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 28px !important;
+      font-weight: bold !important;
+      flex-shrink: 0 !important;
+      margin-right: 20px !important;
+    }
+    
+    .step-text {
+      font-size: 30px !important;
+      color: #333 !important;
+      line-height: 1.6 !important;
+      flex: 1 !important;
+    }
+  }
+}
+
+/* 查看订单详情按钮容器 */
+.detail-button-wrapper {
+  .secondary-btn {
+    width: 100% !important;
+    height: 88px !important;
+    background: white !important;
+    color: #666 !important;
+    font-size: 32px !important;
+    border-radius: 44px !important;
+    border: 2px solid #e0e0e0 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+    
+    &::after {
+      border: none !important;
+    }
+    
+    &:active {
+      background: #f5f5f5 !important;
+    }
+  }
+}
+
+/* 加载和空状态 */
+.loading,
+.empty-state {
+  text-align: center !important;
+  padding: 100px 40px !important;
+  color: #999 !important;
+  font-size: 32px !important;
+}

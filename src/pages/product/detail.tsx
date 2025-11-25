@@ -27,11 +27,23 @@ const ProductDetail = () => {
         setProduct(found);
 
         if (found?.variations?.length) {
-          // 如果 URL 带了 variation_id，预选该规格
-          const preselected = params.variationId
+          // 优先级1: URL 带了 variation_id
+          let targetVariation = params.variationId
             ? found.variations.find(v => v.variation_id === params.variationId)
-            : found.variations[0];
-          setSelectedVariation(preselected || found.variations[0]);
+            : null;
+          
+          // 优先级2: 检查登录前保存的变体
+          if (!targetVariation) {
+            const saved = Taro.getStorageSync('SELECTED_VARIATION_BEFORE_LOGIN');
+            if (saved && saved.productId === found.id) {
+              targetVariation = found.variations.find(v => v.variation_id === saved.variationId);
+              Taro.removeStorageSync('SELECTED_VARIATION_BEFORE_LOGIN');
+              console.log('[Detail] 恢复登录前选择的变体:', saved.variationId);
+            }
+          }
+          
+          // 优先级3: 默认第一个
+          setSelectedVariation(targetVariation || found.variations[0]);
         }
       } catch (error) {
         console.error('获取商品详情失败', error);
@@ -54,16 +66,30 @@ const ProductDetail = () => {
       return;
     }
 
+    // 保存当前选中的变体ID，用于登录后恢复
+    Taro.setStorageSync('SELECTED_VARIATION_BEFORE_LOGIN', {
+      productId: product!.id,
+      variationId: selectedVariation.variation_id
+    });
+
     try {
-      await cartService.addToCart({
-        product_id: product!.id,
-        variation_id: selectedVariation.variation_id,
-        quantity: 1
+      await cartService.addToCart(selectedVariation.variation_id, 1);
+      
+      // 显示成功提示，并提供跳转选项
+      Taro.showModal({
+        title: '添加成功',
+        content: '商品已加入购物车',
+        confirmText: '去购物车',
+        cancelText: '继续购物',
+        success: (res) => {
+          if (res.confirm) {
+            Taro.switchTab({ url: '/pages/cart/index' });
+          }
+        }
       });
-      Taro.showToast({ title: '已加入购物车', icon: 'success' });
     } catch (error) {
       console.error('加入购物车失败', error);
-      Taro.showToast({ title: '加入购物车失败', icon: 'none' });
+      // 错误处理已经在 handleUnauthorized 中完成
     }
   };
 

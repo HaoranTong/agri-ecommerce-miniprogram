@@ -45,10 +45,57 @@ const isDev = process.env.NODE_ENV !== 'production';
 const resolveUrl = (endpoint: string) =>
   endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
 
+let isRedirecting = false; // 防止重复跳转
+
 const handleUnauthorized = () => {
+  if (isRedirecting) return; // 如果正在跳转，直接返回
+  
+  isRedirecting = true;
   clearToken();
-  Taro.showToast({ title: '登录已失效，请重新登录', icon: 'none' });
-  Taro.navigateTo({ url: '/pages/auth/login' });
+  
+  // 获取当前页面路径
+  const pages = Taro.getCurrentPages();
+  const currentPage = pages[pages.length - 1];
+  const currentPath = currentPage?.route || '';
+  
+  // 如果已经在登录页，不再跳转
+  if (currentPath.includes('auth/login')) {
+    isRedirecting = false;
+    return;
+  }
+  
+  // 保存当前页面信息，登录后返回
+  const redirectData = { 
+    path: currentPath, 
+    params: JSON.stringify(currentPage?.options || {}) 
+  };
+  console.log('[Auth] 保存返回路径:', redirectData);
+  
+  try {
+    Taro.setStorageSync('REDIRECT_AFTER_LOGIN', redirectData);
+  } catch (e) {
+    console.error('[Auth] 保存返回路径失败:', e);
+  }
+  
+  // 延迟跳转，确保当前请求完成
+  setTimeout(() => {
+    Taro.showToast({
+      title: '请先登录',
+      icon: 'none',
+      duration: 1500
+    });
+    
+    setTimeout(() => {
+      Taro.reLaunch({ 
+        url: '/pages/auth/login'
+      }).then(() => {
+        isRedirecting = false;
+      }).catch((err) => {
+        console.error('[Auth] 跳转登录页失败:', err);
+        isRedirecting = false;
+      });
+    }, 1500);
+  }, 100);
 };
 
 export const request = async <T = any>({
@@ -68,6 +115,14 @@ export const request = async <T = any>({
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
+  }
+
+  // 对需要认证的请求记录 token 状态
+  if (!suppressLog && (url.includes('/cart') || url.includes('/orders'))) {
+    console.log(`[API] ${method} ${url}`, {
+      hasToken: !!token,
+      tokenPrefix: token ? token.substring(0, 20) + '...' : 'NONE'
+    });
   }
 
   if (showLoading) {
@@ -118,13 +173,31 @@ export const request = async <T = any>({
 
 export const authService = {
   async login(code: string) {
-    const result = await request<LoginResponse>({
+    const response = await request<{ success: boolean; data: LoginResponse }>({
       url: API_ENDPOINTS.login,
       method: 'POST',
       data: { code }
     });
 
+    // 后端返回格式：{ success: true, data: { token, user_id, openid } }
+    const result = response.data;
+    
+    if (!result || !result.token) {
+      console.error('登录响应格式错误:', response);
+      throw new Error('登录失败：未返回 token');
+    }
+
+    // 同步保存 token
     setToken(result.token);
+    
+    // 立即验证是否保存成功
+    const savedToken = getToken();
+    console.log('Token 保存验证:', { 
+      received: result.token.substring(0, 30) + '...',
+      saved: savedToken ? savedToken.substring(0, 30) + '...' : 'NULL',
+      match: savedToken === result.token 
+    });
+    
     const storedUser: StoredUserInfo = {
       user_id: result.user_id,
       phone: result.phone,
@@ -132,6 +205,7 @@ export const authService = {
       invite_code: result.invite_code
     };
     setStoredUserInfo(storedUser);
+    
     return result;
   }
 };
@@ -243,7 +317,8 @@ export const orderService = {
       url: resolveUrl(API_ENDPOINTS.uploadPaymentProof(orderId)),
       filePath,
       name: 'proof_image',
-      header: token ? { Authorization: `Bearer ${token}` } : {}
+      header: token ? { Authorization: `Bearer ${token}` } : {},
+      timeout: 60000  // 设置60秒超时
     });
 
     let data: any = {};

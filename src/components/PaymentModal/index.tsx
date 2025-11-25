@@ -24,6 +24,14 @@ export default function PaymentModal({
 }: PaymentModalProps) {
   if (!isOpen) return null;
 
+  console.log('[PaymentModal] Props:', {
+    orderId,
+    paymentQrUrl,
+    customerServiceQr,
+    hasPaymentQr: !!paymentQrUrl,
+    hasCustomerServiceQr: !!customerServiceQr
+  });
+
   const handleUpload = async () => {
     try {
       const { tempFilePaths } = await Taro.chooseImage({ count: 1 });
@@ -35,6 +43,13 @@ export default function PaymentModal({
       Taro.showToast({ title: '凭证上传成功', icon: 'success' });
       onUploaded?.();
       onClose();
+      
+      // 跳转到支付成功页面
+      setTimeout(() => {
+        Taro.redirectTo({
+          url: `/pages/order/payment-success?orderId=${orderId}`
+        });
+      }, 1500);
     } catch (error) {
       console.error('上传付款凭证失败', error);
       Taro.showToast({ title: '上传失败，请重试', icon: 'none' });
@@ -43,35 +58,36 @@ export default function PaymentModal({
 
   return (
     <View className="payment-modal-overlay" onClick={onClose}>
-      <View className="payment-modal-content" onClick={(event) => event.stopPropagation()}>
-        <Text className="modal-title">请扫码付款</Text>
-
-        <View className="qr-section">
-          <View className="qr-item">
-            <Text className="qr-label">微信收款码</Text>
+      <View 
+        className="payment-modal-content" 
+        onClick={(event) => event.stopPropagation()}
+      >
+        {/* 收款二维码 */}
+        <View className="qr-item centered">
+          <Text className="qr-label">微信收款码</Text>
+          {paymentQrUrl ? (
             <Image src={paymentQrUrl} className="qr-code" mode="widthFix" />
-          </View>
+          ) : (
+            <View className="qr-placeholder">
+              <Text className="placeholder-text">收款码未配置</Text>
+            </View>
+          )}
+        </View>
 
-          <View className="qr-item">
-            <Text className="qr-label">添加客服企业微信</Text>
+        {/* 客服二维码 */}
+        <View className="qr-item centered">
+          <Text className="qr-label">添加客服企业微信</Text>
+          {customerServiceQr ? (
             <Image src={customerServiceQr} className="qr-code" mode="widthFix" />
-          </View>
+          ) : (
+            <View className="qr-placeholder">
+              <Text className="placeholder-text">客服二维码未配置</Text>
+            </View>
+          )}
         </View>
 
-        <View className="order-info">
-          <Text>
-            订单号：<Text className="order-id">{orderId}</Text>
-          </Text>
-          <Text className="instruction">
-            {`1. 扫描上方收款码完成付款\n2. 截图付款成功页面\n3. 点击下方按钮上传凭证`}
-          </Text>
-        </View>
-
-        <Button className="upload-btn" onClick={handleUpload}>
-          上传付款截图
-        </Button>
         <Button className="close-btn" onClick={onClose}>
-          已完成，关闭窗口
+          关闭
         </Button>
       </View>
     </View>

@@ -108,6 +108,12 @@ export interface OrderItemSummary {
 export interface OrderDetail extends OrderCreated {
   items?: OrderItemSummary[];
   created_at?: string;
+  shipping_address?: ShippingAddress;
+  payment_proof_url?: string;
+  payment_proof_submitted_at?: string;
+  has_payment_proof?: boolean;
+  tracking_number?: string;
+  tracking_company?: string;
 }
 
 export interface GiftCard {

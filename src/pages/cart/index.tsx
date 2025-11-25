@@ -83,15 +83,21 @@ const Cart = () => {
       return;
     }
 
-    // 简化版：只支持单件商品结算
-    if (selectedItems.length > 1) {
-      Taro.showToast({ title: '暂不支持多件商品结算', icon: 'none' });
-      return;
-    }
+    // 将选中的商品信息存储到全局数据中
+    const cartData = selectedItems.map(item => ({
+      variation_id: item.variation_id,
+      product_name: item.product_name,
+      variation_name: item.variation_name,
+      price: item.price,
+      quantity: item.quantity,
+      image_url: item.image_url
+    }));
 
-    const item = selectedItems[0];
+    // 存储到缓存
+    Taro.setStorageSync('checkout_items', cartData);
+
     Taro.navigateTo({
-      url: `/pages/order/create?variation_id=${item.variation_id}&quantity=${item.quantity}`
+      url: '/pages/order/create?from=cart'
     });
   };
 
@@ -137,7 +143,8 @@ const Cart = () => {
 
             <View className="item-info">
               <Text className="item-name">{item.product_name}</Text>
-              <Text className="item-spec">{item.variation_name}</Text>
+              {item.variation_name && <Text className="item-spec">{item.variation_name}</Text>}
+              <Text className="item-id">编号：{item.variation_id}</Text>
               <View className="item-bottom">
                 <Text className="item-price">¥{item.price}</Text>
                 <View className="quantity-control">

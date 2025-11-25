@@ -1,0 +1,207 @@
+/* 订单确认页面（待支付） */
+.order-confirm-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding: 16px;
+  padding-bottom: 140px;
+}
+
+.page-title {
+  display: block;
+  font-size: 32px;
+  font-weight: bold;
+  color: #ff6b6b;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  
+  .card-title {
+    display: block;
+    font-size: 28px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e8e8e8;
+  }
+  
+  /* 商品项 */
+  .product-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 12px 0;
+    border-bottom: 1px dashed #f0f0f0;
+    
+    &:last-of-type {
+      border-bottom: none;
+    }
+    
+    .product-info {
+      flex: 1;
+      
+      .product-name {
+        display: block;
+        font-size: 28px;
+        color: #333;
+        margin-bottom: 6px;
+      }
+      
+      .product-spec {
+        display: block;
+        font-size: 24px;
+        color: #999;
+      }
+    }
+    
+    .product-price-qty {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      
+      .price {
+        font-size: 28px;
+        color: #ff6b6b;
+        font-weight: bold;
+        margin-bottom: 4px;
+      }
+      
+      .quantity {
+        font-size: 24px;
+        color: #666;
+      }
+    }
+  }
+  
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    margin-top: 12px;
+    border-top: 2px solid #e8e8e8;
+    
+    .label {
+      font-size: 28px;
+      color: #333;
+      font-weight: bold;
+    }
+    
+    .amount {
+      font-size: 36px;
+      color: #ff6b6b;
+      font-weight: bold;
+    }
+  }
+  
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    
+    &.total {
+      margin-top: 12px;
+      padding-top: 16px;
+      border-top: 2px solid #e8e8e8;
+      background: linear-gradient(to right, #fff5f5, #ffffff);
+      padding: 16px 12px;
+      margin: 12px -12px 0 -12px;
+      border-radius: 8px;
+    }
+    
+    .label {
+      font-size: 28px;
+      color: #666;
+    }
+    
+    .value {
+      font-size: 28px;
+      color: #333;
+      text-align: right;
+      flex: 1;
+      margin-left: 20px;
+      
+      &.status {
+        color: #ff9800;
+        font-weight: bold;
+      }
+      
+      &.amount {
+        font-size: 40px;
+        color: #ff6b6b;
+        font-weight: bold;
+      }
+      
+      &.address {
+        line-height: 1.6;
+        word-break: break-all;
+      }
+    }
+  }
+}
+
+.action-buttons {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  padding: 16px 24px;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  gap: 12px;
+  
+  .modify-btn {
+    flex: 1;
+    height: 80px !important;
+    background: white !important;
+    color: #666 !important;
+    font-size: 28px !important;
+    border-radius: 40px !important;
+    border: 2px solid #e0e0e0 !important;
+    
+    &::after {
+      border: none !important;
+    }
+    
+    &:active {
+      background: #f5f5f5 !important;
+    }
+  }
+  
+  .pay-btn {
+    flex: 1.5;
+    height: 80px !important;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%) !important;
+    color: white !important;
+    font-size: 32px !important;
+    font-weight: bold !important;
+    border-radius: 40px !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4) !important;
+    
+    &::after {
+      border: none !important;
+    }
+    
+    &:active {
+      opacity: 0.85;
+    }
+  }
+}
+
+.loading,
+.empty-state {
+  text-align: center;
+  padding: 100px 40px;
+  color: #999;
+  font-size: 32px;
+}
