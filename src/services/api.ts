@@ -250,12 +250,23 @@ export const productService = {
 };
 
 export const userService = {
-  getProfile: () =>
-    request<UserProfile>({
+  getProfile: async () => {
+    const response = await request<{ success: boolean; data: UserProfile }>({
       url: API_ENDPOINTS.me,
       method: 'GET',
       showLoading: true
-    })
+    });
+    return response.data;
+  },
+  updateProfile: async (data: { nickname?: string; first_name?: string; phone?: string }) => {
+    const response = await request<{ success: boolean; data: UserProfile }>({
+      url: '/user/profile',
+      method: 'PUT',
+      data,
+      showLoading: true
+    });
+    return response.data;
+  }
 };
 
 export const cartService = {

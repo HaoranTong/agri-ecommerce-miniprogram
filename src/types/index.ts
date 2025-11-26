@@ -43,7 +43,19 @@ export interface LoginResponse {
 
 export interface UserProfile {
   user_id: number;
+  username: string;
+  nickname?: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
   phone?: string;
+  avatar?: string;
+  openid?: string;
+  referral_code?: string;
+  points_balance?: number;
+  is_test_user?: boolean;
+  test_code?: string;
+  // 兼容旧字段
   wechat_nickname?: string;
   wechat_avatar?: string;
   invite_code?: string;

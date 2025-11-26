@@ -22,6 +22,7 @@ export default defineAppConfig({
     'pages/commission/list',
     'pages/auth/login',
     'pages/user/profile',
+    'pages/user/edit-profile',
     'pages/points/summary',
     'pages/points/ledger',
     'pages/cart/index'

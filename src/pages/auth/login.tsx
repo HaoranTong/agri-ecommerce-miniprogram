@@ -2,6 +2,7 @@ import { View, Button, Text } from '@tarojs/components';
 import { useState } from 'react';
 import Taro from '@tarojs/taro';
 
+import TestUserSelector from '../../components/TestUserSelector';
 import { authService } from '../../services/api';
 import { getToken } from '../../utils/storage';
 import './login.scss';
@@ -14,7 +15,20 @@ const Login = () => {
 
     try {
       setLoading(true);
-      const { code } = await Taro.login();
+      
+      // 检查是否选择了测试用户（从测试用户选择器中获取）
+      const testCode = Taro.getStorageSync('DEV_TEST_USER_CODE');
+      let code = '';
+      
+      if (testCode) {
+        // 使用测试用户代码
+        console.log('[Login] 使用测试用户:', testCode);
+        code = testCode;
+      } else {
+        // 使用真实微信登录
+        const loginRes = await Taro.login();
+        code = loginRes.code;
+      }
 
       if (!code) {
         Taro.showToast({ title: '获取登录凭证失败', icon: 'none' });
@@ -92,6 +106,9 @@ const Login = () => {
         <Text className="text">和</Text>
         <Text className="link">《隐私政策》</Text>
       </View>
+      
+      {/* 测试用户选择器 */}
+      <TestUserSelector />
     </View>
   );
 };
