@@ -33,7 +33,7 @@
     background: white;
     border-radius: 24rpx 24rpx 0 0;
     box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.15);
-    animation: slideUp 0.3s ease-out;
+    animation: slide-up 0.3s ease-out;
   }
   
   .panel-header {
@@ -138,16 +138,18 @@
     transform: scale(1);
     box-shadow: 0 6rpx 16rpx rgba(102, 126, 234, 0.5);
   }
+
   50% {
     transform: scale(1.05);
     box-shadow: 0 8rpx 20rpx rgba(102, 126, 234, 0.7);
   }
 }
 
-@keyframes slideUp {
+@keyframes slide-up {
   from {
     transform: translateY(100%);
   }
+
   to {
     transform: translateY(0);
   }

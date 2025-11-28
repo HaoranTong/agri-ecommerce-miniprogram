@@ -54,30 +54,30 @@ const PointsRedeem = () => {
   };
 
   return (
-    <View className="points-redeem-page">
+    <View className='points-redeem-page'>
       {loading && options.length === 0 ? (
-        <View className="page-state">加载中...</View>
+        <View className='page-state'>加载中...</View>
       ) : options.length === 0 ? (
-        <View className="page-state">暂无可兑换内容</View>
+        <View className='page-state'>暂无可兑换内容</View>
       ) : (
         options.map((option) => (
-          <View className="redeem-card" key={option.option_id}>
-            <View className="redeem-header">
-              <Text className="redeem-title">{option.title}</Text>
+          <View className='redeem-card' key={option.option_id}>
+            <View className='redeem-header'>
+              <Text className='redeem-title'>{option.title}</Text>
               <Text className={`redeem-status ${option.status}`}>
                 {renderStatus(option)}
               </Text>
             </View>
-            <Text className="redeem-type">类型：{option.type}</Text>
+            <Text className='redeem-type'>类型：{option.type}</Text>
             {option.description && (
-              <Text className="redeem-desc">{option.description}</Text>
+              <Text className='redeem-desc'>{option.description}</Text>
             )}
-            <Text className="redeem-cost">所需积分：{option.cost_points}</Text>
+            <Text className='redeem-cost'>所需积分：{option.cost_points}</Text>
             {option.stock !== null && option.stock !== undefined && (
-              <Text className="redeem-stock">剩余库存：{option.stock}</Text>
+              <Text className='redeem-stock'>剩余库存：{option.stock}</Text>
             )}
             <Button
-              className="redeem-btn"
+              className='redeem-btn'
               loading={redeeming === option.option_id}
               disabled={option.status !== 'active' || redeeming === option.option_id}
               onClick={() => handleRedeem(option.option_id)}

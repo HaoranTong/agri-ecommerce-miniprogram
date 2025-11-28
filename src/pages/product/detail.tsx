@@ -105,11 +105,11 @@ const ProductDetail = () => {
   };
 
   if (loading) {
-    return <View className="loading-container">商品加载中...</View>;
+    return <View className='loading-container'>商品加载中...</View>;
   }
 
   if (!product) {
-    return <View className="error-container">商品不存在</View>;
+    return <View className='error-container'>商品不存在</View>;
   }
 
   // 构建图片列表
@@ -178,32 +178,32 @@ const ProductDetail = () => {
   ];
 
   return (
-    <View className="product-detail-page">
+    <View className='product-detail-page'>
       {/* 图片/视频轮播 */}
-      <View className="media-section">
+      <View className='media-section'>
         {images.length > 0 ? (
-          <Swiper className="media-swiper" indicatorDots circular>
+          <Swiper className='media-swiper' indicatorDots circular>
             {images.map((img, index) => (
               <SwiperItem key={index}>
-                <Image className="product-image" src={img} mode="aspectFill" />
+                <Image className='product-image' src={img} mode='aspectFill' />
               </SwiperItem>
             ))}
           </Swiper>
         ) : (
-          <View className="placeholder-image">
-            <Text className="placeholder-text">暂无图片</Text>
+          <View className='placeholder-image'>
+            <Text className='placeholder-text'>暂无图片</Text>
           </View>
         )}
       </View>
 
       {/* 商品基本信息 */}
-      <View className="info-section">
-        <View className="price-section">
-          <Text className="price-symbol">¥</Text>
-          <Text className="price-value">{selectedVariation?.price || product.min_price || '--'}</Text>
+      <View className='info-section'>
+        <View className='price-section'>
+          <Text className='price-symbol'>¥</Text>
+          <Text className='price-value'>{selectedVariation?.price || product.min_price || '--'}</Text>
         </View>
-        <Text className="product-name">{product.name}</Text>
-        <Text className="product-desc">
+        <Text className='product-name'>{product.name}</Text>
+        <Text className='product-desc'>
           {product.description && product.description.length > 80
             ? `${product.description.slice(0, 80)}...`
             : product.description || '优质农产品，产地直供'}
@@ -211,52 +211,52 @@ const ProductDetail = () => {
       </View>
 
       {/* 规格选择 */}
-      <View className="spec-section">
-        <Text className="section-title">选择规格</Text>
-        <View className="spec-options">
+      <View className='spec-section'>
+        <Text className='section-title'>选择规格</Text>
+        <View className='spec-options'>
           {product.variations?.map((variation) => (
             <View
               key={variation.variation_id}
               className={`spec-option ${selectedVariation?.variation_id === variation.variation_id ? 'active' : ''} ${!variation.in_stock ? 'disabled' : ''}`}
               onClick={() => variation.in_stock && handleVariationSelect(variation)}
             >
-              <Text className="spec-text">
+              <Text className='spec-text'>
                 {Object.keys(variation.attributes).join(' ')}
               </Text>
-              {!variation.in_stock && <Text className="spec-badge">缺货</Text>}
+              {!variation.in_stock && <Text className='spec-badge'>缺货</Text>}
             </View>
           ))}
         </View>
       </View>
 
       {/* 规格参数 */}
-      <View className="section-block">
-        <View className="section-header">
-          <Text className="section-icon">📋</Text>
-          <Text className="section-title">规格参数</Text>
+      <View className='section-block'>
+        <View className='section-header'>
+          <Text className='section-icon'>📋</Text>
+          <Text className='section-title'>规格参数</Text>
         </View>
-        <View className="specs-table">
+        <View className='specs-table'>
           {specs.map((spec, index) => (
-            <View key={index} className="spec-row">
-              <Text className="spec-label">{spec.label}</Text>
-              <Text className="spec-value">{spec.value}</Text>
+            <View key={index} className='spec-row'>
+              <Text className='spec-label'>{spec.label}</Text>
+              <Text className='spec-value'>{spec.value}</Text>
             </View>
           ))}
         </View>
       </View>
 
       {/* 商品详情 */}
-      <View className="section-block">
-        <View className="section-header">
-          <Text className="section-icon">📖</Text>
-          <Text className="section-title">商品介绍</Text>
+      <View className='section-block'>
+        <View className='section-header'>
+          <Text className='section-icon'>📖</Text>
+          <Text className='section-title'>商品介绍</Text>
         </View>
-        <View className="detail-content">
-          <Text className="content-text">{product.description || '暂无详细介绍'}</Text>
+        <View className='detail-content'>
+          <Text className='content-text'>{product.description || '暂无详细介绍'}</Text>
           {images.length > 0 && (
-            <View className="detail-images">
+            <View className='detail-images'>
               {images.map((img, index) => (
-                <Image key={index} className="detail-img" src={img} mode="widthFix" />
+                <Image key={index} className='detail-img' src={img} mode='widthFix' />
               ))}
             </View>
           )}
@@ -264,34 +264,34 @@ const ProductDetail = () => {
       </View>
 
       {/* 用户评价 */}
-      <View className="section-block">
-        <View className="section-header">
-          <Text className="section-icon">💬</Text>
-          <Text className="section-title">用户评价</Text>
+      <View className='section-block'>
+        <View className='section-header'>
+          <Text className='section-icon'>💬</Text>
+          <Text className='section-title'>用户评价</Text>
         </View>
-        <View className="reviews-content">
-          <View className="empty-reviews">
-            <Text className="empty-text">暂无评价</Text>
-            <Text className="empty-hint">快来成为第一个评价的人吧~</Text>
+        <View className='reviews-content'>
+          <View className='empty-reviews'>
+            <Text className='empty-text'>暂无评价</Text>
+            <Text className='empty-hint'>快来成为第一个评价的人吧~</Text>
           </View>
         </View>
       </View>
 
       {/* 底部操作栏 */}
-      <View className="action-bar">
-        <View className="action-left">
-          <View className="action-icon-btn" onClick={() => Taro.switchTab({ url: '/pages/index/index' })}>
-            <Text className="icon-text">🏠</Text>
-            <Text className="icon-label">首页</Text>
+      <View className='action-bar'>
+        <View className='action-left'>
+          <View className='action-icon-btn' onClick={() => Taro.switchTab({ url: '/pages/index/index' })}>
+            <Text className='icon-text'>🏠</Text>
+            <Text className='icon-label'>首页</Text>
           </View>
-          <View className="action-icon-btn" onClick={() => Taro.switchTab({ url: '/pages/cart/index' })}>
-            <Text className="icon-text">🛒</Text>
-            <Text className="icon-label">购物车</Text>
+          <View className='action-icon-btn' onClick={() => Taro.switchTab({ url: '/pages/cart/index' })}>
+            <Text className='icon-text'>🛒</Text>
+            <Text className='icon-label'>购物车</Text>
           </View>
         </View>
-        <View className="action-buttons">
-          <Button className="btn-cart" onClick={handleAddToCart}>加入购物车</Button>
-          <Button className="btn-buy" onClick={handleBuyNow}>立即购买</Button>
+        <View className='action-buttons'>
+          <Button className='btn-cart' onClick={handleAddToCart}>加入购物车</Button>
+          <Button className='btn-buy' onClick={handleBuyNow}>立即购买</Button>
         </View>
       </View>
     </View>

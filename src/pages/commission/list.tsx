@@ -68,26 +68,26 @@ const CommissionList = () => {
   const currentCommissions = activeTab === 'referral' ? referralCommissions : agentCommissions;
 
   if (loading) {
-    return <View className="commission-list-page loading-state">加载中...</View>;
+    return <View className='commission-list-page loading-state'>加载中...</View>;
   }
 
   return (
-    <View className="commission-list-page">
+    <View className='commission-list-page'>
       {/* 统计卡片 */}
-      <View className="summary-card">
-        <View className="summary-item">
-          <Text className="summary-label">推荐佣金</Text>
-          <Text className="summary-value">¥{calculateTotal(referralCommissions)}</Text>
+      <View className='summary-card'>
+        <View className='summary-item'>
+          <Text className='summary-label'>推荐佣金</Text>
+          <Text className='summary-value'>¥{calculateTotal(referralCommissions)}</Text>
         </View>
-        <View className="summary-divider" />
-        <View className="summary-item">
-          <Text className="summary-label">代理佣金</Text>
-          <Text className="summary-value">¥{calculateTotal(agentCommissions)}</Text>
+        <View className='summary-divider' />
+        <View className='summary-item'>
+          <Text className='summary-label'>代理佣金</Text>
+          <Text className='summary-value'>¥{calculateTotal(agentCommissions)}</Text>
         </View>
       </View>
 
       {/* 切换标签 */}
-      <View className="tab-bar">
+      <View className='tab-bar'>
         <View
           className={`tab-item ${activeTab === 'referral' ? 'active' : ''}`}
           onClick={() => setActiveTab('referral')}
@@ -104,31 +104,31 @@ const CommissionList = () => {
 
       {/* 佣金列表 */}
       {currentCommissions.length === 0 ? (
-        <View className="empty-state">暂无佣金记录</View>
+        <View className='empty-state'>暂无佣金记录</View>
       ) : (
-        <View className="commission-list">
+        <View className='commission-list'>
           {currentCommissions.map((commission) => (
-            <View key={commission.id} className="commission-item">
-              <View className="item-header">
-                <Text className="order-id">订单 #{commission.order_id}</Text>
+            <View key={commission.id} className='commission-item'>
+              <View className='item-header'>
+                <Text className='order-id'>订单 #{commission.order_id}</Text>
                 <View className={`status-badge ${getStatusColor(commission.status)}`}>
                   <Text>{getStatusText(commission.status)}</Text>
                 </View>
               </View>
-              <View className="item-body">
-                <View className="item-row">
-                  <Text className="item-label">佣金金额</Text>
-                  <Text className="item-value amount">¥{commission.amount}</Text>
+              <View className='item-body'>
+                <View className='item-row'>
+                  <Text className='item-label'>佣金金额</Text>
+                  <Text className='item-value amount'>¥{commission.amount}</Text>
                 </View>
-                <View className="item-row">
-                  <Text className="item-label">佣金类型</Text>
-                  <Text className="item-value">
+                <View className='item-row'>
+                  <Text className='item-label'>佣金类型</Text>
+                  <Text className='item-value'>
                     {commission.commission_type === 'referral' ? '推荐佣金' : '代理佣金'}
                   </Text>
                 </View>
-                <View className="item-row">
-                  <Text className="item-label">创建时间</Text>
-                  <Text className="item-value">{formatDate(commission.created_at)}</Text>
+                <View className='item-row'>
+                  <Text className='item-label'>创建时间</Text>
+                  <Text className='item-value'>{formatDate(commission.created_at)}</Text>
                 </View>
               </View>
             </View>

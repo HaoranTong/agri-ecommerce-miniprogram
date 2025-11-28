@@ -1,0 +1,107 @@
+.bundle-checkout-page {
+  min-height: 100vh;
+  padding: 24px;
+  background: #f7f7f7;
+  box-sizing: border-box;
+
+  &.loading,
+  &.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    font-size: 28px;
+  }
+
+  .summary-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 24px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+  }
+
+  .summary-card .title {
+    font-size: 32px;
+    font-weight: 600;
+  }
+
+  .summary-card .value {
+    margin-top: 8px;
+    font-size: 28px;
+    color: #e3614a;
+  }
+
+  .summary-card .hint {
+    margin-top: 12px;
+    font-size: 24px;
+    color: #888;
+    line-height: 1.4;
+  }
+
+  .section {
+    background: #fff;
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .section-title {
+    font-size: 30px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  .message-input {
+    width: 100%;
+    min-height: 160px;
+    background: #f8f8f8;
+    border-radius: 16px;
+    padding: 16px;
+    font-size: 26px;
+    color: #333;
+    box-sizing: border-box;
+  }
+
+  .form-row {
+    margin-bottom: 16px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .label {
+    display: block;
+    font-size: 26px;
+    color: #555;
+    margin-bottom: 8px;
+  }
+
+  .input {
+    width: 100%;
+    height: 80px;
+    background: #f8f8f8;
+    border-radius: 14px;
+    padding: 0 20px;
+    font-size: 26px;
+    box-sizing: border-box;
+  }
+
+  .tips {
+    color: #666;
+    line-height: 1.6;
+  }
+
+  .tip-text {
+    font-size: 24px;
+  }
+
+  .submit-btn {
+    margin-top: 12px;
+    background: linear-gradient(120deg, #ff977c, #ff6c6c);
+    color: #fff;
+    border-radius: 999px;
+  }
+}

@@ -29,12 +29,12 @@ const ReferralIndex = () => {
   }, []);
 
   return (
-    <View className="address-page">
-      <View className="address-card">
-        <Text className="section-title">我的邀请</Text>
-        {downlines.length === 0 && <View className="empty">暂无下级用户</View>}
+    <View className='address-page'>
+      <View className='address-card'>
+        <Text className='section-title'>我的邀请</Text>
+        {downlines.length === 0 && <View className='empty'>暂无下级用户</View>}
         {downlines.map((item) => (
-          <View className="info-row" key={item.user_id}>
+          <View className='info-row' key={item.user_id}>
             <Text>{item.phone}</Text>
             <Text>
               {item.level}级 · 注册时间 {item.registered_at}
@@ -43,11 +43,11 @@ const ReferralIndex = () => {
         ))}
       </View>
 
-      <View className="address-card">
-        <Text className="section-title">佣金明细</Text>
-        {commissions.length === 0 && <View className="empty">暂无佣金记录</View>}
+      <View className='address-card'>
+        <Text className='section-title'>佣金明细</Text>
+        {commissions.length === 0 && <View className='empty'>暂无佣金记录</View>}
         {commissions.map((commission) => (
-          <View className="info-row" key={commission.id}>
+          <View className='info-row' key={commission.id}>
             <Text>订单 {commission.order_id}</Text>
             <Text>
               ¥{commission.amount} · {commission.status}

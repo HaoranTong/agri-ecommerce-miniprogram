@@ -81,30 +81,30 @@ const Login = () => {
   const hasToken = !!getToken();
 
   return (
-    <View className="login-container">
-      <View className="logo">
-        <Text className="title">常香米坊</Text>
-        <Text className="subtitle">精选五常好米，直供到家</Text>
+    <View className='login-container'>
+      <View className='logo'>
+        <Text className='title'>常香米坊</Text>
+        <Text className='subtitle'>精选五常好米，直供到家</Text>
       </View>
 
-      <Button className="btn-login" loading={loading} onClick={handleLogin} type="primary">
-        <Text className="btn-text">微信快捷登录</Text>
+      <Button className='btn-login' loading={loading} onClick={handleLogin} type='primary'>
+        <Text className='btn-text'>微信快捷登录</Text>
       </Button>
 
       {hasToken && (
         <Button
-          className="btn-skip"
+          className='btn-skip'
           onClick={() => Taro.switchTab({ url: '/pages/index/index' })}
         >
           已登录，返回商城
         </Button>
       )}
 
-      <View className="footer">
-        <Text className="text">登录即表示同意</Text>
-        <Text className="link">《用户协议》</Text>
-        <Text className="text">和</Text>
-        <Text className="link">《隐私政策》</Text>
+      <View className='footer'>
+        <Text className='text'>登录即表示同意</Text>
+        <Text className='link'>《用户协议》</Text>
+        <Text className='text'>和</Text>
+        <Text className='link'>《隐私政策》</Text>
       </View>
       
       {/* 测试用户选择器 */}

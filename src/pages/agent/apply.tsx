@@ -70,87 +70,87 @@ const AgentApply = () => {
   };
 
   return (
-    <View className="agent-apply-page">
-      <View className="form-card">
-        <Text className="form-title">代理商申请</Text>
+    <View className='agent-apply-page'>
+      <View className='form-card'>
+        <Text className='form-title'>代理商申请</Text>
 
-        <View className="form-item">
-          <Text className="form-label">代理类型 *</Text>
+        <View className='form-item'>
+          <Text className='form-label'>代理类型 *</Text>
           <Picker
-            mode="selector"
+            mode='selector'
             range={regionTypeLabels}
             onChange={handleRegionTypeChange}
           >
-            <View className="picker">
+            <View className='picker'>
               {regionTypeLabels[regionTypes.indexOf(formData.region_type)]}
             </View>
           </Picker>
         </View>
 
-        <View className="form-item">
-          <Text className="form-label">区域编码 *</Text>
+        <View className='form-item'>
+          <Text className='form-label'>区域编码 *</Text>
           <Input
-            className="form-input"
-            placeholder="如：440300（深圳市）"
+            className='form-input'
+            placeholder='如：440300（深圳市）'
             value={formData.region_code}
             onInput={(e) => handleInputChange('region_code', e.detail.value)}
           />
-          <Text className="form-tip">请输入6位行政区划代码</Text>
+          <Text className='form-tip'>请输入6位行政区划代码</Text>
         </View>
 
-        <View className="form-item">
-          <Text className="form-label">上级代理编码（可选）</Text>
+        <View className='form-item'>
+          <Text className='form-label'>上级代理编码（可选）</Text>
           <Input
-            className="form-input"
-            placeholder="如果有推荐人，请填写其代理编码"
+            className='form-input'
+            placeholder='如果有推荐人，请填写其代理编码'
             value={formData.parent_agent_code}
             onInput={(e) => handleInputChange('parent_agent_code', e.detail.value)}
           />
         </View>
 
-        <View className="form-item">
-          <Text className="form-label">公司名称（可选）</Text>
+        <View className='form-item'>
+          <Text className='form-label'>公司名称（可选）</Text>
           <Input
-            className="form-input"
-            placeholder="请输入公司全称"
+            className='form-input'
+            placeholder='请输入公司全称'
             value={formData.company_name}
             onInput={(e) => handleInputChange('company_name', e.detail.value)}
           />
         </View>
 
-        <View className="form-item">
-          <Text className="form-label">联系人 *</Text>
+        <View className='form-item'>
+          <Text className='form-label'>联系人 *</Text>
           <Input
-            className="form-input"
-            placeholder="请输入联系人姓名"
+            className='form-input'
+            placeholder='请输入联系人姓名'
             value={formData.contact_name}
             onInput={(e) => handleInputChange('contact_name', e.detail.value)}
           />
         </View>
 
-        <View className="form-item">
-          <Text className="form-label">联系电话 *</Text>
+        <View className='form-item'>
+          <Text className='form-label'>联系电话 *</Text>
           <Input
-            className="form-input"
-            type="number"
-            placeholder="请输入联系电话"
+            className='form-input'
+            type='number'
+            placeholder='请输入联系电话'
             value={formData.contact_phone}
             onInput={(e) => handleInputChange('contact_phone', e.detail.value)}
           />
         </View>
 
-        <Button className="submit-btn" onClick={handleSubmit}>
+        <Button className='submit-btn' onClick={handleSubmit}>
           提交申请
         </Button>
       </View>
 
-      <View className="tips-card">
-        <Text className="tips-title">📋 申请说明</Text>
-        <View className="tips-list">
-          <Text className="tips-item">• 每个区域同一时间只能有一个代理商</Text>
-          <Text className="tips-item">• 区域编码请参考国家行政区划代码</Text>
-          <Text className="tips-item">• 申请成功后将自动分配代理编码</Text>
-          <Text className="tips-item">• 如有上级代理，系统会自动建立层级关系</Text>
+      <View className='tips-card'>
+        <Text className='tips-title'>📋 申请说明</Text>
+        <View className='tips-list'>
+          <Text className='tips-item'>• 每个区域同一时间只能有一个代理商</Text>
+          <Text className='tips-item'>• 区域编码请参考国家行政区划代码</Text>
+          <Text className='tips-item'>• 申请成功后将自动分配代理编码</Text>
+          <Text className='tips-item'>• 如有上级代理，系统会自动建立层级关系</Text>
         </View>
       </View>
     </View>

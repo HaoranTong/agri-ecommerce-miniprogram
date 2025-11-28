@@ -40,7 +40,7 @@ const ProductCard = ({ product, onSelect, onChooseVariant }: ProductCardProps) =
       <Image
         className={styles.cover}
         src={coverSrc}
-        mode="aspectFill"
+        mode='aspectFill'
       />
       <View className={styles.info}>
         <Text className={styles.title}>{product.name}</Text>

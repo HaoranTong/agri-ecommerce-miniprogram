@@ -90,10 +90,26 @@ export interface ShippingAddress {
   postcode?: string;
 }
 
+export type GiftCardPurchaseFlow = 'stored_value' | 'bundle' | 'custom';
+
+export interface GiftCardOrderPayload {
+  amount?: number;
+  selected_items?: Array<{ variation_id: number; quantity: number }>;
+  message?: string;
+  recipient_hint?: string;
+  recipient_contact?: string;
+  remark?: string;
+  [key: string]: any;
+}
+
 export interface CreateOrderPayload {
-  variation_id: number;
-  quantity: number;
-  shipping_address: ShippingAddress;
+  variation_id?: number;
+  quantity?: number;
+  shipping_address?: ShippingAddress;
+  giftcard_mode?: GiftCardPurchaseFlow;
+  giftcard_template_id?: number;
+  giftcard_payload?: GiftCardOrderPayload;
+  remark?: string;
 }
 
 export interface OrderCreated {
@@ -147,6 +163,21 @@ export interface GiftCard {
   can_reset_pin?: boolean;
 }
 
+export interface GiftCardBundleItem {
+  product_id?: number | null;
+  variation_id?: number | null;
+  name?: string | null;
+  product_name?: string | null;
+  title?: string | null;
+  description?: string | null;
+  subtitle?: string | null;
+  image_url?: string | null;
+  quantity?: number | null;
+  price?: string | number | null;
+  attributes?: Record<string, any> | null;
+  [key: string]: any;
+}
+
 export interface GiftCardTemplate {
   id: number;
   name: string;
@@ -160,6 +191,22 @@ export interface GiftCardTemplate {
   valid_days: number;
   share_template_config?: Record<string, any> | null;
   print_template_url?: string | null;
+  purchase_flow?: GiftCardPurchaseFlow;
+  amount_options?: number[] | null;
+  min_amount?: number | null;
+  max_amount?: number | null;
+  allowed_product_ids?: number[] | null;
+  allowed_variation_ids?: number[] | null;
+  max_items?: number | null;
+  max_total?: number | null;
+  success_copywriting?: string | null;
+  bundle_items?: GiftCardBundleItem[] | null;
+}
+
+export interface GiftCardPurchaseResult {
+  card_number: string;
+  card_pin: string;
+  template: GiftCardTemplate;
 }
 
 export interface GiftCardShareResult {

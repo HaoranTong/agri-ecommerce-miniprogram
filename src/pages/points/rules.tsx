@@ -28,16 +28,16 @@ const PointsRules = () => {
   }, []);
 
   return (
-    <View className="points-rules-page">
+    <View className='points-rules-page'>
       {loading && rules.length === 0 ? (
-        <View className="page-state">加载中...</View>
+        <View className='page-state'>加载中...</View>
       ) : rules.length === 0 ? (
-        <View className="page-state">暂无积分规则</View>
+        <View className='page-state'>暂无积分规则</View>
       ) : (
         rules.map((rule) => (
-          <View className="rule-card" key={rule.rule_id}>
-            <Text className="rule-title">{rule.title}</Text>
-            <Text className="rule-desc">{rule.description}</Text>
+          <View className='rule-card' key={rule.rule_id}>
+            <Text className='rule-title'>{rule.title}</Text>
+            <Text className='rule-desc'>{rule.description}</Text>
             <Text className={`rule-status ${rule.status}`}>
               {rule.status === 'active' ? '生效中' : '已下线'}
             </Text>

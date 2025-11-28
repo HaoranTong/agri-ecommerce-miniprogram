@@ -1,6 +1,6 @@
 import { Button, Text, View } from '@tarojs/components';
-import Taro from '@tarojs/taro';
-import { useEffect, useMemo, useState } from 'react';
+import Taro, { useRouter } from '@tarojs/taro';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { giftCardService } from '../../services/api';
 import type { GiftCard, GiftCardDeliveryMode, GiftCardShareResult } from '../../types';
@@ -29,6 +29,8 @@ const GiftCardShare = () => {
   const [deliveryMode, setDeliveryMode] = useState<GiftCardDeliveryMode>('digital_share');
   const [shareResult, setShareResult] = useState<GiftCardShareResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const presetCardFromRoute = (router?.params?.card as string) || '';
 
   const getAvailableModes = (card?: GiftCard): GiftCardDeliveryMode[] => {
     const candidates = card?.delivery_modes?.length ? card.delivery_modes : FALLBACK_MODES;
@@ -42,15 +44,18 @@ const GiftCardShare = () => {
 
   const availableModes = useMemo(() => getAvailableModes(selectedCardInfo), [selectedCardInfo]);
 
-  const loadCards = async () => {
+  const loadCards = useCallback(async () => {
     try {
       const data = await giftCardService.listMine();
       const activeCards = data.filter(card => card.status === 'active' && getBalanceNumber(card.balance) > 0);
       setCards(activeCards);
       if (activeCards.length > 0) {
-        const firstCard = activeCards[0];
-        setSelectedCard(firstCard.card_number);
-        const modes = getAvailableModes(firstCard);
+        const matchedCard = presetCardFromRoute
+          ? activeCards.find((card) => card.card_number === presetCardFromRoute)
+          : undefined;
+        const defaultCard = matchedCard || activeCards[0];
+        setSelectedCard(defaultCard.card_number);
+        const modes = getAvailableModes(defaultCard);
         setDeliveryMode(modes[0] ?? 'digital_share');
       }
     } catch (error) {
@@ -59,11 +64,11 @@ const GiftCardShare = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [presetCardFromRoute]);
 
   useEffect(() => {
     loadCards();
-  }, []);
+  }, [loadCards]);
 
   const handleSelectCard = (card: GiftCard) => {
     setSelectedCard(card.card_number);
@@ -84,6 +89,7 @@ const GiftCardShare = () => {
       Taro.showToast({ title: '分享成功', icon: 'success' });
     } catch (error) {
       console.error('分享失败', error);
+      Taro.showToast({ title: '分享失败', icon: 'none' });
     }
   };
 
@@ -114,20 +120,28 @@ const GiftCardShare = () => {
   };
 
   if (loading) {
-    return <View className="gift-card-share-page loading-state">加载中...</View>;
+    return <View className='gift-card-share-page loading-state'>加载中...</View>;
   }
 
   if (cards.length === 0) {
     return (
-      <View className="gift-card-share-page">
-        <View className="empty-state">
-          <Text className="empty-text">暂无可分享的礼品卡</Text>
-          <Button
-            className="back-btn"
-            onClick={() => Taro.navigateBack()}
-          >
-            返回
-          </Button>
+      <View className='gift-card-share-page'>
+        <View className='empty-state'>
+          <Text className='empty-text'>暂无可分享的礼品卡</Text>
+          <View className='empty-actions'>
+            <Button
+              className='back-btn'
+              onClick={() => Taro.navigateTo({ url: '/pages/giftcard/templates' })}
+            >
+              去购卡
+            </Button>
+            <Button
+              className='back-btn secondary'
+              onClick={() => Taro.navigateBack()}
+            >
+              返回
+            </Button>
+          </View>
         </View>
       </View>
     );
@@ -136,13 +150,13 @@ const GiftCardShare = () => {
   const modeTip = MODE_META[deliveryMode]?.tip;
 
   return (
-    <View className="gift-card-share-page">
+    <View className='gift-card-share-page'>
       {!shareResult ? (
         <>
           {/* 选择礼品卡 */}
-          <View className="section">
-            <Text className="section-title">选择要分享的礼品卡</Text>
-            <View className="card-list">
+          <View className='section'>
+            <Text className='section-title'>选择要分享的礼品卡</Text>
+            <View className='card-list'>
               {cards.map((card) => {
                 const balanceValue = card.balance ?? '--';
                 const templateName = card.template_name || '礼品卡';
@@ -152,16 +166,16 @@ const GiftCardShare = () => {
                     className={`card-item ${selectedCard === card.card_number ? 'selected' : ''}`}
                     onClick={() => handleSelectCard(card)}
                   >
-                    <View className="card-info">
-                      <Text className="card-name">{templateName}</Text>
-                      <Text className="card-number">{card.card_number}</Text>
+                    <View className='card-info'>
+                      <Text className='card-name'>{templateName}</Text>
+                      <Text className='card-number'>{card.card_number}</Text>
                     </View>
-                    <View className="card-balance">
-                      <Text className="balance-label">余额</Text>
-                      <Text className="balance-value">¥{balanceValue}</Text>
+                    <View className='card-balance'>
+                      <Text className='balance-label'>余额</Text>
+                      <Text className='balance-value'>¥{balanceValue}</Text>
                     </View>
                     {selectedCard === card.card_number && (
-                      <View className="check-icon">✓</View>
+                      <View className='check-icon'>✓</View>
                     )}
                   </View>
                 );
@@ -170,9 +184,9 @@ const GiftCardShare = () => {
           </View>
 
           {/* 选择分享方式 */}
-          <View className="section">
-            <Text className="section-title">选择分享方式</Text>
-            <View className="mode-list">
+          <View className='section'>
+            <Text className='section-title'>选择分享方式</Text>
+            <View className='mode-list'>
               {availableModes.map((mode) => {
                 const meta = MODE_META[mode];
                 return (
@@ -181,18 +195,18 @@ const GiftCardShare = () => {
                     className={`mode-item ${deliveryMode === mode ? 'selected' : ''}`}
                     onClick={() => setDeliveryMode(mode)}
                   >
-                    <Text className="mode-icon">{meta.icon}</Text>
-                    <Text className="mode-label">{meta.label}</Text>
-                    {deliveryMode === mode && <View className="check-icon">✓</View>}
+                    <Text className='mode-icon'>{meta.icon}</Text>
+                    <Text className='mode-label'>{meta.label}</Text>
+                    {deliveryMode === mode && <View className='check-icon'>✓</View>}
                   </View>
                 );
               })}
             </View>
-            {modeTip && <Text className="mode-tip">{modeTip}</Text>}
+            {modeTip && <Text className='mode-tip'>{modeTip}</Text>}
           </View>
 
-          <View className="action-section">
-            <Button className="share-btn" onClick={handleShare}>
+          <View className='action-section'>
+            <Button className='share-btn' onClick={handleShare}>
               生成分享
             </Button>
           </View>
@@ -200,48 +214,48 @@ const GiftCardShare = () => {
       ) : (
         <>
           {/* 分享结果 */}
-          <View className="result-section">
-            <Text className="result-title">✨ 分享成功</Text>
-            <View className="result-summary">
-              <Text className="result-card-name">{shareResult.template_name || '礼品卡'}</Text>
-              <Text className="result-card-number">卡号：{shareResult.card_number}</Text>
+          <View className='result-section'>
+            <Text className='result-title'>✨ 分享成功</Text>
+            <View className='result-summary'>
+              <Text className='result-card-name'>{shareResult.template_name || '礼品卡'}</Text>
+              <Text className='result-card-number'>卡号：{shareResult.card_number}</Text>
             </View>
 
             {shareResult.delivery_mode === 'digital_share' && (
-              <View className="result-card">
-                <Text className="result-label">分享口令</Text>
-                <View className="result-content passcode">
-                  <Text className="result-text">{shareResult.share_token}</Text>
+              <View className='result-card'>
+                <Text className='result-label'>分享口令</Text>
+                <View className='result-content passcode'>
+                  <Text className='result-text'>{shareResult.share_token}</Text>
                 </View>
-                <Button className="copy-btn" onClick={handleCopyToken}>
+                <Button className='copy-btn' onClick={handleCopyToken}>
                   复制口令
                 </Button>
-                <Text className="result-tip">转发口令给好友，让 TA 在“领取礼品卡”页输入即可领取。</Text>
+                <Text className='result-tip'>转发口令给好友，让 TA 在“领取礼品卡”页输入即可领取。</Text>
               </View>
             )}
 
             {shareResult.delivery_mode === 'printable' && (
-              <View className="result-card">
-                <Text className="result-label">打印模板链接</Text>
-                <View className="result-content">
-                  <Text className="result-text">
+              <View className='result-card'>
+                <Text className='result-label'>打印模板链接</Text>
+                <View className='result-content'>
+                  <Text className='result-text'>
                     {shareResult.print_template_url || selectedCardInfo?.print_template_url || '未配置'}
                   </Text>
                 </View>
-                <Button className="copy-btn" onClick={handleCopyPrintUrl}>
+                <Button className='copy-btn' onClick={handleCopyPrintUrl}>
                   复制模板链接
                 </Button>
-                <Text className="result-tip">复制链接在浏览器中打开，填写卡号/有效期后即可打印或转发。</Text>
+                <Text className='result-tip'>复制链接在浏览器中打开，填写卡号/有效期后即可打印或转发。</Text>
               </View>
             )}
 
             {shareResult.expires_at && (
-              <Text className="expire-tip">
+              <Text className='expire-tip'>
                 分享记录将于 {new Date(shareResult.expires_at).toLocaleString()} 过期，可随时重新生成。
               </Text>
             )}
 
-            <Button className="done-btn" onClick={() => Taro.navigateBack()}>
+            <Button className='done-btn' onClick={() => Taro.navigateBack()}>
               完成
             </Button>
           </View>

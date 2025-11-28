@@ -70,117 +70,117 @@ const UserProfile = () => {
   };
 
   if (loading) {
-    return <View className="user-profile-page loading-state">加载中...</View>;
+    return <View className='user-profile-page loading-state'>加载中...</View>;
   }
 
   if (!profile) {
     return (
-      <View className="user-profile-page">
-        <View className="empty">未获取到用户信息</View>
+      <View className='user-profile-page'>
+        <View className='empty'>未获取到用户信息</View>
       </View>
     );
   }
 
   return (
-    <View className="user-profile-page">
+    <View className='user-profile-page'>
       {/* 用户基础信息卡片 */}
-      <View className="user-card">
-        <View className="user-avatar">
+      <View className='user-card'>
+        <View className='user-avatar'>
           {profile.avatar ? (
-            <Image className="avatar-img" src={profile.avatar} mode="aspectFill" />
+            <Image className='avatar-img' src={profile.avatar} mode='aspectFill' />
           ) : (
-            <View className="avatar-placeholder">👤</View>
+            <View className='avatar-placeholder'>👤</View>
           )}
         </View>
-        <View className="user-info">
-          <Text className="user-nickname">
+        <View className='user-info'>
+          <Text className='user-nickname'>
             {profile.nickname || profile.first_name || '未设置昵称'}
           </Text>
-          <Text className="user-id">ID: {profile.username}</Text>
+          <Text className='user-id'>ID: {profile.username}</Text>
           {profile.is_test_user && (
-            <View className="test-badge">🧪 {profile.test_code}</View>
+            <View className='test-badge'>🧪 {profile.test_code}</View>
           )}
         </View>
       </View>
 
       {/* 积分和礼品卡 */}
-      <View className="stats-section">
-        <View className="stat-item" onClick={() => handleNavigate('/pages/points/summary')}>
-          <Text className="stat-value">{profile.points_balance || 0}</Text>
-          <Text className="stat-label">我的积分</Text>
+      <View className='stats-section'>
+        <View className='stat-item' onClick={() => handleNavigate('/pages/points/summary')}>
+          <Text className='stat-value'>{profile.points_balance || 0}</Text>
+          <Text className='stat-label'>我的积分</Text>
         </View>
-        <View className="stat-divider" />
-        <View className="stat-item" onClick={() => handleNavigate('/pages/giftcard/mine')}>
-          <Text className="stat-value">{giftCardCount ?? '--'}</Text>
-          <Text className="stat-label">礼品卡</Text>
+        <View className='stat-divider' />
+        <View className='stat-item' onClick={() => handleNavigate('/pages/giftcard/mine')}>
+          <Text className='stat-value'>{giftCardCount ?? '--'}</Text>
+          <Text className='stat-label'>礼品卡</Text>
         </View>
       </View>
 
       {/* 功能菜单列表 */}
-      <View className="menu-section">
-        <View className="menu-item" onClick={() => handleNavigate('/pages/user/edit-profile')}>
-          <View className="menu-icon">👤</View>
-          <Text className="menu-label">个人中心</Text>
-          <Text className="menu-arrow">→</Text>
+      <View className='menu-section'>
+        <View className='menu-item' onClick={() => handleNavigate('/pages/user/edit-profile')}>
+          <View className='menu-icon'>👤</View>
+          <Text className='menu-label'>个人中心</Text>
+          <Text className='menu-arrow'>→</Text>
         </View>
 
-        <View className="menu-item" onClick={() => handleNavigate('/pages/order/list')}>
-          <View className="menu-icon">📦</View>
-          <Text className="menu-label">我的订单</Text>
-          <Text className="menu-arrow">→</Text>
+        <View className='menu-item' onClick={() => handleNavigate('/pages/order/list')}>
+          <View className='menu-icon'>📦</View>
+          <Text className='menu-label'>我的订单</Text>
+          <Text className='menu-arrow'>→</Text>
         </View>
 
-        <View className="menu-item" onClick={() => handleNavigate('/pages/address/list')}>
-          <View className="menu-icon">📍</View>
-          <Text className="menu-label">收货信息</Text>
-          <Text className="menu-arrow">→</Text>
+        <View className='menu-item' onClick={() => handleNavigate('/pages/address/list')}>
+          <View className='menu-icon'>📍</View>
+          <Text className='menu-label'>收货信息</Text>
+          <Text className='menu-arrow'>→</Text>
         </View>
       </View>
 
-      <View className="menu-section">
+      <View className='menu-section'>
         {profile.is_agent && (
-          <View className="menu-item" onClick={() => handleNavigate('/pages/agent/dashboard')}>
-            <View className="menu-icon">🏢</View>
-            <Text className="menu-label">代理中心</Text>
-            {profile.agent_code && <Text className="menu-badge">{profile.agent_code}</Text>}
-            <Text className="menu-arrow">→</Text>
+          <View className='menu-item' onClick={() => handleNavigate('/pages/agent/dashboard')}>
+            <View className='menu-icon'>🏢</View>
+            <Text className='menu-label'>代理中心</Text>
+            {profile.agent_code && <Text className='menu-badge'>{profile.agent_code}</Text>}
+            <Text className='menu-arrow'>→</Text>
           </View>
         )}
 
         {!profile.is_agent && (
-          <View className="menu-item" onClick={() => handleNavigate('/pages/agent/apply')}>
-            <View className="menu-icon">📝</View>
-            <Text className="menu-label">申请代理</Text>
-            <Text className="menu-arrow">→</Text>
+          <View className='menu-item' onClick={() => handleNavigate('/pages/agent/apply')}>
+            <View className='menu-icon'>📝</View>
+            <Text className='menu-label'>申请代理</Text>
+            <Text className='menu-arrow'>→</Text>
           </View>
         )}
 
-        <View className="menu-item" onClick={() => handleNavigate('/pages/referral/index')}>
-          <View className="menu-icon">👥</View>
-          <Text className="menu-label">我的推荐</Text>
-          <Text className="menu-arrow">→</Text>
+        <View className='menu-item' onClick={() => handleNavigate('/pages/referral/index')}>
+          <View className='menu-icon'>👥</View>
+          <Text className='menu-label'>我的推荐</Text>
+          <Text className='menu-arrow'>→</Text>
         </View>
 
-        <View className="menu-item" onClick={() => handleNavigate('/pages/commission/list')}>
-          <View className="menu-icon">💰</View>
-          <Text className="menu-label">佣金明细</Text>
-          <Text className="menu-arrow">→</Text>
+        <View className='menu-item' onClick={() => handleNavigate('/pages/commission/list')}>
+          <View className='menu-icon'>💰</View>
+          <Text className='menu-label'>佣金明细</Text>
+          <Text className='menu-arrow'>→</Text>
         </View>
       </View>
 
       {profile.invite_code && (
-        <View className="menu-section">
-          <View className="menu-item">
-            <View className="menu-icon">🔑</View>
-            <Text className="menu-label">我的邀请码</Text>
-            <Text className="menu-value invite-code">{profile.invite_code}</Text>
+        <View className='menu-section'>
+          <View className='menu-item'>
+            <View className='menu-icon'>🔑</View>
+            <Text className='menu-label'>我的邀请码</Text>
+            <Text className='menu-value invite-code'>{profile.invite_code}</Text>
           </View>
         </View>
       )}
 
       {/* 退出登录 */}
-      <View className="logout-section">
-        <Button className="logout-btn" onClick={handleLogout}>
+      <View className='logout-section'>
+        <Button className='logout-btn' onClick={handleLogout}>
           退出登录
         </Button>
       </View>

@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
   login: '/auth/login',
   me: '/me',
   cart: '/cart',
+  cartItem: (variationId: number | string) => `/cart/${variationId}`,
   orders: '/orders',
   uploadPaymentProof: (orderId: number | string) => `/orders/${orderId}/upload-payment-proof`,
   giftCards: '/gift-cards',

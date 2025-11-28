@@ -43,10 +43,10 @@ const TestUserSelector = () => {
   };
   
   return (
-    <View className="test-user-selector">
+    <View className='test-user-selector'>
       {/* 触发按钮 */}
       <View 
-        className="toggle-btn" 
+        className='toggle-btn' 
         onClick={() => setVisible(!visible)}
       >
         🧪
@@ -54,30 +54,30 @@ const TestUserSelector = () => {
       
       {/* 选择面板 */}
       {visible && (
-        <View className="selector-panel">
-          <View className="panel-header">
-            <Text className="panel-title">选择测试账号</Text>
-            <View className="close-btn" onClick={() => setVisible(false)}>✕</View>
+        <View className='selector-panel'>
+          <View className='panel-header'>
+            <Text className='panel-title'>选择测试账号</Text>
+            <View className='close-btn' onClick={() => setVisible(false)}>✕</View>
           </View>
           
-          <View className="user-list">
+          <View className='user-list'>
             {testUsers.map(user => (
               <View 
                 key={user.code}
-                className="user-item"
+                className='user-item'
                 onClick={() => handleSelectUser(user.code)}
               >
-                <View className="user-info">
-                  <Text className="user-name">{user.name}</Text>
-                  <Text className="user-code">code: {user.code}</Text>
+                <View className='user-info'>
+                  <Text className='user-name'>{user.name}</Text>
+                  <Text className='user-code'>code: {user.code}</Text>
                 </View>
-                <Text className="user-desc">{user.desc}</Text>
+                <Text className='user-desc'>{user.desc}</Text>
               </View>
             ))}
           </View>
           
-          <View className="panel-footer">
-            <Button className="clear-btn" onClick={handleClearSelection}>
+          <View className='panel-footer'>
+            <Button className='clear-btn' onClick={handleClearSelection}>
               清除选择（使用真实登录）
             </Button>
           </View>

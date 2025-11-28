@@ -1,6 +1,6 @@
 import { Button, Image, Text, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { orderService } from '../../services/api';
 import type { OrderDetail } from '../../types';
@@ -16,7 +16,7 @@ const OrderPayment = () => {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadOrder = async () => {
+  const loadOrder = useCallback(async () => {
     console.log('[OrderConfirm] 开始加载订单:', orderId);
     
     if (!orderId) {
@@ -37,20 +37,20 @@ const OrderPayment = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId]);
 
   useEffect(() => {
     loadOrder();
-  }, []);
+  }, [loadOrder]);
 
   if (loading) {
-    return <View className="loading">加载中...</View>;
+    return <View className='loading'>加载中...</View>;
   }
 
   if (!order) {
     return (
-      <View className="order-detail-page">
-        <View className="empty-state">未找到订单信息</View>
+      <View className='order-detail-page'>
+        <View className='empty-state'>未找到订单信息</View>
       </View>
     );
   }
@@ -94,35 +94,35 @@ const OrderPayment = () => {
   };
 
   return (
-    <View className="payment-page">
+    <View className='payment-page'>
       {/* 支付说明 */}
-      <View className="notice-card">
-        <Text className="notice-title">💳 支付说明</Text>
-        <View className="notice-step">
-          <Text className="step-num">1</Text>
-          <Text className="step-text">长按下载保存收款二维码到相册</Text>
+      <View className='notice-card'>
+        <Text className='notice-title'>💳 支付说明</Text>
+        <View className='notice-step'>
+          <Text className='step-num'>1</Text>
+          <Text className='step-text'>长按下载保存收款二维码到相册</Text>
         </View>
-        <View className="notice-step">
-          <Text className="step-num">2</Text>
-          <Text className="step-text">微信扫描保存到相册的收款码完成付款</Text>
+        <View className='notice-step'>
+          <Text className='step-num'>2</Text>
+          <Text className='step-text'>微信扫描保存到相册的收款码完成付款</Text>
         </View>
-        <View className="notice-step">
-          <Text className="step-num">3</Text>
-          <Text className="step-text">截图保存付款成功信息</Text>
+        <View className='notice-step'>
+          <Text className='step-num'>3</Text>
+          <Text className='step-text'>截图保存付款成功信息</Text>
         </View>
-        <View className="notice-step">
-          <Text className="step-num">4</Text>
-          <Text className="step-text">点击下方按钮上传支付凭证（也可添加客服发送）</Text>
+        <View className='notice-step'>
+          <Text className='step-num'>4</Text>
+          <Text className='step-text'>点击下方按钮上传支付凭证（也可添加客服发送）</Text>
         </View>
       </View>
 
       {/* 收款二维码 */}
-      <View className="qr-card">
-        <Text className="qr-title">微信收款码</Text>
+      <View className='qr-card'>
+        <Text className='qr-title'>微信收款码</Text>
         {order.payment_qr_url ? (
-          <Image src={order.payment_qr_url} className="qr-image" mode="widthFix" />
+          <Image src={order.payment_qr_url} className='qr-image' mode='widthFix' />
         ) : (
-          <View className="qr-placeholder">
+          <View className='qr-placeholder'>
             <Text>收款码未配置</Text>
           </View>
         )}
@@ -130,14 +130,14 @@ const OrderPayment = () => {
 
       {/* 客服二维码（可选） */}
       {order.customer_service_qr && (
-        <View className="qr-card">
-          <Text className="qr-title">客服企业微信（可选）</Text>
-          <Image src={order.customer_service_qr} className="qr-image" mode="widthFix" />
+        <View className='qr-card'>
+          <Text className='qr-title'>客服企业微信（可选）</Text>
+          <Image src={order.customer_service_qr} className='qr-image' mode='widthFix' />
         </View>
       )}
 
       {/* 上传凭证按钮 */}
-      <Button className="upload-btn" onClick={handleUpload}>
+      <Button className='upload-btn' onClick={handleUpload}>
         上传支付凭证
       </Button>
     </View>

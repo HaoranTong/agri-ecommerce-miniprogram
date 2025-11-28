@@ -1,0 +1,128 @@
+.stored-value-modal__mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 40rpx;
+}
+
+.stored-value-modal__container {
+  width: 100%;
+  background: #fff;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 48rpx 40rpx 72rpx;
+  box-sizing: border-box;
+}
+
+.modal-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #222;
+}
+
+.modal-subtitle {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: #666;
+}
+
+.preset-amounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+  margin-top: 32rpx;
+}
+
+.amount-chip {
+  min-width: 180rpx;
+  padding: 20rpx 32rpx;
+  border-radius: 999rpx;
+  border: 1px solid #ddd;
+  font-size: 30rpx;
+  color: #333;
+  text-align: center;
+}
+
+.amount-chip.selected {
+  border-color: #2c8cf4;
+  background: rgba(44, 140, 244, 0.08);
+  color: #2c8cf4;
+}
+
+.custom-amount-block {
+  margin-top: 40rpx;
+}
+
+.field-label {
+  font-size: 28rpx;
+  color: #444;
+}
+
+.amount-input {
+  margin-top: 20rpx;
+  display: flex;
+  align-items: center;
+  border: 1px solid #eee;
+  border-radius: 20rpx;
+  padding: 10rpx 24rpx;
+}
+
+.currency {
+  font-size: 34rpx;
+  color: #111;
+  margin-right: 12rpx;
+}
+
+.amount-input Input {
+  flex: 1;
+  font-size: 34rpx;
+  color: #111;
+}
+
+.helper-text {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.error-text {
+  margin-top: 20rpx;
+  color: #e64545;
+  font-size: 26rpx;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 24rpx;
+  margin-top: 48rpx;
+}
+
+.modal-actions Button {
+  flex: 1;
+  height: 88rpx;
+  border-radius: 999rpx;
+  font-size: 30rpx;
+}
+
+.modal-actions .secondary {
+  color: #333;
+  background: #f5f5f5;
+}
+
+.modal-actions .primary {
+  color: #fff;
+  background: linear-gradient(135deg, #ff8f5c, #ff5c96);
+}
+
+.tips {
+  display: block;
+  margin-top: 32rpx;
+  font-size: 24rpx;
+  color: #888;
+  line-height: 1.5;
+}

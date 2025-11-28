@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+
+# 在提交前运行完整 lint，确保代码风格一致
+npm run lint

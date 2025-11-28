@@ -12,6 +12,12 @@
   - `pages/giftcard/share`：选择分享渠道、生成分享口令
   - `pages/giftcard/claim`：输入口令领取或扫码领取
   - `pages/giftcard/redeem`：输入卡号/密码核销
+- 购卡流程（V2）
+  - 模板列表页根据 `purchase_flow` 分流：`stored_value` → 弹窗购卡，`bundle` → 组合详情页，`custom` → 自选搭配页。
+  - 新增页面：
+    - `pages/giftcard/bundle-detail` / `bundle-checkout`
+    - `pages/giftcard/custom-builder` / `custom-checkout`
+  - 所有购卡成功场景需跳转/提示“我的礼品卡”查看，并附带分享入口。
 - 组件
   - `components/GiftCardTile`：卡片展示（背景、余额、状态）
   - `components/ShareTokenPanel`：显示分享二维码/口令
@@ -23,6 +29,10 @@
   - 分享成功后更新本地 token，跳转到分享详情页
   - 领取成功后提示“绑定成功”，更新卡列表缓存
   - 兑换成功后刷新卡列表并弹出结果模态框
+  - 购卡路径：
+    - 储值卡弹窗需支持金额选择/自定义金额，支付完成后提示卡号+PIN。
+    - 固定组合/任意组合在下单页隐藏收货地址，改为赠言与受赠人提示；支付完成后由后端生成礼品卡。
+    - 所有下单接口需传 `giftcard_mode`、`giftcard_template_id`、`giftcard_payload`，并在支付成功回传 `card_number`。
 - 测试 checklist（手动）
   1. 使用购卡用户登录 → 购买并分享 → 切换另一个账号领取 → 再兑换
   2. 分享链接过期提示、卡已被领取提示覆盖

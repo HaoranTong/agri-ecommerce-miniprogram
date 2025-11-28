@@ -1,6 +1,6 @@
 import { Button, Image, Text, View } from '@tarojs/components';
-import Taro from '@tarojs/taro';
-import { useEffect, useState } from 'react';
+import Taro, { useDidShow } from '@tarojs/taro';
+import { useCallback, useEffect, useState } from 'react';
 
 import { cartService } from '../../services/api';
 import type { CartItem } from '../../types';
@@ -10,8 +10,9 @@ const Cart = () => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
+  const [clearing, setClearing] = useState(false);
 
-  const loadCart = async () => {
+  const loadCart = useCallback(async () => {
     try {
       const data = await cartService.getCart();
       setItems(data);
@@ -23,11 +24,15 @@ const Cart = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadCart();
-  }, []);
+  }, [loadCart]);
+
+  useDidShow(() => {
+    loadCart();
+  });
 
   const handleToggleSelect = (variationId: number) => {
     if (selectedIds.includes(variationId)) {
@@ -76,6 +81,36 @@ const Cart = () => {
     }
   };
 
+  const handleClearCart = async () => {
+    if (!items.length || clearing) {
+      return;
+    }
+
+    const confirmResult = await Taro.showModal({
+      title: '确认清空?',
+      content: '将删除所有未结算的商品，需重新加购。',
+      confirmText: '清空',
+      cancelText: '取消'
+    });
+
+    if (!confirmResult.confirm) {
+      return;
+    }
+
+    try {
+      setClearing(true);
+      await cartService.clearCart();
+      setItems([]);
+      setSelectedIds([]);
+      Taro.showToast({ title: '购物车已清空', icon: 'success' });
+    } catch (error) {
+      console.error('清空购物车失败', error);
+      Taro.showToast({ title: '清空失败', icon: 'none' });
+    } finally {
+      setClearing(false);
+    }
+  };
+
   const handleCheckout = () => {
     const selectedItems = items.filter(item => selectedIds.includes(item.variation_id));
     if (selectedItems.length === 0) {
@@ -109,16 +144,16 @@ const Cart = () => {
   };
 
   if (loading) {
-    return <View className="cart-page loading-state">加载中...</View>;
+    return <View className='cart-page loading-state'>加载中...</View>;
   }
 
   if (items.length === 0) {
     return (
-      <View className="cart-page">
-        <View className="empty-state">
-          <Text className="empty-icon">🛒</Text>
-          <Text className="empty-text">购物车是空的</Text>
-          <Button className="go-shopping-btn" onClick={() => Taro.switchTab({ url: '/pages/index/index' })}>
+      <View className='cart-page'>
+        <View className='empty-state'>
+          <Text className='empty-icon'>🛒</Text>
+          <Text className='empty-text'>购物车是空的</Text>
+          <Button className='go-shopping-btn' onClick={() => Taro.switchTab({ url: '/pages/index/index' })}>
             去逛逛
           </Button>
         </View>
@@ -127,11 +162,21 @@ const Cart = () => {
   }
 
   return (
-    <View className="cart-page">
+    <View className='cart-page'>
+      <View className='cart-toolbar'>
+        <Button
+          className='clear-cart-btn'
+          onClick={handleClearCart}
+          disabled={!items.length || clearing}
+          loading={clearing}
+        >
+          清空购物车
+        </Button>
+      </View>
       {/* 购物车列表 */}
-      <View className="cart-list">
+      <View className='cart-list'>
         {items.map((item) => (
-          <View key={item.variation_id} className="cart-item">
+          <View key={item.variation_id} className='cart-item'>
             <View
               className={`checkbox ${selectedIds.includes(item.variation_id) ? 'checked' : ''}`}
               onClick={() => handleToggleSelect(item.variation_id)}
@@ -139,24 +184,24 @@ const Cart = () => {
               {selectedIds.includes(item.variation_id) && '✓'}
             </View>
 
-            <Image className="item-image" src={item.image_url || '/assets/placeholder.png'} mode="aspectFill" />
+            <Image className='item-image' src={item.image_url || '/assets/placeholder.png'} mode='aspectFill' />
 
-            <View className="item-info">
-              <Text className="item-name">{item.product_name}</Text>
-              {item.variation_name && <Text className="item-spec">{item.variation_name}</Text>}
-              <Text className="item-id">编号：{item.variation_id}</Text>
-              <View className="item-bottom">
-                <Text className="item-price">¥{item.price}</Text>
-                <View className="quantity-control">
+            <View className='item-info'>
+              <Text className='item-name'>{item.product_name}</Text>
+              {item.variation_name && <Text className='item-spec'>{item.variation_name}</Text>}
+              <Text className='item-id'>编号：{item.variation_id}</Text>
+              <View className='item-bottom'>
+                <Text className='item-price'>¥{item.price}</Text>
+                <View className='quantity-control'>
                   <View
-                    className="control-btn"
+                    className='control-btn'
                     onClick={() => handleUpdateQuantity(item.variation_id, -1)}
                   >
                     -
                   </View>
-                  <Text className="quantity-value">{item.quantity}</Text>
+                  <Text className='quantity-value'>{item.quantity}</Text>
                   <View
-                    className="control-btn"
+                    className='control-btn'
                     onClick={() => handleUpdateQuantity(item.variation_id, 1)}
                   >
                     +
@@ -165,7 +210,7 @@ const Cart = () => {
               </View>
             </View>
 
-            <View className="remove-btn" onClick={() => handleRemove(item.variation_id)}>
+            <View className='remove-btn' onClick={() => handleRemove(item.variation_id)}>
               ✕
             </View>
           </View>
@@ -173,23 +218,23 @@ const Cart = () => {
       </View>
 
       {/* 底部结算栏 */}
-      <View className="cart-footer">
-        <View className="footer-left">
+      <View className='cart-footer'>
+        <View className='footer-left'>
           <View
             className={`checkbox ${selectedIds.length === items.length ? 'checked' : ''}`}
             onClick={handleToggleSelectAll}
           >
             {selectedIds.length === items.length && '✓'}
           </View>
-          <Text className="select-all-text">全选</Text>
+          <Text className='select-all-text'>全选</Text>
         </View>
 
-        <View className="footer-right">
-          <View className="total-section">
-            <Text className="total-label">合计：</Text>
-            <Text className="total-value">¥{calculateTotal()}</Text>
+        <View className='footer-right'>
+          <View className='total-section'>
+            <Text className='total-label'>合计：</Text>
+            <Text className='total-value'>¥{calculateTotal()}</Text>
           </View>
-          <Button className="checkout-btn" onClick={handleCheckout}>
+          <Button className='checkout-btn' onClick={handleCheckout}>
             结算（{selectedIds.length}）
           </Button>
         </View>

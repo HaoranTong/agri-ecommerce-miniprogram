@@ -47,23 +47,23 @@ const GiftCardRedeem = () => {
   };
 
   return (
-    <View className="address-page">
-      <View className="address-card">
-        <Text className="section-title">购物卡兑换 / 重置密码</Text>
-        <View className="info-row">
+    <View className='address-page'>
+      <View className='address-card'>
+        <Text className='section-title'>购物卡兑换 / 重置密码</Text>
+        <View className='info-row'>
           <Text>购物卡卡号</Text>
-          <Input placeholder="请输入卡号" value={cardNumber} onInput={(event) => setCardNumber(event.detail.value)} />
+          <Input placeholder='请输入卡号' value={cardNumber} onInput={(event) => setCardNumber(event.detail.value)} />
         </View>
-        <View className="info-row">
+        <View className='info-row'>
           <Text>卡密 / 新密码</Text>
-          <Input placeholder="请输入密码" value={pin} onInput={(event) => setPin(event.detail.value)} />
+          <Input placeholder='请输入密码' value={pin} onInput={(event) => setPin(event.detail.value)} />
         </View>
       </View>
 
-      <Button className="add-btn" loading={loading} onClick={handleRedeem}>
+      <Button className='add-btn' loading={loading} onClick={handleRedeem}>
         立即兑换
       </Button>
-      <Button className="add-btn" loading={loading} onClick={handleResetPin}>
+      <Button className='add-btn' loading={loading} onClick={handleResetPin}>
         重置密码
       </Button>
     </View>

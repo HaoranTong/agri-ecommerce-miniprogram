@@ -15,6 +15,56 @@
   margin-bottom: 16px;
 }
 
+.giftcard-hint-card {
+  background: #fff7ef;
+  border: 1px solid #ffd7ba;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 14px rgba(255, 168, 80, 0.2);
+
+  .hint-title {
+    font-size: 30px;
+    font-weight: 600;
+    color: #c2571a;
+    margin-bottom: 10px;
+  }
+
+  .hint-item {
+    display: block;
+    font-size: 24px;
+    color: #8a4d19;
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+
+  .hint-actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 12px;
+  }
+
+  .hint-btn {
+    flex: 1;
+    height: 72px !important;
+    border-radius: 36px !important;
+    background: linear-gradient(135deg, #ff8f5c 0%, #ff5c96 100%) !important;
+    color: #fff !important;
+    font-size: 26px !important;
+    border: none !important;
+
+    &.secondary {
+      background: rgba(255, 255, 255, 0.9) !important;
+      color: #c2571a !important;
+      border: 1px solid rgba(194, 87, 26, 0.3) !important;
+    }
+
+    &::after {
+      border: none !important;
+    }
+  }
+}
+
 .card {
   background: white;
   border-radius: 12px;

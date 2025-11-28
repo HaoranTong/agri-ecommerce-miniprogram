@@ -57,39 +57,39 @@ export default function PaymentModal({
   };
 
   return (
-    <View className="payment-modal-overlay" onClick={onClose}>
+    <View className='payment-modal-overlay' onClick={onClose}>
       <View 
-        className="payment-modal-content" 
+        className='payment-modal-content' 
         onClick={(event) => event.stopPropagation()}
       >
         {/* 收款二维码 */}
-        <View className="qr-item centered">
-          <Text className="qr-label">微信收款码</Text>
+        <View className='qr-item centered'>
+          <Text className='qr-label'>微信收款码</Text>
           {paymentQrUrl ? (
-            <Image src={paymentQrUrl} className="qr-code" mode="widthFix" />
+            <Image src={paymentQrUrl} className='qr-code' mode='widthFix' />
           ) : (
-            <View className="qr-placeholder">
-              <Text className="placeholder-text">收款码未配置</Text>
+            <View className='qr-placeholder'>
+              <Text className='placeholder-text'>收款码未配置</Text>
             </View>
           )}
         </View>
 
         {/* 客服二维码 */}
-        <View className="qr-item centered">
-          <Text className="qr-label">添加客服企业微信</Text>
+        <View className='qr-item centered'>
+          <Text className='qr-label'>添加客服企业微信</Text>
           {customerServiceQr ? (
-            <Image src={customerServiceQr} className="qr-code" mode="widthFix" />
+            <Image src={customerServiceQr} className='qr-code' mode='widthFix' />
           ) : (
-            <View className="qr-placeholder">
-              <Text className="placeholder-text">客服二维码未配置</Text>
+            <View className='qr-placeholder'>
+              <Text className='placeholder-text'>客服二维码未配置</Text>
             </View>
           )}
         </View>
 
-        <Button className="upload-btn" onClick={handleUpload}>
+        <Button className='upload-btn' onClick={handleUpload}>
           上传付款凭证
         </Button>
-        <Button className="close-btn" onClick={onClose}>
+        <Button className='close-btn' onClick={onClose}>
           关闭
         </Button>
       </View>

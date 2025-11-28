@@ -90,40 +90,40 @@ const EditProfile = () => {
   };
 
   return (
-    <View className="edit-profile-page">
-      <View className="form-section">
-        <View className="form-item readonly">
-          <Text className="form-label">用户名</Text>
-          <Text className="form-value">{profile?.username || '-'}</Text>
-          <Text className="form-tip">系统生成，不可修改</Text>
+    <View className='edit-profile-page'>
+      <View className='form-section'>
+        <View className='form-item readonly'>
+          <Text className='form-label'>用户名</Text>
+          <Text className='form-value'>{profile?.username || '-'}</Text>
+          <Text className='form-tip'>系统生成，不可修改</Text>
         </View>
 
-        <View className="form-item">
-          <Text className="form-label">昵称 <Text className="required">*</Text></Text>
+        <View className='form-item'>
+          <Text className='form-label'>昵称 <Text className='required'>*</Text></Text>
           <Input
-            className="form-input"
-            placeholder="请输入昵称"
+            className='form-input'
+            placeholder='请输入昵称'
             value={formData.nickname}
             onInput={(e) => handleInput('nickname', e.detail.value)}
           />
         </View>
 
-        <View className="form-item">
-          <Text className="form-label">真实姓名 <Text className="required">*</Text></Text>
+        <View className='form-item'>
+          <Text className='form-label'>真实姓名 <Text className='required'>*</Text></Text>
           <Input
-            className="form-input"
-            placeholder="请输入真实姓名"
+            className='form-input'
+            placeholder='请输入真实姓名'
             value={formData.first_name}
             onInput={(e) => handleInput('first_name', e.detail.value)}
           />
         </View>
 
-        <View className="form-item">
-          <Text className="form-label">手机号 <Text className="required">*</Text></Text>
+        <View className='form-item'>
+          <Text className='form-label'>手机号 <Text className='required'>*</Text></Text>
           <Input
-            className="form-input"
-            type="number"
-            placeholder="请输入手机号"
+            className='form-input'
+            type='number'
+            placeholder='请输入手机号'
             value={formData.phone}
             onInput={(e) => handleInput('phone', e.detail.value)}
             maxlength={11}
@@ -131,16 +131,16 @@ const EditProfile = () => {
         </View>
 
         {profile?.is_test_user && (
-          <View className="test-user-badge">
+          <View className='test-user-badge'>
             🧪 测试账号: {profile.test_code}
           </View>
         )}
       </View>
 
-      <View className="button-group">
+      <View className='button-group'>
         <Button
-          className="save-button"
-          type="primary"
+          className='save-button'
+          type='primary'
           loading={loading}
           onClick={handleSubmit}
         >

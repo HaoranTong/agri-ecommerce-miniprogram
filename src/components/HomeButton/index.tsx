@@ -14,9 +14,9 @@ const HomeButton = ({ show = true }: HomeButtonProps) => {
   };
 
   return (
-    <View className="home-button" onClick={handleGoHome}>
-      <View className="home-icon">🏠</View>
-      <View className="home-text">首页</View>
+    <View className='home-button' onClick={handleGoHome}>
+      <View className='home-icon'>🏠</View>
+      <View className='home-text'>首页</View>
     </View>
   );
 };

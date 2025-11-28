@@ -1,6 +1,6 @@
 import { Button, Text, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { orderService } from '../../services/api';
 import type { OrderDetail as OrderDetailType } from '../../types';
@@ -15,8 +15,8 @@ const OrderDetail = () => {
     return params.id || params.orderId || '';
   }, []);
 
-  const getStatusInfo = (order: OrderDetailType) => {
-    const { status, has_payment_proof } = order;
+  const getStatusInfo = (currentOrder: OrderDetailType) => {
+    const { status, has_payment_proof } = currentOrder;
     
     if (status === 'pending' && !has_payment_proof) {
       return { text: '待支付', color: '#ff9800', icon: '⏱️', tip: '请尽快完成支付' };
@@ -36,7 +36,7 @@ const OrderDetail = () => {
     return { text: status, color: '#666', icon: '📋', tip: '' };
   };
 
-  const loadOrderDetail = async () => {
+  const loadOrderDetail = useCallback(async () => {
     if (!orderId) {
       setLoading(false);
       return;
@@ -51,11 +51,11 @@ const OrderDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId]);
 
   useEffect(() => {
     loadOrderDetail();
-  }, []);
+  }, [loadOrderDetail]);
 
   const handleGoPayment = () => {
     if (order?.has_payment_proof) {
@@ -95,16 +95,16 @@ const OrderDetail = () => {
 
   if (loading) {
     return (
-      <View className="order-detail-page">
-        <View className="loading">订单加载中...</View>
+      <View className='order-detail-page'>
+        <View className='loading'>订单加载中...</View>
       </View>
     );
   }
 
   if (!order) {
     return (
-      <View className="order-detail-page">
-        <View className="empty-state">未找到该订单</View>
+      <View className='order-detail-page'>
+        <View className='empty-state'>未找到该订单</View>
       </View>
     );
   }
@@ -112,29 +112,29 @@ const OrderDetail = () => {
   const statusInfo = getStatusInfo(order);
 
   return (
-    <View className="order-detail-page">
+    <View className='order-detail-page'>
       {/* 顶部返回首页按钮 */}
-      <View className="top-home-btn" onClick={handleGoHome}>
-        <Text className="home-icon">🏠</Text>
-        <Text className="home-text">首页</Text>
+      <View className='top-home-btn' onClick={handleGoHome}>
+        <Text className='home-icon'>🏠</Text>
+        <Text className='home-text'>首页</Text>
       </View>
 
       {/* 订单状态卡片 */}
-      <View className="status-card" style={{ borderLeftColor: statusInfo.color }}>
-        <View className="status-header">
-          <Text className="status-icon">{statusInfo.icon}</Text>
-          <View className="status-info">
-            <Text className="status-text" style={{ color: statusInfo.color }}>
+      <View className='status-card' style={{ borderLeftColor: statusInfo.color }}>
+        <View className='status-header'>
+          <Text className='status-icon'>{statusInfo.icon}</Text>
+          <View className='status-info'>
+            <Text className='status-text' style={{ color: statusInfo.color }}>
               {statusInfo.text}
             </Text>
-            <Text className="status-tip">{statusInfo.tip}</Text>
+            <Text className='status-tip'>{statusInfo.tip}</Text>
           </View>
         </View>
         {order.has_payment_proof && (
-          <View className="proof-notice">
-            <Text className="proof-icon">✓</Text>
-            <Text className="proof-text">已提交付款凭证</Text>
-            <Text className="proof-time">
+          <View className='proof-notice'>
+            <Text className='proof-icon'>✓</Text>
+            <Text className='proof-text'>已提交付款凭证</Text>
+            <Text className='proof-time'>
               {order.payment_proof_submitted_at}
             </Text>
           </View>
@@ -143,72 +143,72 @@ const OrderDetail = () => {
 
       {/* 物流信息 */}
       {order.tracking_number && (
-        <View className="card logistics-card">
-          <Text className="card-title">🚚 物流信息</Text>
-          <View className="logistics-content">
-            <View className="info-row">
-              <Text className="label">物流公司</Text>
-              <Text className="value">{order.tracking_company || '暂无'}</Text>
+        <View className='card logistics-card'>
+          <Text className='card-title'>🚚 物流信息</Text>
+          <View className='logistics-content'>
+            <View className='info-row'>
+              <Text className='label'>物流公司</Text>
+              <Text className='value'>{order.tracking_company || '暂无'}</Text>
             </View>
-            <View className="info-row">
-              <Text className="label">运单号码</Text>
-              <Text className="value tracking">{order.tracking_number}</Text>
+            <View className='info-row'>
+              <Text className='label'>运单号码</Text>
+              <Text className='value tracking'>{order.tracking_number}</Text>
             </View>
           </View>
         </View>
       )}
 
       {/* 商品信息 */}
-      <View className="card">
-        <Text className="card-title">📦 商品信息</Text>
+      <View className='card'>
+        <Text className='card-title'>📦 商品信息</Text>
         {order.items?.map((item, index) => (
-          <View key={index} className="product-item">
-            <View className="product-info">
-              <Text className="product-name">{item.product_name}</Text>
+          <View key={index} className='product-item'>
+            <View className='product-info'>
+              <Text className='product-name'>{item.product_name}</Text>
               {item.variation_name && (
-                <Text className="product-spec">{item.variation_name}</Text>
+                <Text className='product-spec'>{item.variation_name}</Text>
               )}
             </View>
-            <View className="product-price-qty">
-              <Text className="price">¥{item.price}</Text>
-              <Text className="quantity">x{item.quantity}</Text>
+            <View className='product-price-qty'>
+              <Text className='price'>¥{item.price}</Text>
+              <Text className='quantity'>x{item.quantity}</Text>
             </View>
           </View>
         ))}
-        <View className="total-row">
-          <Text className="label">订单总额</Text>
-          <Text className="amount">¥{order.total}</Text>
+        <View className='total-row'>
+          <Text className='label'>订单总额</Text>
+          <Text className='amount'>¥{order.total}</Text>
         </View>
       </View>
 
       {/* 订单信息 */}
-      <View className="card">
-        <Text className="card-title">📋 订单信息</Text>
-        <View className="info-row" onClick={handleCopyOrderNumber}>
-          <Text className="label">订单号</Text>
-          <Text className="value order-num">{order.order_number} 📋</Text>
+      <View className='card'>
+        <Text className='card-title'>📋 订单信息</Text>
+        <View className='info-row' onClick={handleCopyOrderNumber}>
+          <Text className='label'>订单号</Text>
+          <Text className='value order-num'>{order.order_number} 📋</Text>
         </View>
-        <View className="info-row">
-          <Text className="label">下单时间</Text>
-          <Text className="value">{order.created_at}</Text>
+        <View className='info-row'>
+          <Text className='label'>下单时间</Text>
+          <Text className='value'>{order.created_at}</Text>
         </View>
       </View>
 
       {/* 收货信息 */}
       {order.shipping_address && (
-        <View className="card">
-          <Text className="card-title">📍 收货信息</Text>
-          <View className="info-row">
-            <Text className="label">收件人</Text>
-            <Text className="value">{order.shipping_address.name}</Text>
+        <View className='card'>
+          <Text className='card-title'>📍 收货信息</Text>
+          <View className='info-row'>
+            <Text className='label'>收件人</Text>
+            <Text className='value'>{order.shipping_address.name}</Text>
           </View>
-          <View className="info-row">
-            <Text className="label">联系电话</Text>
-            <Text className="value">{order.shipping_address.phone}</Text>
+          <View className='info-row'>
+            <Text className='label'>联系电话</Text>
+            <Text className='value'>{order.shipping_address.phone}</Text>
           </View>
-          <View className="info-row">
-            <Text className="label">收货地址</Text>
-            <Text className="value address">
+          <View className='info-row'>
+            <Text className='label'>收货地址</Text>
+            <Text className='value address'>
               {order.shipping_address.province} {order.shipping_address.city}{' '}
               {order.shipping_address.district}{' '}
               {order.shipping_address.detail_address}
@@ -218,12 +218,12 @@ const OrderDetail = () => {
       )}
 
       {/* 操作按钮 */}
-      <View className="action-buttons">
-        <Button className="contact-btn" onClick={handleContactService}>
+      <View className='action-buttons'>
+        <Button className='contact-btn' onClick={handleContactService}>
           联系客服
         </Button>
         {order.status === 'pending' && (
-          <Button className="pay-btn" onClick={handleGoPayment}>
+          <Button className='pay-btn' onClick={handleGoPayment}>
             {order.has_payment_proof ? '查看付款详情' : '去支付'}
           </Button>
         )}

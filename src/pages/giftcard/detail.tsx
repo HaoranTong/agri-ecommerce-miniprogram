@@ -1,6 +1,6 @@
 import { Button, Text, View } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { giftCardService } from '../../services/api';
 import type { GiftCardShareDetail } from '../../types';
@@ -12,7 +12,7 @@ const GiftCardDetail = () => {
   const [detail, setDetail] = useState<GiftCardShareDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadDetail = async () => {
+  const loadDetail = useCallback(async () => {
     if (!token) {
       Taro.showToast({ title: '缺少参数', icon: 'none' });
       return;
@@ -27,11 +27,11 @@ const GiftCardDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     loadDetail();
-  }, [token]);
+  }, [loadDetail]);
 
   const handleClaim = () => {
     if (!token) return;
@@ -57,13 +57,13 @@ const GiftCardDetail = () => {
   };
 
   if (loading) {
-    return <View className="gift-card-detail-page loading-state">加载中...</View>;
+    return <View className='gift-card-detail-page loading-state'>加载中...</View>;
   }
 
   if (!detail) {
     return (
-      <View className="gift-card-detail-page">
-        <View className="empty">未找到礼品卡信息</View>
+      <View className='gift-card-detail-page'>
+        <View className='empty'>未找到礼品卡信息</View>
       </View>
     );
   }
@@ -77,47 +77,47 @@ const GiftCardDetail = () => {
   const balanceText = typeof detail.balance === 'string' ? detail.balance : '--';
 
   return (
-    <View className="gift-card-detail-page">
+    <View className='gift-card-detail-page'>
       {/* 礼品卡主卡片 */}
-      <View className="card-main">
-        <View className="card-header">
-          <Text className="card-template">{templateName}</Text>
+      <View className='card-main'>
+        <View className='card-header'>
+          <Text className='card-template'>{templateName}</Text>
           <View className={`status-badge ${getStatusColor(detail.status)}`}>
             <Text>{getStatusText(detail.status)}</Text>
           </View>
         </View>
 
-        <View className="card-balance">
-          <Text className="balance-label">卡内余额</Text>
-          <Text className="balance-value">¥{balanceText}</Text>
+        <View className='card-balance'>
+          <Text className='balance-label'>卡内余额</Text>
+          <Text className='balance-value'>¥{balanceText}</Text>
         </View>
 
         {senderName && (
-          <View className="card-sender">
-            <Text className="sender-label">来自</Text>
-            <Text className="sender-name">{senderName}</Text>
+          <View className='card-sender'>
+            <Text className='sender-label'>来自</Text>
+            <Text className='sender-name'>{senderName}</Text>
           </View>
         )}
       </View>
 
       {/* 详情信息 */}
-      <View className="detail-card">
-        <View className="detail-item">
-          <Text className="detail-label">礼品卡号</Text>
-          <Text className="detail-value">{detail.card_number}</Text>
+      <View className='detail-card'>
+        <View className='detail-item'>
+          <Text className='detail-label'>礼品卡号</Text>
+          <Text className='detail-value'>{detail.card_number}</Text>
         </View>
-        <View className="detail-item">
-          <Text className="detail-label">分享方式</Text>
-          <Text className="detail-value">
+        <View className='detail-item'>
+          <Text className='detail-label'>分享方式</Text>
+          <Text className='detail-value'>
             {deliveryMode === 'link' && '链接分享'}
             {deliveryMode === 'qrcode' && '二维码'}
             {deliveryMode === 'passcode' && '口令'}
             {!['link', 'qrcode', 'passcode'].includes(deliveryMode) && deliveryMode}
           </Text>
         </View>
-        <View className="detail-item">
-          <Text className="detail-label">过期时间</Text>
-          <Text className="detail-value expire">
+        <View className='detail-item'>
+          <Text className='detail-label'>过期时间</Text>
+          <Text className='detail-value expire'>
             {expiresText}
           </Text>
         </View>
@@ -125,22 +125,22 @@ const GiftCardDetail = () => {
 
       {/* 操作按钮 */}
       {detail.status === 'active' && (
-        <View className="action-section">
-          <Button className="claim-btn" onClick={handleClaim}>
+        <View className='action-section'>
+          <Button className='claim-btn' onClick={handleClaim}>
             立即领取
           </Button>
         </View>
       )}
 
       {detail.status === 'claimed' && (
-        <View className="tip-section">
-          <Text className="tip-text">此礼品卡已被领取</Text>
+        <View className='tip-section'>
+          <Text className='tip-text'>此礼品卡已被领取</Text>
         </View>
       )}
 
       {detail.status === 'expired' && (
-        <View className="tip-section">
-          <Text className="tip-text">此分享链接已过期</Text>
+        <View className='tip-section'>
+          <Text className='tip-text'>此分享链接已过期</Text>
         </View>
       )}
     </View>

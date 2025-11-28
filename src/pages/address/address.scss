@@ -5,6 +5,26 @@
   padding: 16px 16px 120px 16px;
 }
 
+.giftcard-highlight {
+  background: linear-gradient(135deg, #fff3e0, #ffe0f0);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(255, 176, 122, 0.25);
+
+  .highlight-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: #c05a00;
+  }
+
+  .highlight-text {
+    margin-top: 6px;
+    font-size: 24px;
+    color: #7a3c24;
+  }
+}
+
 /* 空状态 */
 .empty-state {
   display: flex;

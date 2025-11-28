@@ -167,59 +167,59 @@ const OrderCreate = () => {
   };
 
   return (
-    <View className="order-detail-page">
-      <View className="card">
-        <Text className="section-title highlight-title">确认商品</Text>
+    <View className='order-detail-page'>
+      <View className='card'>
+        <Text className='section-title highlight-title'>确认商品</Text>
         {fromCart ? (
           checkoutItems.map((item, index) => (
-            <View key={index} className="checkout-item-block">
-              <View className="info-row">
-                <Text className="label">商品名称:</Text>
-                <Text className="value">{item.product_name}</Text>
+            <View key={index} className='checkout-item-block'>
+              <View className='info-row'>
+                <Text className='label'>商品名称:</Text>
+                <Text className='value'>{item.product_name}</Text>
               </View>
-              <View className="info-row">
-                <Text className="label">商品编号:</Text>
-                <Text className="value">{item.variation_id}</Text>
+              <View className='info-row'>
+                <Text className='label'>商品编号:</Text>
+                <Text className='value'>{item.variation_id}</Text>
               </View>
               {/* 将规格属性拆分为单独的行 */}
               {item.variation_name.split(' | ').map((attr, attrIndex) => {
                 const [attrName, attrValue] = attr.split(': ');
                 return (
-                  <View key={attrIndex} className="info-row">
-                    <Text className="label">{attrName}:</Text>
-                    <Text className="value">{attrValue}</Text>
+                  <View key={attrIndex} className='info-row'>
+                    <Text className='label'>{attrName}:</Text>
+                    <Text className='value'>{attrValue}</Text>
                   </View>
                 );
               })}
-              <View className="info-row">
-                <Text className="label">单价:</Text>
-                <Text className="value price">¥{item.price}</Text>
+              <View className='info-row'>
+                <Text className='label'>单价:</Text>
+                <Text className='value price'>¥{item.price}</Text>
               </View>
-              <View className="info-row">
-                <Text className="label">数量:</Text>
-                <Text className="value">×{item.quantity}</Text>
+              <View className='info-row'>
+                <Text className='label'>数量:</Text>
+                <Text className='value'>×{item.quantity}</Text>
               </View>
-              <View className="info-row highlight">
-                <Text className="label">小计:</Text>
-                <Text className="value subtotal">¥{(parseFloat(item.price) * item.quantity).toFixed(2)}</Text>
+              <View className='info-row highlight'>
+                <Text className='label'>小计:</Text>
+                <Text className='value subtotal'>¥{(parseFloat(item.price) * item.quantity).toFixed(2)}</Text>
               </View>
-              {index < checkoutItems.length - 1 && <View className="divider" />}
+              {index < checkoutItems.length - 1 && <View className='divider' />}
             </View>
           ))
         ) : (
           <>
-            <View className="info-row">
+            <View className='info-row'>
               <Text>商品名称</Text>
               <Text>{productName}</Text>
             </View>
-            <View className="info-row">
+            <View className='info-row'>
               <Text>规格 ID</Text>
               <Text>{variationId}</Text>
             </View>
-            <View className="info-row">
+            <View className='info-row'>
               <Text>购买数量</Text>
               <Input
-                type="number"
+                type='number'
                 value={String(quantity)}
                 onInput={(event) => {
                   const next = parseInt(event.detail.value || '1', 10) || 1;
@@ -231,44 +231,44 @@ const OrderCreate = () => {
         )}
       </View>
 
-      <View className="card">
-        <Text className="section-title highlight-title">收货信息</Text>
-        <View className="info-row">
+      <View className='card'>
+        <Text className='section-title highlight-title'>收货信息</Text>
+        <View className='info-row'>
           <Text>收件人</Text>
           <Input
-            placeholder="请输入收件人姓名"
+            placeholder='请输入收件人姓名'
             value={address.name}
             onInput={(event) => handleAddressChange('name', event.detail.value)}
           />
         </View>
-        <View className="info-row">
+        <View className='info-row'>
           <Text>联系电话</Text>
           <Input
-            placeholder="请输入手机号"
+            placeholder='请输入手机号'
             value={address.phone}
             onInput={(event) => handleAddressChange('phone', event.detail.value)}
           />
         </View>
-        <View className="info-row">
+        <View className='info-row'>
           <Text>所在地区</Text>
-          <Picker mode="region" value={region} onChange={handleRegionChange}>
-            <View className="picker-value">
+          <Picker mode='region' value={region} onChange={handleRegionChange}>
+            <View className='picker-value'>
               {address.province ? `${address.province} ${address.city} ${address.district}` : '请选择省市区'}
             </View>
           </Picker>
         </View>
-        <View className="info-row">
+        <View className='info-row'>
           <Text>详细地址</Text>
           <Input
-            placeholder="街道、楼栋、房号"
+            placeholder='街道、楼栋、房号'
             value={address.detail_address}
             onInput={(event) => handleAddressChange('detail_address', event.detail.value)}
           />
         </View>
-        <View className="info-row">
+        <View className='info-row'>
           <Text>邮编</Text>
           <Input
-            placeholder="可选"
+            placeholder='可选'
             value={address.postcode || ''}
             onInput={(event) => handleAddressChange('postcode', event.detail.value)}
           />
@@ -276,15 +276,15 @@ const OrderCreate = () => {
       </View>
 
       {fromCart && (
-        <View className="card total-card">
-          <View className="info-row total-row">
-            <Text className="total-label">订单总额</Text>
-            <Text className="total-value">¥{calculateTotal()}</Text>
+        <View className='card total-card'>
+          <View className='info-row total-row'>
+            <Text className='total-label'>订单总额</Text>
+            <Text className='total-value'>¥{calculateTotal()}</Text>
           </View>
         </View>
       )}
 
-      <Button className="pay-btn" loading={submitting} onClick={handleSubmit}>
+      <Button className='pay-btn' loading={submitting} onClick={handleSubmit}>
         {fromCart ? `提交订单（共${checkoutItems.length}件）` : '提交订单'}
       </Button>
     </View>

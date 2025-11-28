@@ -111,9 +111,9 @@ const PointsLedger = () => {
   };
 
   return (
-    <View className="points-ledger-page">
-      <View className="filter-bar">
-        <View className="filter-row">
+    <View className='points-ledger-page'>
+      <View className='filter-bar'>
+        <View className='filter-row'>
           {['all', 'earn', 'spend', 'expire', 'refund'].map((type) => (
             <View
               key={type}
@@ -126,7 +126,7 @@ const PointsLedger = () => {
             </View>
           ))}
         </View>
-        <View className="filter-row secondary">
+        <View className='filter-row secondary'>
           {['all', 'pending', 'confirmed'].map((status) => (
             <View
               key={status}
@@ -142,23 +142,23 @@ const PointsLedger = () => {
       </View>
 
       {loading && items.length === 0 ? (
-        <View className="loading-state">加载中...</View>
+        <View className='loading-state'>加载中...</View>
       ) : items.length === 0 ? (
-        <View className="empty-state">暂无积分记录</View>
+        <View className='empty-state'>暂无积分记录</View>
       ) : (
-        <View className="ledger-list">
+        <View className='ledger-list'>
           {items.map((item) => (
-            <View key={item.id} className="ledger-item">
-              <View className="item-left">
+            <View key={item.id} className='ledger-item'>
+              <View className='item-left'>
                 <Text className={`type-badge ${getTypeColor(item.type)}`}>
                   {getTypeLabel(item.type)}
                 </Text>
-                <View className="item-info">
-                  <Text className="item-source">{formatDescription(item)}</Text>
-                  <Text className="item-date">{formatDate(item.created_at)}</Text>
+                <View className='item-info'>
+                  <Text className='item-source'>{formatDescription(item)}</Text>
+                  <Text className='item-date'>{formatDate(item.created_at)}</Text>
                   {item.reference_order_id && (
                     <Text
-                      className="item-link"
+                      className='item-link'
                       onClick={() => handleGoOrder(item.reference_order_id)}
                     >
                       查看订单 →
@@ -166,23 +166,23 @@ const PointsLedger = () => {
                   )}
                 </View>
               </View>
-              <View className="item-right">
+              <View className='item-right'>
                 <Text className={`points-change ${item.delta > 0 ? 'positive' : 'negative'}`}>
                   {item.delta > 0 ? '+' : ''}{item.delta}
                 </Text>
-                <Text className="balance-after">余额 {item.balance_after}</Text>
+                <Text className='balance-after'>余额 {item.balance_after}</Text>
               </View>
             </View>
           ))}
 
           {hasMore && (
-            <View className="load-more" onClick={handleLoadMore}>
+            <View className='load-more' onClick={handleLoadMore}>
               <Text>{loading ? '加载中...' : '加载更多'}</Text>
             </View>
           )}
 
           {!hasMore && items.length > 0 && (
-            <View className="no-more">
+            <View className='no-more'>
               <Text>没有更多了</Text>
             </View>
           )}

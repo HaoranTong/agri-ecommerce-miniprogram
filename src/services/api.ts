@@ -16,8 +16,10 @@ import type {
   CommissionRecord,
   CreateOrderPayload,
   GiftCard,
+  GiftCardPurchaseResult,
   GiftCardShareDetail,
   GiftCardShareResult,
+  GiftCardTemplate,
   LoginResponse,
   OrderCreated,
   OrderDetail,
@@ -303,16 +305,15 @@ export const cartService = {
     }),
   updateCart: (variation_id: number, quantity: number) =>
     request<{ success: boolean }>({
-      url: API_ENDPOINTS.cart,
-      method: 'POST',
-      data: { variation_id, quantity },
+      url: API_ENDPOINTS.cartItem(variation_id),
+      method: 'PUT',
+      data: { quantity },
       showLoading: true
     }),
   removeFromCart: (variation_id: number) =>
     request<{ success: boolean }>({
-      url: API_ENDPOINTS.cart,
-      method: 'POST',
-      data: { variation_id, quantity: 0 }
+      url: API_ENDPOINTS.cartItem(variation_id),
+      method: 'DELETE'
     }),
   clearCart: () =>
     request<void>({
@@ -374,6 +375,43 @@ export const giftCardService = {
       showLoading: true
     });
     return response.data ?? response.cards ?? [];
+  },
+  listTemplates: async () => {
+    const response = await request<{ success: boolean; data: GiftCardTemplate[] }>({
+      url: '/gift-cards/templates',
+      method: 'GET',
+      showLoading: true
+    });
+    return response.data ?? [];
+  },
+  getTemplateDetail: async (templateId: number) => {
+    const response = await request<{ success: boolean; data: GiftCardTemplate }>( {
+      url: `/gift-cards/templates/${templateId}`,
+      method: 'GET',
+      showLoading: true
+    });
+    return response.data;
+  },
+  purchase: async (
+    template_id: number,
+    options?: {
+      amount?: number;
+      delivery_mode?: string;
+      remark?: string;
+      order_id?: number;
+      payload?: Record<string, any>;
+    }
+  ) => {
+    const response = await request<{ success: boolean; data: GiftCardPurchaseResult }>({
+      url: '/gift-cards/purchase',
+      method: 'POST',
+      data: {
+        template_id,
+        ...(options || {})
+      },
+      showLoading: true
+    });
+    return response.data;
   },
   redeem: async (card_number: string, card_pin: string) => {
     const response = await request<{ success: boolean; data?: { card_number: string; status: string }; message?: string }>({

@@ -51,39 +51,39 @@ const GiftCardClaim = () => {
   };
 
   return (
-    <View className="gift-card-claim-page">
+    <View className='gift-card-claim-page'>
       {!claimed ? (
-        <View className="claim-form">
-          <Text className="page-title">🎁 领取礼品卡</Text>
-          <Text className="page-subtitle">输入分享口令或扫描二维码领取好友赠送的礼品卡</Text>
+        <View className='claim-form'>
+          <Text className='page-title'>🎁 领取礼品卡</Text>
+          <Text className='page-subtitle'>输入分享口令或扫描二维码领取好友赠送的礼品卡</Text>
 
-          <View className="form-section">
-            <View className="form-item">
-              <Text className="form-label">分享口令 / Token *</Text>
+          <View className='form-section'>
+            <View className='form-item'>
+              <Text className='form-label'>分享口令 / Token *</Text>
               <Input
-                className="form-input"
-                placeholder="请输入分享口令"
+                className='form-input'
+                placeholder='请输入分享口令'
                 value={token}
                 onInput={(e) => setToken(e.detail.value)}
               />
             </View>
 
-            <View className="form-item">
-              <Text className="form-label">PIN码（如需要）</Text>
+            <View className='form-item'>
+              <Text className='form-label'>PIN码（如需要）</Text>
               <Input
-                className="form-input"
-                placeholder="某些礼品卡需要PIN码"
+                className='form-input'
+                placeholder='某些礼品卡需要PIN码'
                 value={pinCode}
                 password
                 maxlength={6}
                 onInput={(e) => setPinCode(e.detail.value)}
               />
-              <Text className="form-tip">如果赠送者设置了PIN码保护，需要输入正确的PIN码才能领取</Text>
+              <Text className='form-tip'>如果赠送者设置了PIN码保护，需要输入正确的PIN码才能领取</Text>
             </View>
           </View>
 
           <Button
-            className="claim-btn"
+            className='claim-btn'
             onClick={handleClaim}
             loading={loading}
             disabled={loading}
@@ -91,42 +91,42 @@ const GiftCardClaim = () => {
             {loading ? '领取中...' : '立即领取'}
           </Button>
 
-          <View className="help-section">
-            <Text className="help-title">💡 如何获取分享口令？</Text>
-            <View className="help-list">
-              <Text className="help-item">• 好友通过"分享礼品卡"功能生成口令</Text>
-              <Text className="help-item">• 复制好友发送的分享链接中的Token</Text>
-              <Text className="help-item">• 扫描好友分享的二维码自动填充</Text>
+          <View className='help-section'>
+            <Text className='help-title'>💡 如何获取分享口令？</Text>
+            <View className='help-list'>
+              <Text className='help-item'>• 好友通过 &quot;分享礼品卡&quot; 功能生成口令</Text>
+              <Text className='help-item'>• 复制好友发送的分享链接中的 Token</Text>
+              <Text className='help-item'>• 扫描好友分享的二维码自动填充</Text>
             </View>
           </View>
         </View>
       ) : (
-        <View className="claim-success">
-          <View className="success-icon">✨</View>
-          <Text className="success-title">领取成功！</Text>
+        <View className='claim-success'>
+          <View className='success-icon'>✨</View>
+          <Text className='success-title'>领取成功！</Text>
           
           {claimResult && (
-            <View className="result-card">
-              <View className="result-item">
-                <Text className="result-label">礼品卡号</Text>
-                <Text className="result-value">{claimResult.card_number}</Text>
+            <View className='result-card'>
+              <View className='result-item'>
+                <Text className='result-label'>礼品卡号</Text>
+                <Text className='result-value'>{claimResult.card_number}</Text>
               </View>
-              <View className="result-item">
-                <Text className="result-label">卡内余额</Text>
-                <Text className="result-value balance">¥{claimResult.balance ?? '--'}</Text>
+              <View className='result-item'>
+                <Text className='result-label'>卡内余额</Text>
+                <Text className='result-value balance'>¥{claimResult.balance ?? '--'}</Text>
               </View>
             </View>
           )}
 
-          <Text className="success-tip">
-            礼品卡已添加到您的账户，可在"我的礼品卡"中查看
+          <Text className='success-tip'>
+            礼品卡已添加到您的账户，可在 &quot;我的礼品卡&quot; 中查看
           </Text>
 
-          <Button className="view-btn" onClick={handleViewCards}>
+          <Button className='view-btn' onClick={handleViewCards}>
             查看我的礼品卡
           </Button>
           
-          <Button className="back-btn" onClick={() => Taro.navigateBack()}>
+          <Button className='back-btn' onClick={() => Taro.navigateBack()}>
             返回
           </Button>
         </View>
