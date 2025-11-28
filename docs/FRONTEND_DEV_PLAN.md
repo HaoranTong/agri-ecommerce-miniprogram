@@ -48,6 +48,53 @@
   2. 流水时间排序、分页加载
   3. Spend 失败的错误提示
 
+## 积分中心二期规划（行业实践对齐）
+
+> 目标：在现有 Summary/Ledger 基础上，引入任务、兑换、规则说明与抵扣闭环，保证“赚积分 → 看积分 → 花积分”三段式体验顺滑，并覆盖常见的积分合规提示。
+
+### 页面与能力矩阵
+
+| 页面 | 框架 | 关键接口 | 必备交互 | 容错与提示 |
+| --- | --- | --- | --- | --- |
+| Summary 汇总 | `pages/points/summary` | `GET /points/balance` + `GET /points/rules` | 显示可用/冻结/待入账/将过期、近 30 天趋势、模块入口（流水/任务/兑换/规则） | 接口失败时展示占位 + 重试按钮；提醒“该功能需要登录”并跳转登录 |
+| Ledger 流水 | `pages/points/ledger` | `GET /points/ledger` | 类型+状态+日期筛选、无限滚动、跳转订单详情、显示到期日 | 若 `from/to` 无数据展示“无匹配记录”，后台 4xx 展示错误 toast |
+| Missions 任务 | `pages/points/missions` | `GET /points/missions` + `POST /points/missions/{id}/claim` | 进度条、锁定任务解锁条件、领取后刷新余额/任务状态 | 领取失败区分 `mission_locked`、`mission_already_claimed`、`insufficient_progress` 提示 |
+| Redeem 兑换 | `pages/points/redeem` | `GET /points/redeem/options` + `POST /points/redeem` | 兑换前校验可用积分、展示券/礼品卡 meta、兑换结果二次确认（包含券码复制、跳转礼品卡详情） | 库存不足、积分不足分别提示，失败时保留按钮状态以便重试 |
+| Rules 规则 | `pages/points/rules` | `GET /points/rules` | 分类展示（基础规则/活动规则）、最后更新时间、锚点跳转 | 规则为空时展示“由运营配置，请稍后再来” |
+| Order Checkout 联动 | `pages/order/*` | `POST /orders` (传 `points_to_use`) | 下单前告知可抵扣比例、切换开关输入积分、失焦自动校验 | 校验失败回滚输入，对齐后端错误码 `insufficient_points`、`points_disabled` |
+
+### Services 与状态管理
+
+- `src/services/api.ts` 中的 `pointsService` 需保持幂等与错误码透传，新增：
+  - `refreshBalanceAfter(action: Promise<any>)` 帮助任务领取/兑换后统一刷新 `GET /points/balance`。
+  - `getRedeemHistory`（预留）便于后续“兑换记录”页面复用。
+- `src/store/points.ts`（待新增）：
+  - `balance`, `ledger`, `missions`, `redeemOptions` 的缓存与时间戳；
+  - actions：`fetchBalance`, `fetchLedger`, `claimMissionAndRefresh`, `redeemAndRefresh`。
+- 统一的错误码 → 文案映射表写在 `src/utils/error-messages.ts`，避免各页面重复判断。
+
+### 交互与视觉要点
+
+1. **骨架屏**：Summary/Missions/Redeem 首屏加载需有骨架或占位，避免白屏；失败时提供“下拉刷新”提示。
+2. **实时反馈**：领取任务、兑换成功后，通过 `Taro.eventCenter` 或 store 发布“pointsUpdated”，驱动 Summary 页同步刷新。
+3. **解锁逻辑**：`locked` 状态任务应展示 `unlock_hint`（来自接口 `meta.unlock_hint`），并在点击时提示“完成 XX 前无法领取”。
+4. **兑换安全**：兑换礼品卡需二次确认弹窗（防误触），并在结果页提供“复制卡号/券码”与“去礼品卡列表”两个 CTA。
+5. **到期提醒**：Ledger 列表中对即将过期记录（`expire_at` 小于 30 天）添加黄色徽标，同时 Summary 的提醒卡片点击后携带筛选条件进入 Ledger。
+
+### 技术迭代步骤
+
+1. **服务层补强**：完成 `pointsService` 额外方法、错误码映射与 store；补上 `POST /points/redeem`、`POST /orders` 抵扣的前端校验。
+2. **页面增强**：逐页实现上表“必备交互”，优先 Missions/Redeem（用户可感知差距最大）。
+3. **联动闭环**：在订单确认页引入“积分抵扣”交互，并在订单成功页展示消耗明细。
+4. **监控与埋点**：在关键操作（领取、兑换、下单抵扣）上报埋点，帮助运营观察转化率。
+5. **文档同步**：每个阶段完成后更新 `docs/API_CONTRACT_V2.3.md` 与 `docs/POINTS_CENTER_STATUS.md`，并在 `POINTS_TEST_NOTES.md` 增加验证脚本。
+
+### 验收依据
+
+- 任意用户在 Summary → Missions → Redeem → Order 流程中，积分余额、流水、任务状态保持一致且实时更新。
+- 常见失败场景（积分不足、任务未解锁、库存告罄、接口 5xx）均有明确提示，不留空白页。
+- 真机体验中，所有积分相关页面加载时间 < 2s（在 Wi-Fi 下），并支持下拉刷新恢复。
+
 ## 共性需求
 - `services/api.ts` 增加 Gift Card / Points 方法，响应 Promise 类型写在 `src/types/index.ts`。
 - 错误处理统一走 `utils/toast.ts`，根据后端错误码输出中文提示。

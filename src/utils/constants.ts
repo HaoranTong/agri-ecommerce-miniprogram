@@ -15,7 +15,6 @@ export const API_ENDPOINTS = {
   orders: '/orders',
   uploadPaymentProof: (orderId: number | string) => `/orders/${orderId}/upload-payment-proof`,
   giftCards: '/gift-cards',
-  giftCardsMine: '/gift-cards/mine',
   redeemGiftCard: '/gift-cards/redeem',
   shareGiftCard: '/gift-cards/share',
   getShareDetail: (token: string) => `/gift-cards/share/${token}`,
@@ -28,5 +27,10 @@ export const API_ENDPOINTS = {
   agentCommissions: '/agents/commissions',
   pointsBalance: '/points/balance',
   pointsLedger: '/points/ledger',
-  pointsSpend: '/points/spend'
+  pointsSpend: '/points/spend',
+  pointsRules: '/points/rules',
+  pointsMissions: '/points/missions',
+  pointsClaimMission: (missionId: string) => `/points/missions/${missionId}/claim`,
+  pointsRedeemOptions: '/points/redeem/options',
+  pointsRedeem: '/points/redeem'
 } as const;

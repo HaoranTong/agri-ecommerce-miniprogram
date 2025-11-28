@@ -2,7 +2,7 @@ import { Button, Image, Text, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useEffect, useState } from 'react';
 
-import { userService } from '../../services/api';
+import { giftCardService, userService } from '../../services/api';
 import { clearToken } from '../../utils/storage';
 import type { UserProfile } from '../../types';
 import './profile.scss';
@@ -10,9 +10,11 @@ import './profile.scss';
 const UserProfile = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [giftCardCount, setGiftCardCount] = useState<number | null>(null);
 
   const loadProfile = async () => {
     try {
+      setLoading(true);
       const data = await userService.getProfile();
       console.log('[Profile] 加载用户数据:', data);
       console.log('[Profile] 积分余额:', data.points_balance);
@@ -27,14 +29,27 @@ const UserProfile = () => {
     }
   };
 
+  const loadGiftCardCount = async () => {
+    try {
+      const cards = await giftCardService.listMine();
+      setGiftCardCount(Array.isArray(cards) ? cards.length : 0);
+    } catch (error) {
+      console.error('获取礼品卡数量失败', error);
+      setGiftCardCount(0);
+    }
+  };
+
   useEffect(() => {
-    loadProfile();
+    Promise.all([loadProfile(), loadGiftCardCount()]).catch(() => {
+      // 单个 Promise 内部已处理日志/Toast，这里仅避免未处理的拒绝
+    });
   }, []);
 
   // 页面显示时重新加载数据（从编辑页面返回时会触发）
   Taro.useDidShow(() => {
     console.log('[Profile] 页面显示，重新加载数据');
     loadProfile();
+    loadGiftCardCount();
   });
 
   const handleLogout = () => {
@@ -96,7 +111,7 @@ const UserProfile = () => {
         </View>
         <View className="stat-divider" />
         <View className="stat-item" onClick={() => handleNavigate('/pages/giftcard/mine')}>
-          <Text className="stat-value">0</Text>
+          <Text className="stat-value">{giftCardCount ?? '--'}</Text>
           <Text className="stat-label">礼品卡</Text>
         </View>
       </View>

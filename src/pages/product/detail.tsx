@@ -1,4 +1,4 @@
-import { Button, Image, Swiper, SwiperItem, Text, Video, View } from '@tarojs/components';
+import { Button, Image, Swiper, SwiperItem, Text, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -113,10 +113,10 @@ const ProductDetail = () => {
   }
 
   // 构建图片列表
-  const images = [
-    selectedVariation?.image_url || product.image_url,
-    product.image_url
-  ].filter((img, index, self) => img && self.indexOf(img) === index);
+  const images = (
+    [selectedVariation?.image_url ?? null, product.image_url ?? null]
+      .filter((img): img is string => typeof img === 'string' && img.length > 0)
+  ).filter((img, index, self) => self.indexOf(img) === index);
 
   // 提取规格属性信息（修复版）
   const getSpecInfo = () => {
@@ -137,7 +137,6 @@ const ProductDetail = () => {
 
     // 遍历所有属性
     Object.keys(attrs).forEach(key => {
-      const lowerKey = key.toLowerCase();
       
       // 包装方式
       if (key.includes('袋装') || key.includes('礼盒')) {

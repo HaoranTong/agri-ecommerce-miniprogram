@@ -25,6 +25,9 @@ export default defineAppConfig({
     'pages/user/edit-profile',
     'pages/points/summary',
     'pages/points/ledger',
+    'pages/points/missions',
+    'pages/points/redeem',
+    'pages/points/rules',
     'pages/cart/index'
   ],
   window: {

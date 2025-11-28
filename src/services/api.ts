@@ -12,7 +12,7 @@ import {
 import type {
   AgentDownline,
   AgentProfile,
-  CartSummary,
+  CartItem,
   CommissionRecord,
   CreateOrderPayload,
   GiftCard,
@@ -23,12 +23,31 @@ import type {
   OrderDetail,
   PointsBalance,
   PointsLedgerItem,
+  PointsMission,
+  PointsRedeemOption,
+  PointsRedeemResult,
+  PointsRule,
   Product,
   PublicConfig,
   ReferralDownline,
-  ShippingAddress,
   UserProfile
 } from '../types';
+
+interface PointsService {
+  getBalance: () => Promise<PointsBalance>;
+  getLedger: (params?: { page?: number; per_page?: number; type?: string; status?: string; from?: string; to?: string }) => Promise<{
+    items: PointsLedgerItem[];
+    total: number;
+  }>;
+  spend: (points: number, reason: string) => Promise<{ new_balance: number; deducted: number }>;
+  getRules: () => Promise<PointsRule[]>;
+  getMissions: () => Promise<PointsMission[]>;
+  claimMission: (
+    missionId: string
+  ) => Promise<{ mission_id: string; awarded_points: number; new_balance: number; message?: string }>;
+  getRedeemOptions: () => Promise<PointsRedeemOption[]>;
+  redeem: (optionId: string) => Promise<PointsRedeemResult>;
+}
 
 interface RequestOptions {
   url: string;
@@ -348,38 +367,49 @@ export const orderService = {
 };
 
 export const giftCardService = {
-  listMine: () =>
-    request<{ cards: GiftCard[] }>({
-      url: API_ENDPOINTS.giftCardsMine,
+  listMine: async () => {
+    const response = await request<{ success?: boolean; data?: GiftCard[]; cards?: GiftCard[] }>({
+      url: API_ENDPOINTS.giftCards,
       method: 'GET',
       showLoading: true
-    }).then(res => res.cards),
-  redeem: (card_number: string, pin_code: string) =>
-    request({
+    });
+    return response.data ?? response.cards ?? [];
+  },
+  redeem: async (card_number: string, card_pin: string) => {
+    const response = await request<{ success: boolean; data?: { card_number: string; status: string }; message?: string }>({
       url: API_ENDPOINTS.redeemGiftCard,
       method: 'POST',
-      data: { card_number, pin_code },
+      data: { card_number, card_pin },
       showLoading: true
-    }),
-  share: (card_number: string, delivery_mode: 'link' | 'qrcode' | 'passcode', channel?: string) =>
-    request<GiftCardShareResult>({
+    });
+    return response.data;
+  },
+  share: async (card_number: string, delivery_mode: string, channel?: string) => {
+    const response = await request<{ success: boolean; data: GiftCardShareResult }>({
       url: API_ENDPOINTS.shareGiftCard,
       method: 'POST',
       data: { card_number, delivery_mode, channel },
       showLoading: true
-    }),
-  getShareDetail: (token: string) =>
-    request<GiftCardShareDetail>({
+    });
+    return response.data;
+  },
+  getShareDetail: async (token: string) => {
+    const response = await request<{ success: boolean; data: GiftCardShareDetail }>({
       url: API_ENDPOINTS.getShareDetail(token),
       method: 'GET'
-    }),
-  claim: (token: string, pin_code?: string) =>
-    request<{ card_number: string; balance: string }>({
+    });
+    return response.data;
+  },
+  claim: async (token: string, pin_code?: string) => {
+    const payload = pin_code ? { pin_code } : undefined;
+    const response = await request<{ success: boolean; data: { card_number: string; status: string } }>({
       url: API_ENDPOINTS.claimGiftCard(token),
       method: 'POST',
-      data: pin_code ? { pin_code } : {},
+      data: payload,
       showLoading: true
-    }),
+    });
+    return response.data;
+  },
   resetPin: (cardId: number | string, newPin: string) =>
     request({
       url: API_ENDPOINTS.resetGiftCardPin(cardId),
@@ -419,23 +449,70 @@ export const agentService = {
     }).then(res => res.commissions)
 };
 
-export const pointsService = {
-  getBalance: () =>
-    request<PointsBalance>({
+export const pointsService: PointsService = {
+  getBalance: async () => {
+    const response = await request<{ success: boolean; data: PointsBalance }>({
       url: API_ENDPOINTS.pointsBalance,
       method: 'GET'
-    }),
-  getLedger: (params?: { page?: number; per_page?: number; type?: string }) =>
-    request<{ items: PointsLedgerItem[]; total: number }>({
+    });
+    return response.data;
+  },
+  getLedger: async (params?: { page?: number; per_page?: number; type?: string; status?: string; from?: string; to?: string }) => {
+    const response = await request<{ success: boolean; data: PointsLedgerItem[]; pagination?: { total?: number } }>({
       url: API_ENDPOINTS.pointsLedger,
       method: 'GET',
       data: params
-    }),
-  spend: (points: number, purpose: string) =>
-    request<{ success: boolean; new_balance: number }>({
+    });
+    return {
+      items: response.data ?? [],
+      total: response.pagination?.total ?? response.data?.length ?? 0
+    };
+  },
+  spend: async (points: number, reason: string) => {
+    const response = await request<{ success: boolean; data: { new_balance: number; deducted: number } }>({
       url: API_ENDPOINTS.pointsSpend,
       method: 'POST',
-      data: { points, purpose },
+      data: { points, reason },
       showLoading: true
-    })
+    });
+    return response.data;
+  },
+  getRules: async () => {
+    const response = await request<{ success: boolean; data: PointsRule[] }>({
+      url: API_ENDPOINTS.pointsRules,
+      method: 'GET'
+    });
+    return response.data ?? [];
+  },
+  getMissions: async () => {
+    const response = await request<{ success: boolean; data: PointsMission[] }>({
+      url: API_ENDPOINTS.pointsMissions,
+      method: 'GET'
+    });
+    return response.data ?? [];
+  },
+  claimMission: async (missionId: string) => {
+    const response = await request<{ success: boolean; data: { mission_id: string; awarded_points: number; new_balance: number; message?: string } }>({
+      url: API_ENDPOINTS.pointsClaimMission(missionId),
+      method: 'POST',
+      showLoading: true
+    });
+    return response.data;
+  },
+  getRedeemOptions: async () => {
+    const response = await request<{ success: boolean; data: PointsRedeemOption[] }>({
+      url: API_ENDPOINTS.pointsRedeemOptions,
+      method: 'GET'
+    });
+    return response.data ?? [];
+  },
+  redeem: async (optionId: string) => {
+    const response = await request<{ success: boolean; data: PointsRedeemResult }>({
+      url: API_ENDPOINTS.pointsRedeem,
+      method: 'POST',
+      data: { option_id: optionId },
+      showLoading: true
+    });
+    return response.data;
+  }
 };

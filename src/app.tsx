@@ -1,4 +1,4 @@
-import React, { PropsWithChildren } from 'react';
+import { PropsWithChildren } from 'react';
 import Taro from '@tarojs/taro';
 import TestUserSelector from './components/TestUserSelector';
 import './components/TestUserSelector/index.scss';

@@ -5,26 +5,42 @@
   /* 筛选器 */
   .filter-bar {
     background: #fff;
-    display: flex;
-    padding: 20px 40px;
+    padding: 16px 24px;
     border-bottom: 1px solid #f0f0f0;
     position: sticky;
     top: 0;
     z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 
-    .filter-item {
-      flex: 1;
-      text-align: center;
-      padding: 10px 0;
-      font-size: 28px;
-      color: #666;
-      border-radius: 8px;
-      transition: all 0.3s;
+    .filter-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
 
-      &.active {
-        color: #667eea;
-        background: rgba(102, 126, 234, 0.1);
-        font-weight: 600;
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      &.secondary {
+        opacity: 0.9;
+      }
+
+      .filter-item {
+        flex: 1;
+        text-align: center;
+        padding: 12px 0;
+        font-size: 26px;
+        color: #666;
+        border-radius: 10px;
+        border: 1px solid #e0e0e0;
+        transition: all 0.3s;
+
+        &.active {
+          color: #556ee6;
+          border-color: #556ee6;
+          background: rgba(85, 110, 230, 0.08);
+          font-weight: 600;
+        }
       }
     }
   }
@@ -102,6 +118,12 @@
           .item-date {
             font-size: 22px;
             color: #999;
+          }
+
+          .item-link {
+            font-size: 22px;
+            color: #556ee6;
+            margin-top: 6px;
           }
         }
       }

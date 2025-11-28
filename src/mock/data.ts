@@ -21,20 +21,19 @@ export const mockProducts: Product[] = [
     name: 'Organic Daohuaxiang Rice',
     type: 'variable',
     description: 'Premium Wuchang rice with soft texture and natural aroma.',
-    is_gift_card: false,
     image_url: 'https://placehold.co/200x200?text=Rice',
     variations: [
       {
         variation_id: 1001001,
         attributes: { Spec: '5kg Bag' },
         price: '128.00',
-        stock_status: 'instock'
+        in_stock: true
       },
       {
         variation_id: 1001002,
         attributes: { Spec: '10kg Gift Box' },
         price: '238.00',
-        stock_status: 'instock'
+        in_stock: true
       }
     ]
   },
@@ -43,14 +42,13 @@ export const mockProducts: Product[] = [
     name: 'Organic Brown Rice Gift Box',
     type: 'variable',
     description: 'Low temperature drying keeps nutrition intact for daily meals.',
-    is_gift_card: false,
     image_url: 'https://placehold.co/200x200?text=Brown+Rice',
     variations: [
       {
         variation_id: 1002001,
         attributes: { Spec: '4kg Gift Box' },
         price: '198.00',
-        stock_status: 'instock'
+        in_stock: true
       }
     ]
   }

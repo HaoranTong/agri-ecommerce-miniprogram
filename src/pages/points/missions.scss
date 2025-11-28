@@ -1,0 +1,116 @@
+.points-missions-page {
+  min-height: 100vh;
+  background: #f6f7fb;
+  padding: 24px;
+
+  .page-state {
+    text-align: center;
+    color: #999;
+    padding: 120px 0;
+    font-size: 28px;
+  }
+
+  .mission-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+
+    .mission-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+
+      .mission-title {
+        font-size: 30px;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .mission-desc {
+        font-size: 24px;
+        color: #777;
+        margin-top: 6px;
+      }
+
+      .status {
+        font-size: 22px;
+        padding: 6px 16px;
+        border-radius: 999px;
+        color: #fff;
+
+        &.completed {
+          background: #4caf50;
+        }
+
+        &.claimed {
+          background: #9e9e9e;
+        }
+
+        &.locked {
+          background: #bbb;
+        }
+
+        &.ongoing {
+          background: #667eea;
+        }
+
+        &.claimable {
+          background: #ff9800;
+        }
+      }
+    }
+
+    .mission-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 24px;
+      color: #555;
+      margin-bottom: 16px;
+    }
+
+    .progress-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+
+      .progress-track {
+        flex: 1;
+        background: #f0f2f7;
+        border-radius: 999px;
+        height: 12px;
+
+        .progress-fill {
+          height: 100%;
+          border-radius: inherit;
+          background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+      }
+
+      .progress-text {
+        font-size: 24px;
+        color: #666;
+      }
+    }
+
+    .mission-actions {
+      display: flex;
+      justify-content: flex-end;
+
+      .action-btn {
+        min-width: 220px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+        border-radius: 999px;
+
+        &[disabled] {
+          opacity: 0.5;
+        }
+      }
+    }
+  }
+}

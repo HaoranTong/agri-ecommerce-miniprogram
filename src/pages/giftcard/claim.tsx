@@ -10,7 +10,11 @@ const GiftCardClaim = () => {
   const [pinCode, setPinCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [claimed, setClaimed] = useState(false);
-  const [claimResult, setClaimResult] = useState<{ card_number: string; balance: string } | null>(null);
+  const [claimResult, setClaimResult] = useState<{
+    card_number: string;
+    balance?: string | null;
+    status?: string;
+  } | null>(null);
 
   const handleClaim = async () => {
     if (!token.trim()) {
@@ -109,7 +113,7 @@ const GiftCardClaim = () => {
               </View>
               <View className="result-item">
                 <Text className="result-label">卡内余额</Text>
-                <Text className="result-value balance">¥{claimResult.balance}</Text>
+                <Text className="result-value balance">¥{claimResult.balance ?? '--'}</Text>
               </View>
             </View>
           )}

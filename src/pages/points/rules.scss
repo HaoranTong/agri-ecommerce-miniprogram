@@ -1,0 +1,48 @@
+.points-rules-page {
+  min-height: 100vh;
+  background: #f6f7fb;
+  padding: 24px;
+
+  .page-state {
+    text-align: center;
+    color: #999;
+    padding: 120px 0;
+    font-size: 28px;
+  }
+
+  .rule-card {
+    background: #fff;
+    border-radius: 18px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.05);
+
+    .rule-title {
+      font-size: 30px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .rule-desc {
+      font-size: 24px;
+      color: #666;
+      margin: 12px 0;
+      line-height: 1.6;
+    }
+
+    .rule-status {
+      font-size: 22px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      color: #fff;
+
+      &.active {
+        background: #4caf50;
+      }
+
+      &.inactive {
+        background: #bbb;
+      }
+    }
+  }
+}

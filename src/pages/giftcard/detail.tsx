@@ -68,12 +68,20 @@ const GiftCardDetail = () => {
     );
   }
 
+  const templateName = detail.template_name || detail.template?.name || '礼品卡';
+  const senderName = detail.sender_nickname || '';
+  const deliveryMode = detail.delivery_mode || detail.share_channel || '';
+  const expiresText = detail.expires_at
+    ? new Date(detail.expires_at).toLocaleString()
+    : '长期有效';
+  const balanceText = typeof detail.balance === 'string' ? detail.balance : '--';
+
   return (
     <View className="gift-card-detail-page">
       {/* 礼品卡主卡片 */}
       <View className="card-main">
         <View className="card-header">
-          <Text className="card-template">{detail.template_name}</Text>
+          <Text className="card-template">{templateName}</Text>
           <View className={`status-badge ${getStatusColor(detail.status)}`}>
             <Text>{getStatusText(detail.status)}</Text>
           </View>
@@ -81,13 +89,13 @@ const GiftCardDetail = () => {
 
         <View className="card-balance">
           <Text className="balance-label">卡内余额</Text>
-          <Text className="balance-value">¥{detail.balance}</Text>
+          <Text className="balance-value">¥{balanceText}</Text>
         </View>
 
-        {detail.sender_nickname && (
+        {senderName && (
           <View className="card-sender">
             <Text className="sender-label">来自</Text>
-            <Text className="sender-name">{detail.sender_nickname}</Text>
+            <Text className="sender-name">{senderName}</Text>
           </View>
         )}
       </View>
@@ -101,15 +109,16 @@ const GiftCardDetail = () => {
         <View className="detail-item">
           <Text className="detail-label">分享方式</Text>
           <Text className="detail-value">
-            {detail.delivery_mode === 'link' && '链接分享'}
-            {detail.delivery_mode === 'qrcode' && '二维码'}
-            {detail.delivery_mode === 'passcode' && '口令'}
+            {deliveryMode === 'link' && '链接分享'}
+            {deliveryMode === 'qrcode' && '二维码'}
+            {deliveryMode === 'passcode' && '口令'}
+            {!['link', 'qrcode', 'passcode'].includes(deliveryMode) && deliveryMode}
           </Text>
         </View>
         <View className="detail-item">
           <Text className="detail-label">过期时间</Text>
           <Text className="detail-value expire">
-            {new Date(detail.expires_at).toLocaleString()}
+            {expiresText}
           </Text>
         </View>
       </View>

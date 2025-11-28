@@ -1,0 +1,77 @@
+.points-redeem-page {
+  min-height: 100vh;
+  background: #f6f7fb;
+  padding: 24px;
+
+  .page-state {
+    text-align: center;
+    color: #999;
+    padding: 120px 0;
+    font-size: 28px;
+  }
+
+  .redeem-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+
+    .redeem-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+
+      .redeem-title {
+        font-size: 30px;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .redeem-status {
+        font-size: 22px;
+        padding: 4px 14px;
+        border-radius: 999px;
+        color: #fff;
+
+        &.active {
+          background: #4caf50;
+        }
+
+        &.coming_soon {
+          background: #ff9800;
+        }
+
+        &.sold_out {
+          background: #9e9e9e;
+        }
+      }
+    }
+
+    .redeem-type,
+    .redeem-cost,
+    .redeem-stock,
+    .redeem-desc {
+      font-size: 24px;
+      color: #555;
+      margin-top: 6px;
+    }
+
+    .redeem-desc {
+      color: #777;
+      line-height: 1.6;
+    }
+
+    .redeem-btn {
+      margin-top: 18px;
+      background: linear-gradient(135deg, #ff8a00, #ff5f6d);
+      color: #fff;
+      border-radius: 999px;
+
+      &[disabled] {
+        opacity: 0.6;
+      }
+    }
+  }
+}

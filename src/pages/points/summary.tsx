@@ -1,30 +1,45 @@
 import { Text, View } from '@tarojs/components';
-import Taro from '@tarojs/taro';
+import Taro, { usePullDownRefresh } from '@tarojs/taro';
 import { useEffect, useState } from 'react';
 
 import { pointsService } from '../../services/api';
-import type { PointsBalance } from '../../types';
+import type { PointsBalance, PointsRule } from '../../types';
 import './summary.scss';
 
 const PointsSummary = () => {
   const [balance, setBalance] = useState<PointsBalance | null>(null);
+  const [rules, setRules] = useState<PointsRule[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadBalance = async () => {
+  const loadData = async (showSkeleton = true) => {
     try {
-      const data = await pointsService.getBalance();
-      setBalance(data);
+      if (showSkeleton) {
+        setLoading(true);
+      }
+      const [balanceData, rulesData] = await Promise.all([
+        pointsService.getBalance(),
+        pointsService.getRules().catch(() => [])
+      ]);
+      setBalance(balanceData);
+      setRules((rulesData || []).slice(0, 3));
     } catch (error) {
-      console.error('获取积分余额失败', error);
+      console.error('获取积分数据失败', error);
       Taro.showToast({ title: '加载失败', icon: 'none' });
     } finally {
-      setLoading(false);
+      if (showSkeleton) {
+        setLoading(false);
+      }
+      Taro.stopPullDownRefresh();
     }
   };
 
   useEffect(() => {
-    loadBalance();
+    loadData();
   }, []);
+
+  usePullDownRefresh(() => {
+    loadData(false);
+  });
 
   const handleNavigate = (url: string) => {
     Taro.navigateTo({ url });
@@ -44,60 +59,104 @@ const PointsSummary = () => {
 
   return (
     <View className="points-summary-page">
-      {/* 可用积分卡片 */}
       <View className="balance-card">
-        <Text className="card-title">可用积分</Text>
-        <Text className="balance-value">{balance.available}</Text>
-        <Text className="card-subtitle">用于抵扣订单金额或兑换礼品</Text>
+        <Text className="card-label">可用积分</Text>
+        <Text className="card-value">{balance.available}</Text>
+        <View className="card-meta">
+          <View>
+            <Text className="meta-label">近 30 天获取</Text>
+            <Text className="meta-value">+{balance.recent_earnings ?? 0}</Text>
+          </View>
+          <View>
+            <Text className="meta-label">累积使用</Text>
+            <Text className="meta-value muted">-{balance.total_spent}</Text>
+          </View>
+        </View>
       </View>
 
-      {/* 积分统计 */}
-      <View className="stats-card">
+      <View className="stats-grid">
         <View className="stat-item">
           <Text className="stat-label">待入账</Text>
           <Text className="stat-value">{balance.pending}</Text>
-          <Text className="stat-tip">订单完成后发放</Text>
+          <Text className="stat-tip">订单完成后自动发放</Text>
         </View>
-        <View className="stat-divider" />
         <View className="stat-item">
-          <Text className="stat-label">即将过期</Text>
-          <Text className="stat-value expiring">{balance.expiring_soon}</Text>
-          {balance.expiring_date && (
-            <Text className="stat-tip">{balance.expiring_date}到期</Text>
-          )}
+          <Text className="stat-label">冻结中</Text>
+          <Text className="stat-value">{balance.frozen ?? 0}</Text>
+          <Text className="stat-tip">用于抵扣的预占积分</Text>
+        </View>
+        <View className="stat-item">
+          <Text className="stat-label">累计获得</Text>
+          <Text className="stat-value">{balance.total_earned}</Text>
+          <Text className="stat-tip">含任务与活动奖励</Text>
+        </View>
+        <View className="stat-item">
+          <Text className="stat-label">累计使用</Text>
+          <Text className="stat-value">{balance.total_spent}</Text>
+          <Text className="stat-tip">含抵扣与兑换</Text>
         </View>
       </View>
 
-      {/* 功能菜单 */}
-      <View className="menu-list">
-        <View className="menu-item" onClick={() => handleNavigate('/pages/points/ledger')}>
-          <Text className="menu-icon">📋</Text>
-          <View className="menu-content">
-            <Text className="menu-label">积分流水</Text>
-            <Text className="menu-desc">查看积分获取和消费记录</Text>
+      {Boolean(balance.expiring_soon) && (
+        <View className="expiring-card" onClick={() => handleNavigate('/pages/points/ledger')}>
+          <View className="expiring-left">
+            <Text className="expiring-title">即将过期</Text>
+            <Text className="expiring-value">{balance.expiring_soon}</Text>
           </View>
-          <Text className="menu-arrow">›</Text>
+          <View className="expiring-right">
+            <Text className="expiring-tip">
+              {balance.expiring_date ? `${balance.expiring_date} 到期` : '请及时使用'}
+            </Text>
+            <Text className="expiring-link">查看详情 →</Text>
+          </View>
         </View>
+      )}
 
-        <View className="menu-item disabled">
-          <Text className="menu-icon">🎁</Text>
-          <View className="menu-content">
-            <Text className="menu-label">积分兑换</Text>
-            <Text className="menu-desc">敬请期待</Text>
-          </View>
-          <Text className="menu-arrow">›</Text>
+      <View className="quick-actions">
+        <View className="action-item" onClick={() => handleNavigate('/pages/points/ledger')}>
+          <Text className="action-icon">📊</Text>
+          <Text className="action-title">积分流水</Text>
+          <Text className="action-desc">所有收支明细</Text>
+        </View>
+        <View className="action-item" onClick={() => handleNavigate('/pages/points/missions')}>
+          <Text className="action-icon">🧩</Text>
+          <Text className="action-title">任务中心</Text>
+          <Text className="action-desc">完成任务赚积分</Text>
+        </View>
+        <View className="action-item" onClick={() => handleNavigate('/pages/points/redeem')}>
+          <Text className="action-icon">🎁</Text>
+          <Text className="action-title">积分兑换</Text>
+          <Text className="action-desc">兑换礼品或券</Text>
+        </View>
+        <View className="action-item" onClick={() => handleNavigate('/pages/points/rules')}>
+          <Text className="action-icon">📘</Text>
+          <Text className="action-title">积分规则</Text>
+          <Text className="action-desc">了解玩法与有效期</Text>
         </View>
       </View>
 
-      {/* 积分说明 */}
-      <View className="tips-card">
-        <Text className="tips-title">💡 积分规则说明</Text>
-        <View className="tips-list">
-          <Text className="tips-item">• 每消费1元获得1积分</Text>
-          <Text className="tips-item">• 推荐好友注册获得50积分</Text>
-          <Text className="tips-item">• 积分自获得之日起1年内有效</Text>
-          <Text className="tips-item">• 订单退款后积分将被扣除</Text>
+      <View className="insight-card">
+        <Text className="insight-title">积分使用建议</Text>
+        <Text className="insight-text">
+          订单支付前可选择抵扣（最多使用当前可用积分），也可在积分兑换专区换取优惠券、礼品卡或实物。冻结积分会在订单完成后自动解锁。
+        </Text>
+      </View>
+
+      <View className="rules-card" onClick={() => handleNavigate('/pages/points/rules')}>
+        <View className="rules-header">
+          <Text className="rules-title">最新积分规则</Text>
+          <Text className="rules-link">查看全部 →</Text>
         </View>
+        {rules.length === 0 ? (
+          <Text className="rules-empty">暂无规则，敬请期待</Text>
+        ) : (
+          rules.map((rule) => (
+            <View className="rule-item" key={rule.rule_id}>
+              <Text className="rule-title">{rule.title}</Text>
+              <Text className="rule-desc">{rule.description}</Text>
+            </View>
+          ))
+        )}
       </View>
     </View>
   );

@@ -58,16 +58,19 @@ const Index = () => {
       {/* 轮播图 */}
       {slides.length > 0 && (
         <Swiper className="hero-swiper" circular autoplay indicatorDots>
-          {slides.map((slide, index) => (
+          {slides.map((slide, index) => {
+            const slideImg = slide?.img || '';
+            return (
             <SwiperItem key={index}>
               <Image
                 className="hero-image"
-                src={slide.img}
+                src={slideImg}
                 mode="aspectFill"
                 onClick={() => slide.link && Taro.navigateTo({ url: slide.link })}
               />
             </SwiperItem>
-          ))}
+          );
+          })}
         </Swiper>
       )}
 
@@ -86,7 +89,7 @@ const Index = () => {
               {/* 商品图片（满屏宽） */}
               <Image
                 className="product-main-image"
-                src={recommendedVariation?.image_url || product.image_url}
+                src={recommendedVariation?.image_url || product.image_url || ''}
                 mode="widthFix"
                 onClick={() => handleProductSelect(product)}
               />

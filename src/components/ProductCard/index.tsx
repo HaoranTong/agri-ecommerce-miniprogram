@@ -33,11 +33,13 @@ const ProductCard = ({ product, onSelect, onChooseVariant }: ProductCardProps) =
     ? `¥${firstVariation.price}`
     : '';
 
+  const coverSrc = firstVariation?.image_url || product.image_url || '';
+
   return (
     <View className={styles.card} onClick={handleClick} hoverClass={styles.cardHover}>
       <Image
         className={styles.cover}
-        src={firstVariation?.image_url || product.image_url}
+        src={coverSrc}
         mode="aspectFill"
       />
       <View className={styles.info}>

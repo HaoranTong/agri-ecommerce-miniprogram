@@ -17,8 +17,11 @@
     "jsx": "react-jsx",
     "allowJs": true,
     "resolveJsonModule": true,
-    "typeRoots": [
-      "node_modules/@types"
+    "skipLibCheck": true,
+    "types": [
+      "@tarojs/plugin-platform-weapp",
+      "@tarojs/taro",
+      "node"
     ],
     "paths": {
       // TS5090 leading './'
@@ -26,5 +29,11 @@
     }
   },
   "include": ["./src", "./types", "./config"],
+  "exclude": [
+    "node_modules/react-native",
+    "node_modules/@tarojs/taro-rn",
+    "node_modules/@tarojs/components-rn",
+    "node_modules/@tarojs/router-rn"
+  ],
   "compileOnSave": false
 }

@@ -22,6 +22,9 @@
 >
 > - 所有 **URL 路径**、**请求/响应字段名**、**核心语义** 一经发布不得修改  
 > - 新功能只能通过 **新增接口** 实现
+------
+
+
 
 ------
 
@@ -90,8 +93,10 @@
       "id": 101,
       "name": "五常稻花香大米",
       "type": "variable",
-      "description": "产自黑龙江五常核心产区，一年一季新米，真空锁鲜",  // ← 新增
-      "is_gift_card": false,
+      "description": "产自黑龙江五常核心产区，一年一季新米，真空锁鲜",
+      "price": "58.00",
+      "min_price": "58.00",
+      "max_price": "88.00",
       "image_url": "https://yourdomain.com/wp-content/uploads/2025/11/rice.jpg",
       "variations": [
         {
@@ -100,30 +105,17 @@
             "规格": "5kg",
             "等级": "特级"
           },
-          "price": "58.00",
-          "stock_status": "instock",
-          "image_url": "https://.../5kg.jpg"  // ← 变体独立图
-        }
-      ]
-    },
-    {
-      "id": 102,
-      "name": "200元通用购物卡",
-      "type": "variable",
-      "is_gift_card": true,
-      "image_url": "https://yourdomain.com/wp-content/uploads/2025/11/giftcard.jpg",
-      "variations": [
-        {
-          "variation_id": 206,
-          "attributes": {},
-          "price": "200.00",
-          "stock_status": "instock"
+          "price": 58,
+          "image_url": "https://.../5kg.jpg",
+          "in_stock": true
         }
       ]
     }
   ]
 }
 ```
+
+> ⚠️ 当前实现不会返回 `is_gift_card`、`stock_status` 等字段；变体 `attributes` 的 value 为 WooCommerce 原生 slug，需要前端自行映射展示。
 
 ------
 
@@ -140,18 +132,20 @@
 }
 ```
 
-**成功响应（200）**：
+**成功响应（200）**（`myshop-core/api/auth-controller.php` 当前实现）：
 
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxxx",
-  "user_id": 42,
-  "is_new": false,
-  "phone": "13800138000",
-  "wechat_nickname": "🌾五常米农",
-  "invite_code": "U42ABC"
+  "success": true,
+  "data": {
+    "user_id": 42,
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxxx",
+    "openid": "oMockUser1234567890ab"
+  }
 }
 ```
+
+> ⚠️ 文档中曾冻结的 `is_new` / `phone` / `wechat_nickname` / `invite_code` 字段尚未在后端返回，如需这些信息需扩展 `Auth_Controller::login`。
 
 ------
 
@@ -162,19 +156,101 @@
 
 ```json
 {
-  "user_id": 42,
-  "phone": "13800138000",
-  "wechat_nickname": "🌾五常米农",
-  "wechat_avatar": "https://yourdomain.com/avatar.jpg",
-  "invite_code": "U42ABC",
-  "referrer_id": 105,
-  "total_points": 280,
-  "membership_level": "silver",
-  "is_agent": false,
-  "agent_code": null,
-  "has_cart": true
+  "success": true,
+  "data": {
+    "user_id": 42,
+    "username": "test_test001",
+    "nickname": "测试用户001",
+    "first_name": "测试用户001",
+    "last_name": "",
+    "email": "test001@test.myshop.local",
+    "phone": "13800138001",
+    "avatar": "https://yourdomain.com/avatar.jpg",
+    "openid": "oTest_User_001_FixedOpenID",
+    "referral_code": "REF000042",
+    "points_balance": 280,
+    "is_test_user": true,
+    "test_code": "test001"
+  }
 }
 ```
+
+> ⚠️ 当前实现暂未返回 `membership_level`、`is_agent`、`agent_code`、`has_cart` 等字段，如需这些字段需扩展 `User_Controller::get_profile`。
+
+------
+
+### GET `/user/profile`
+
+**用途**：获取当前登录用户的完整资料，前端 `UserProfile` 组件依赖下列字段渲染头像、昵称、积分、代理状态等信息。
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "user_id": 42,
+    "username": "138****8000",
+    "nickname": "禾野小店",
+    "first_name": "张",
+    "last_name": "三",
+    "email": "demo@example.com",
+    "phone": "13800138000",
+    "avatar": "https://cdn.example.com/avatar.jpg",
+    "points_balance": 260,
+    "total_points": 580,
+    "membership_level": "gold",
+    "is_test_user": false,
+    "test_code": null,
+    "invite_code": "MYSHOP66",
+    "referrer_id": 18,
+    "is_agent": true,
+    "agent_code": "AGT-0088",
+    "has_cart": true,
+    "wechat_nickname": "wx-nick",
+    "wechat_avatar": "https://wx.qq.com/avatar.png"
+  }
+}
+```
+
+> 其中 `points_balance` 若暂不可用需返回 `null` 并由前端提示“稍后刷新”；`is_agent` / `agent_code` 用于展示代理入口，没有代理身份时返回 `false` 与 `null`。
+
+------
+
+### PUT `/user/profile`
+
+**用途**：修改昵称 / 真实姓名 / 手机号
+
+**请求体**：
+
+```json
+{
+  "nickname": "测试用户001",
+  "first_name": "张三",
+  "phone": "13800138001"
+}
+```
+
+> 目前仅允许修改 `nickname`、`first_name`、`phone`，手机号按中国大陆 11 位规则校验。
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "user_id": 42,
+    "username": "test_test001",
+    "nickname": "测试用户001",
+    "first_name": "张三",
+    "phone": "13800138001",
+    "avatar": null,
+    "points_balance": 280
+  }
+}
+```
+
+> ⚠️ 接口返回最新的整份用户资料，前端需用返回值刷新本地缓存。
 
 ------
 
@@ -312,38 +388,20 @@
 **成功响应（200）**：
 
 ```json
-{
-  "items": [
-    {
-      "product_id": 101,
-      "variation_id": 205,
-      "quantity": 2,
-      "product_name": "五常稻花香大米",
-      "variation_name": "特级 / 5kg / 新米",
-      "price": "58.00",
-      "line_subtotal": "116.00",
-      "line_total": "96.00",
-      "image_url": "https://.../product.jpg",
-      "applied_promotions": [],
-      "gift_card_credits": [
-        {
-          "card_number": "GC20251118001",
-          "amount": "20.00"
-        }
-      ]
-    }
-  ],
-  "total_quantity": 2,
-  "subtotal": "116.00",
-  "discount_total": "0.00",
-  "gift_card_total": "20.00",
-  "payable_total": "96.00",
-  "currency": "CNY",
-  "updated_at": "2025-11-22T10:20:00+08:00"
-}
+[
+  {
+    "product_id": 101,
+    "variation_id": 205,
+    "product_name": "五常稻花香大米",
+    "variation_name": "规格: 5kg | 等级: 特级",
+    "quantity": 2,
+    "price": "58.00",
+    "image_url": "https://yourdomain.com/uploads/thumb-101.jpg"
+  }
+]
 ```
 
-`gift_card_credits` 仅在小程序端填写抵扣金额时返回，保持与虚拟购物卡余额联动。
+> ⚠️ 当前 `Cart_Controller::get_cart` 仅返回条目数组，不包含 `subtotal`、`payable_total`、`gift_card_credits` 等汇总信息，若要展示需前端自行计算或扩展后端。
 
 ### POST `/cart`
 
@@ -382,6 +440,7 @@
 {
   "variation_id": 205,
   "quantity": 2,
+  "points_to_use": 0,
   "shipping_address": {
     "name": "张三",
     "phone": "13800138000",
@@ -399,13 +458,24 @@
 ```json
 {
   "order_id": 1001,
-  "order_number": "#1001",
-  "status": "pending_confirmation",
+  "order_number": "1001",
+  "status": "pending",
   "total": "116.00",
-  "payment_qr_url": "https://.../qr.jpg",
-  "customer_service_qr": "https://.../cs.jpg"
+  "items": [
+    {
+      "product_id": 101,
+      "variation_id": 205,
+      "quantity": 2,
+      "price": "58.00"
+    }
+  ],
+  "payment_qr_url": "https://yourdomain.com/uploads/pay-qr.jpg",
+  "customer_service_qr": "https://yourdomain.com/uploads/cs-qr.jpg",
+  "message": "请扫码向客服付款，并添加企业微信发送付款截图，我们将尽快为您发货。"
 }
 ```
+
+> 可选参数 `points_to_use` 将触发 `Order_Controller::calculate_points_discount`，若超过可用积分会直接返回错误。
 
 ------
 
@@ -415,41 +485,92 @@
 **成功响应（200）**：
 
 ```json
-{
-  "orders": [
-    {
-      "order_id": 1001,
-      "order_number": "#1001",
-      "status": "pending_confirmation",
-      "total": "116.00",
-      "payment_proof_status": "submitted",
-      "latest_remark": "客服已收到截图，排队审核",
-      "created_at": "2025-11-20T12:30:00+08:00",
-      "items": [
-        {
-          "product_id": 101,
-          "variation_id": 205,
-          "name": "五常稻花香大米 5kg",
-          "quantity": 2,
-          "price": "58.00"
-        }
-      ]
-    }
-  ]
-}
+[
+  {
+    "order_id": 1001,
+    "order_number": "1001",
+    "status": "processing",
+    "total": "116.00",
+    "created_at": "2025-11-20 12:30:00",
+    "items": [
+      {
+        "product_id": 101,
+        "variation_id": 205,
+        "name": "五常稻花香大米 5kg",
+        "quantity": 2,
+        "price": "116.00"
+      }
+    ],
+    "tracking_number": "",
+    "tracking_company": "",
+    "shipped_at": ""
+  }
+]
 ```
 
-`payment_proof_status` 枚举：`"missing" | "submitted" | "approved" | "rejected"`
+> ⚠️ 列表接口未返回 `payment_proof_status` 与客服备注，仅在详情接口中可通过 `payment_proof_url` 是否为空推断是否上传凭证。
 
 ------
 
-### POST `/orders/upload-payment-proof`
+### GET `/orders/{order_id}`
+
+**用途**：订单详情页、支付页、支付成功页等均依赖该接口获取完整信息，包括付款二维码、客服二维码、付款凭证状态与收货地址。
+
+**成功响应（200）**：
+
+```json
+{
+  "order_id": 1001,
+  "order_number": "1001",
+  "status": "pending",
+  "message": "请扫码向客服付款，并添加企业微信发送付款截图",
+  "total": "116.00",
+  "created_at": "2025-11-20 12:30:00",
+  "payment_qr_url": "https://yourdomain.com/uploads/pay-qr.jpg",
+  "customer_service_qr": "https://yourdomain.com/uploads/cs-qr.jpg",
+  "has_payment_proof": true,
+  "payment_proof_status": "submitted",
+  "payment_proof_url": "https://yourdomain.com/uploads/payment-proofs/2025/11/order-1001.jpg",
+  "payment_proof_submitted_at": "2025-11-20 12:45:11",
+  "tracking_number": null,
+  "tracking_company": null,
+  "items": [
+    {
+      "product_id": 101,
+      "variation_id": 205,
+      "product_name": "五常稻花香大米 5kg",
+      "variation_name": "规格: 5kg | 产地: 五常",
+      "quantity": 2,
+      "price": "58.00"
+    }
+  ],
+  "shipping_address": {
+    "name": "张三",
+    "phone": "13800138000",
+    "province": "黑龙江省",
+    "city": "哈尔滨市",
+    "district": "五常市",
+    "detail_address": "稻花香农场1号",
+    "postcode": "150200"
+  }
+}
+```
+
+> `has_payment_proof` 为布尔值，`payment_proof_status` 可取 `submitted | approved | rejected`；若未上传则以上字段为 `false` / `null`。前端会依据 `message` 展示付款指引。
+
+------
+
+### POST `/orders/{order_id}/upload-payment-proof`
 
 **用途**：上传付款截图（multipart/form-data）
-**字段**：
+
+**路径参数**：
 
 - `order_id`: integer (required)
-- `proof_image`: file (required, image/jpeg 或 image/png)
+
+**表单字段**：
+
+- `proof_image`: file (required, image/jpeg 或 image/png，<= 5MB)
 
 **成功响应（200）**：
 
@@ -457,9 +578,11 @@
 {
   "order_id": 1001,
   "payment_proof_status": "submitted",
-  "preview_url": "https://yourdomain.com/uploads/orders/1001-proof.jpg"
+  "preview_url": "https://yourdomain.com/uploads/payment-proofs/2025/11/order-1001-xxxx.jpg"
 }
 ```
+
+> 上传成功后 `Order_Controller::upload_payment_proof` 会将订单状态更新为 `processing` 并把原始文件写入 `wp-content/uploads/payment-proofs/{Y}/{m}`。
 
 **失败示例（422）**：
 
@@ -480,195 +603,135 @@
 **请求体**：
 
 ```json
-{ "card_number": "GC20251118001", "pin_code": "123456" }
+{ "card_number": "GC20251118001", "card_pin": "123456" }
 ```
 
 **成功响应（200）**：
 
 ```json
 {
-  "card_id": 3001,
-  "card_number": "GC20251118001",
-  "status": "active",
-  "bind_status": "bound",
-  "available_balance": "200.00",
-  "currency": "CNY",
-  "redeemed_by": 42,
-  "redeemed_at": "2025-11-22T09:00:00+08:00",
-  "expires_at": "2026-11-18T23:59:59+08:00",
-  "template_type": "fixed_amount",
-  "redeemable_items": [],
-  "message": "兑换成功，已绑定至当前账号"
+  "success": true,
+  "message": "礼品卡兑换成功",
+  "data": {
+    "card_number": "GC20251118001",
+    "status": "redeemed"
+  }
 }
 ```
 
-`template_type` 枚举：`"fixed_amount" | "product_bundle"`
-- 当 `template_type = "fixed_amount"` 时，`available_balance` 表示储值余额，可在结算页多次抵扣。
-- 当 `template_type = "product_bundle"` 时，响应将包含 `redeemable_items`（如下所示），小程序需调用订单创建接口生成“0 元订单”完成领取：
+**失败示例（401）**：
 
 ```json
 {
-  "card_id": 3002,
-  "card_number": "GC20251118002",
-  "status": "active",
-  "bind_status": "bound",
-  "available_balance": "0.00",
-  "currency": "CNY",
-  "redeemed_by": 42,
-  "redeemed_at": "2025-11-22T09:05:00+08:00",
-  "expires_at": "2026-05-01T23:59:59+08:00",
-  "template_type": "product_bundle",
-  "redeemable_items": [
-    {
-      "product_id": 301,
-      "product_name": "有机稻花香礼盒 A",
-      "variation_id": 9001,
-      "variation_name": "礼盒 A / 标准装",
-      "quantity": 1
-    }
-  ],
-  "message": "兑换成功，已解锁礼盒兑换资格"
+  "code": "card_invalid_pin",
+  "message": "礼品卡密码错误",
+  "data": {
+    "status": 401
+  }
 }
 ```
 
-**失败示例（409）**：
-
-```json
-{
-  "error_code": "card_already_bound",
-  "message": "该购物卡已被其他账号绑定",
-  "status": 409
-}
-```
+> ⚠️ 现有实现未返回 `available_balance` / `redeemable_items` 等扩展信息，仅标记礼品卡状态；如需更多字段需扩展 `Gift_Card_Controller::redeem_card`。
 
 ------
 
 ### POST `/gift-cards/{card_id}/reset-pin`
 
-**请求体**：
-
-```json
-{ "new_pin": "654321" }
-```
-
-**成功响应（200）**：
-
-```json
-{
-  "card_id": 3001,
-  "card_number": "GC20251118001",
-  "status": "active",
-  "message": "密码已更新"
-}
-```
+> ⚠️ 当前 `Gift_Card_Controller` 尚未实现该接口，后端无对应路由。
 
 ------
 
 ### POST `/gift-cards/{card_id}/reveal-pin`
 
-**用途**：购卡人二次验证后重新查看 PIN（超出一次查看限制时使用）
-**请求体**：
-
-```json
-{
-  "verify_channel": "sms",
-  "verify_code": "932184"
-}
-```
-
-`verify_channel` 枚举：`"sms" | "email" | "wechat"`
-
-**成功响应（200）**：
-
-```json
-{
-  "card_id": 3001,
-  "card_number": "GC20251118001",
-  "pin_code": "123456",
-  "pin_revealed_at": "2025-11-22T15:20:00+08:00",
-  "remaining_reveal_times": 0
-}
-```
-
-**失败示例（423）**：
-
-```json
-{
-  "error_code": "pin_reveal_limit_reached",
-  "message": "PIN 已超过查看次数，请联系客服",
-  "status": 423
-}
-```
+> ⚠️ 当前 `Gift_Card_Controller` 尚未实现该接口，后端无对应路由。
 
 ------
 
-### POST `/gift-cards/{card_id}/share`
+### POST `/gift-cards/share`
 
-**用途**：购卡人生成新的赠礼资产包（分享链接 / 小程序码 / 打印稿）
+**用途**：购卡人生成赠礼 token（链接/二维码需由前端或后台模版渲染）
+
 **请求体**：
 
 ```json
 {
-  "channel": "wechat",
-  "delivery_mode": "digital_share"
-}
-```
-
-`channel` 枚举：`"wechat" | "dingding" | "email" | "custom"`
-`delivery_mode` 枚举：`"digital_share" | "printable"`
-
-**成功响应（201）**：
-
-```json
-{
-  "share_token": "SHR-20251122-XYZ",
-  "share_url": "https://yourdomain.com/gift-card/share/SHR-20251122-XYZ",
-  "mini_program_qr": "https://yourdomain.com/qrcode/SHR-20251122-XYZ.png",
-  "print_template_url": "https://yourdomain.com/gift-card/print/GC20251118001.pdf",
+  "card_number": "GC20251118001",
   "delivery_mode": "digital_share",
-  "expires_at": "2025-12-22T23:59:59+08:00"
+  "channel": "wechat"
 }
 ```
-
-**失败示例（409）**：
-
-```json
-{
-  "error_code": "share_token_active",
-  "message": "当前赠礼链接仍在有效期内，请勿重复生成",
-  "status": 409
-}
-```
-
-------
-
-### POST `/gift-cards/claim`
-
-**用途**：受赠人通过分享链接或实体卡输入卡号 + PIN 完成绑定
-**请求体**：
-
-```json
-{
-  "card_number": "GC20251118001",
-  "pin_code": "123456",
-  "share_token": "SHR-20251122-XYZ"
-}
-```
-
-`share_token` 可为空（用户直接输入卡号 + PIN 的场景）。
 
 **成功响应（200）**：
 
 ```json
 {
-  "card_id": 3001,
-  "bind_status": "bound",
-  "status": "active",
-  "template_type": "fixed_amount",
-  "available_balance": "200.00",
-  "currency": "CNY",
-  "redeemed_by": 512,
-  "redeemed_at": "2025-11-22T19:00:00+08:00"
+  "success": true,
+  "data": {
+    "share_token": "SHR20251122XYZ",
+    "delivery_mode": "digital_share",
+    "channel": "wechat",
+    "expires_at": "2025-12-22 23:59:59"
+  }
+}
+```
+
+> 当前实现不会直接生成 `share_url`、`mini_program_qr` 等素材链接，需要结合模板配置自行渲染。
+
+------
+
+### GET `/gift-cards/share/{token}`
+
+**用途**：查询分享 token 当前状态与礼品卡模板信息
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "card_number": "GC20251118001",
+    "template_id": 12,
+    "template_type": "fixed_amount",
+    "initial_amount": "200.00",
+    "balance": "200.00",
+    "expires_at": "2026-11-18 23:59:59",
+    "share_channel": "wechat",
+    "share_token_expires_at": "2025-12-22 23:59:59",
+    "status": "active",
+    "bind_status": "unbound",
+    "template": {
+      "id": 12,
+      "name": "稻香 200 元礼卡",
+      "type": "fixed_amount",
+      "fixed_amount": "200.00",
+      "delivery_modes": ["digital_share"],
+      "valid_days": 365
+    }
+  }
+}
+```
+
+> 若 token 已失效会返回 `share_expired`/410；若已被领取会返回当前绑定状态供前端提示。
+
+------
+
+### POST `/gift-cards/share/{token}/claim`
+
+**用途**：受赠用户通过分享 token 领取礼品卡
+
+**路径参数**：`token`
+
+**请求体**：_无（仅需携带 JWT）_
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "card_number": "GC20251118001",
+    "status": "bound"
+  }
 }
 ```
 
@@ -676,213 +739,341 @@
 
 ```json
 {
-  "error_code": "share_token_invalid",
-  "message": "分享链接已失效，请联系购卡人重新生成",
-  "status": 410
+  "code": "share_expired",
+  "message": "分享链接已过期",
+  "data": {
+    "status": 410
+  }
 }
 ```
 
 ------
 
-### GET `/gift-cards/mine`
+### GET `/gift-cards`
+
+> ⚠️ 文档冻结版本中的 `/gift-cards/mine` 在当前插件中并未注册，对应功能由 `/gift-cards` 提供。
 
 **成功响应（200）**：
 
 ```json
 {
-  "cards": [
+  "success": true,
+  "data": [
     {
       "card_number": "GC20251118001",
+      "status": "active",
+      "bind_status": "unbound",
       "template_type": "fixed_amount",
+      "template_name": "稻香 200 元礼卡",
       "initial_amount": "200.00",
-      "balance": "180.00",
+      "balance": "200.00",
       "currency": "CNY",
       "expires_at": "2026-11-18T23:59:59+08:00",
-      "status": "active",
-      "template_name": "200元通用卡",
-      "can_reset_pin": true,
-      "locked": false,
-      "last_used_at": "2025-11-22T10:05:00+08:00",
-      "delivery_modes": ["digital_share", "printable"],
-      "share_payload": {
-        "share_token": "SHR-20251122-ABCD",
-        "share_url": "https://yourdomain.com/gift-card/share/SHR-20251122-ABCD",
-        "mini_program_qr": "https://yourdomain.com/qrcode/SHR-20251122-ABCD.png",
-        "expires_at": "2025-12-22T23:59:59+08:00",
-        "allow_reissue": true
-      },
-      "print_template_url": "https://yourdomain.com/gift-card/print/GC20251118001.pdf",
-      "pin_revealed_at": "2025-11-22T10:03:00+08:00",
-      "pin_reveal_limit": 1,
-      "transactions": [
-        {
-          "order_id": 1001,
-          "used_amount": "20.00",
-          "balance_after": "180.00",
-          "used_at": "2025-11-22T10:05:00+08:00"
-        }
-      ]
-    },
-    {
-      "card_number": "GC20251118002",
-      "template_type": "product_bundle",
-      "bundle_config": {
-        "items": [
-          {
-            "product_id": 301,
-            "product_name": "有机稻花香礼盒 A",
-            "variation_id": 9001,
-            "variation_name": "礼盒 A / 标准装",
-            "quantity": 1
-          },
-          {
-            "product_id": 302,
-            "product_name": "礼赠组合套装",
-            "variation_id": null,
-            "quantity": 1
-          }
-        ]
-      },
-      "currency": "CNY",
-      "expires_at": "2026-05-01T23:59:59+08:00",
-      "status": "active",
-      "template_name": "稻香礼盒兑换卡",
+      "purchaser_id": 42,
+      "redeemer_id": null,
       "can_reset_pin": false,
-      "locked": false,
-      "last_used_at": null,
-      "redeem_status": "not_redeemed",
-      "delivery_modes": ["digital_share"],
-      "share_payload": {
-        "share_token": "SHR-20251122-EFGH",
-        "share_url": "https://yourdomain.com/gift-card/share/SHR-20251122-EFGH",
-        "mini_program_qr": "https://yourdomain.com/qrcode/SHR-20251122-EFGH.png",
-        "expires_at": "2025-12-22T23:59:59+08:00",
-        "allow_reissue": false
-      },
-      "print_template_url": null,
-      "pin_revealed_at": "2025-11-22T10:04:00+08:00",
-      "pin_reveal_limit": 1
+      "share_channel": "wechat",
+      "created_at": "2025-11-22 09:00:00",
+      "updated_at": "2025-11-22 09:00:00"
     }
   ]
 }
 ```
 
-`status` 枚举：`"active" | "locked" | "expired"`
-`bundle_config.items[].variation_id` 允许为 `null`，用于单规格商品或礼品组合。
-`delivery_modes` 枚举：`"digital_share" | "printable"`
+> 若模板名称、重置密码能力等衍生字段不可用，则返回 `null`；前端需要根据 `can_reset_pin` 决定是否展示“重置密码”入口。
 
 ------
 
 ## 七、积分中心（二期）
 
-### GET `/points/summary`
+### GET `/points/balance`
 
-**用途**：获取当前用户积分概览及即将过期提醒
 **成功响应（200）**：
 
 ```json
 {
-  "total": 280,
-  "available": 260,
-  "pending": 20,
-  "frozen": 0,
-  "expiring_soon": {
-    "points": 80,
-    "expire_at": "2025-12-31"
-  },
-  "recent_earnings": [
-    {
-      "order_id": 1005,
-      "points": 40,
-      "created_at": "2025-11-21T12:00:00+08:00"
-    }
-  ]
+  "success": true,
+  "data": {
+    "available": 260,
+    "pending": 20,
+    "frozen": 0,
+    "expiring_soon": 40,
+    "expiring_date": "2025-12-31",
+    "recent_earnings": 60,
+    "total_earned": 560,
+    "total_spent": 300
+  }
 }
 ```
+
+> `frozen` 表示订单待确认的已预占积分；`expiring_soon` / `expiring_date` 用于展示即将过期提醒，均从 `myshop_points_ledger` 聚合。`recent_earnings` 表示近 30 天累计获得积分，可用于仪表盘动态提示。
 
 ------
 
 ### GET `/points/ledger`
 
-**用途**：按时间倒序分页返回积分流水
-**查询参数**：`?page=1&page_size=20&month=2025-11`
+**查询参数**：
+
+- `page` / `per_page`
+- `type`: `earn | spend | expire | refund`
+- `status`: `pending | confirmed`
+- `from` / `to`: `YYYY-MM-DD`（可选，按 `created_at` 过滤）
 
 **成功响应（200）**：
 
 ```json
 {
-  "entries": [
+  "success": true,
+  "data": [
     {
       "id": 9001,
       "type": "earn",
       "delta": 60,
       "balance_after": 260,
+      "status": "confirmed",
+      "channel": "order_complete",
       "reference_order_id": 1005,
-      "description": "订单完成赠送积分",
-      "created_at": "2025-11-21T12:00:00+08:00",
-      "expire_at": "2026-11-21"
-    },
-    {
-      "id": 9002,
-      "type": "spend",
-      "delta": -40,
-      "balance_after": 200,
-      "reference_order_id": 1004,
-      "description": "订单抵扣积分",
-      "created_at": "2025-11-20T09:30:00+08:00",
-      "expire_at": null
+      "reservation_id": null,
+      "expire_at": "2026-11-21",
+      "created_at": "2025-11-21 12:00:00",
+      "description": "订单 1005 完成"
     }
   ],
   "pagination": {
     "page": 1,
-    "page_size": 20,
-    "total_pages": 3
+    "per_page": 20,
+    "total": 35,
+    "total_pages": 2
   }
 }
 ```
 
-`type` 枚举：`"earn" | "spend" | "adjust" | "expire"`
+> `description` 字段尚未存储，前端可根据 `channel` / `type` 组合出展示文案。
 
 ------
 
-### POST `/points/redeem`
+### POST `/points/spend`
 
-**用途**：下单时预占 / 确认 / 释放积分
 **请求体**：
 
 ```json
-{
-  "order_id": 1006,
-  "points": 120,
-  "action": "reserve"
-}
+{ "points": 120, "reason": "order_discount" }
 ```
-
-`action` 枚举：
-- `reserve`：预占积分，写入 `status=pending`
-- `confirm`：支付完成，固化积分抵扣
-- `release`：订单取消/超时，释放积分
 
 **成功响应（200）**：
 
 ```json
 {
-  "order_id": 1006,
-  "points_reserved": 120,
-  "currency_equivalent": "12.00",
-  "status": "pending"
+  "success": true,
+  "data": {
+    "new_balance": 140,
+    "deducted": 120
+  }
 }
 ```
 
-**失败示例（409）**：
+**失败示例（400）**：
 
 ```json
 {
-  "error_code": "points_not_enough",
-  "message": "可用积分不足，当前可用 80",
-  "status": 409
+  "code": "insufficient_points",
+  "message": "积分不足",
+  "data": {
+    "status": 400
+  }
 }
 ```
+
+------
+
+### POST `/points/grant`（内部管理接口）
+
+**用途**：运营或脚本向指定用户发放积分，需要具备 `manage_options` 权限或携带 `X-Myshop-Admin-Key`。
+
+**请求体**：
+
+```json
+{
+  "points": 200,
+  "reason": "manual_grant",
+  "target_user_id": 42
+}
+```
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "target_user_id": 42,
+    "new_balance": 460,
+    "granted": 200
+  }
+}
+```
+
+> 旧文档中的 `/points/redeem`（reserve/confirm/release）尚未落地实现。
+
+------
+
+### 积分中心模块设计
+
+| 模块 | 描述 | 关键接口 |
+| --- | --- | --- |
+| 汇总看板 | 展示可用/冻结/待入账/即将过期积分，以及最近获得积分 | `GET /points/balance` |
+| 积分流水 | 分页筛选积分增减记录，支持类型/日期过滤 | `GET /points/ledger` |
+| 获取规则 | 固定规则（下单返积分、邀请奖励、每日签到等） | `GET /points/rules` |
+| 任务中心 | 运营投放的限时任务（完善资料、首次下单等），完成后可领取一次性积分 | `GET /points/missions`、`POST /points/missions/{mission_id}/claim` |
+| 积分兑换 | 使用积分兑换优惠券或礼品卡，或折抵订单金额 | `GET /points/redeem/options`、`POST /points/redeem`、`POST /orders (points_to_use)` |
+| 到期提醒 | 查询 30 天内过期积分，用于 UI 和消息推送 | `GET /points/balance`（`expiring_soon` 字段） |
+
+#### GET `/points/rules`
+
+**用途**：前端渲染“积分规则说明”列表，便于与运营约定的文案保持一致。
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "rule_id": "order_reward",
+      "title": "下单返积分",
+      "description": "每消费 1 元获得 1 积分，订单完成后发放",
+      "status": "active"
+    },
+    {
+      "rule_id": "referral_reward",
+      "title": "邀请好友注册",
+      "description": "好友首单完成后额外获得 50 积分",
+      "status": "active"
+    }
+  ]
+}
+```
+
+> 规则内容来自 `myshop_points_rules` 或配置文件，便于非技术同学维护。
+
+#### GET `/points/missions`
+
+**用途**：任务中心列表（可配置任务展示顺序、有效期、奖励积分、完成条件）。
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "mission_id": "complete_profile",
+      "title": "完善个人资料",
+      "description": "补齐昵称、真实姓名、手机号",
+      "reward_points": 30,
+      "status": "available",
+      "progress": 1,
+      "goal": 1,
+      "expires_at": null
+    },
+    {
+      "mission_id": "first_order",
+      "title": "完成首单",
+      "description": "首次付款后额外奖励 100 积分",
+      "reward_points": 100,
+      "status": "completed",
+      "progress": 1,
+      "goal": 1,
+      "completed_at": "2025-11-22 10:30:00"
+    }
+  ]
+}
+```
+
+#### POST `/points/missions/{mission_id}/claim`
+
+**用途**：用户满足条件后主动领取任务奖励（防止重复发放）。
+
+```json
+{
+  "success": true,
+  "data": {
+    "mission_id": "complete_profile",
+    "awarded_points": 30,
+    "new_balance": 290
+  }
+}
+```
+
+#### GET `/points/redeem/options`
+
+**用途**：列出可兑换的优惠券、礼品卡或实物（积分商城）。
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "option_id": "coupon_10",
+      "type": "coupon",
+      "title": "10 元无门槛券",
+      "cost_points": 120,
+      "stock": 999,
+      "description": "适用全场，自兑换起 7 天有效",
+      "status": "active"
+    },
+    {
+      "option_id": "giftcard_50",
+      "type": "gift_card",
+      "title": "50 元礼品卡",
+      "cost_points": 500,
+      "status": "coming_soon"
+    }
+  ]
+}
+```
+
+#### POST `/points/redeem`
+
+**用途**：扣减积分并发放兑换物（优惠券码、礼品卡、虚拟商品）。
+
+```json
+{
+  "option_id": "coupon_10"
+}
+```
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "option_id": "coupon_10",
+    "awarded_coupon_code": "CPN-2025-001234",
+    "cost_points": 120,
+    "new_balance": 140
+  }
+}
+```
+
+> 若库存不足或积分不足，分别返回 `option_out_of_stock` / `insufficient_points`。
+
+#### 与下单抵扣的结合
+
+- `POST /orders` 支持 `points_to_use` 字段，后端调用 `Points_Service::reserve_points` 预占积分，订单完成后转为 `confirmed` 状态；若订单取消则自动释放。
+- `myshop_points_ledger` 中 `reservation_id` 可追踪每次下单抵扣记录，便于在流水详情中跳转到订单页面。
+- 前端在订单确认页展示「可用积分/本单最多可抵扣」提示，调用 `GET /points/balance` 获取 `available` 值并计算最大抵扣额度。
+
+#### 积分中心前端信息架构（Taro 小程序）
+
+- `/pages/points/summary`: 展示可用积分、即将过期、任务入口、兑换入口、规则说明。
+- `/pages/points/ledger`: 支持筛选 `type/status/date`，并提供跳转到相关订单或任务详情。
+- `/pages/points/missions`: 列出任务并在满足条件后调用 `claim`。
+- `/pages/points/redeem`: 展示兑换选项、库存、所需积分，调用 `/points/redeem` 完成兑换。
+- `/pages/points/rules`: 静态或动态文案，调用 `GET /points/rules`。
+
+> 以上页面需结合登录态与接口权限，未登录时统一跳转登录页。
 
 ------
 

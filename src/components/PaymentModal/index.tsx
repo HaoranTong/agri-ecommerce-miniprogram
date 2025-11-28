@@ -86,6 +86,9 @@ export default function PaymentModal({
           )}
         </View>
 
+        <Button className="upload-btn" onClick={handleUpload}>
+          上传付款凭证
+        </Button>
         <Button className="close-btn" onClick={onClose}>
           关闭
         </Button>

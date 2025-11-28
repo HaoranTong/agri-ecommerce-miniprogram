@@ -12,23 +12,30 @@ const PointsLedger = () => {
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [activeStatus, setActiveStatus] = useState<string>('all');
 
-  const loadLedger = async (currentPage: number, filter: string, append = false) => {
+  const loadLedger = async (
+    currentPage: number,
+    filter: string,
+    status: string,
+    append = false
+  ) => {
     try {
       setLoading(true);
-      const params: any = { page: currentPage, per_page: 20 };
+      const params: Record<string, any> = { page: currentPage, per_page: 20 };
       if (filter !== 'all') {
         params.type = filter;
       }
-      const { items: newItems, total } = await pointsService.getLedger(params);
-      
-      if (append) {
-        setItems((prev) => [...prev, ...newItems]);
-      } else {
-        setItems(newItems);
+      if (status !== 'all') {
+        params.status = status;
       }
-      
-      setHasMore(items.length + newItems.length < total);
+      const { items: newItems, total } = await pointsService.getLedger(params);
+
+      setItems((prev) => {
+        const merged = append ? [...prev, ...newItems] : newItems;
+        setHasMore(merged.length < total);
+        return merged;
+      });
     } catch (error) {
       console.error('获取积分流水失败', error);
       Taro.showToast({ title: '加载失败', icon: 'none' });
@@ -38,19 +45,23 @@ const PointsLedger = () => {
   };
 
   useEffect(() => {
-    loadLedger(1, activeFilter);
-  }, [activeFilter]);
+    setPage(1);
+    loadLedger(1, activeFilter, activeStatus);
+  }, [activeFilter, activeStatus]);
 
   const handleFilterChange = (filter: string) => {
     setActiveFilter(filter);
-    setPage(1);
+  };
+
+  const handleStatusChange = (status: string) => {
+    setActiveStatus(status);
   };
 
   const handleLoadMore = () => {
     if (!loading && hasMore) {
       const nextPage = page + 1;
       setPage(nextPage);
-      loadLedger(nextPage, activeFilter, true);
+      loadLedger(nextPage, activeFilter, activeStatus, true);
     }
   };
 
@@ -83,37 +94,53 @@ const PointsLedger = () => {
     return `${month}-${day} ${hour}:${minute}`;
   };
 
+  const formatDescription = (item: PointsLedgerItem) => {
+    if (item.description) return item.description;
+    if (item.channel === 'order_complete' && item.reference_order_id) {
+      return `订单 ${item.reference_order_id} 完成获得积分`;
+    }
+    if (item.channel === 'order_spend' && item.reference_order_id) {
+      return `订单 ${item.reference_order_id} 抵扣积分`;
+    }
+    return item.channel || '积分调整';
+  };
+
+  const handleGoOrder = (orderId?: number | null) => {
+    if (!orderId) return;
+    Taro.navigateTo({ url: `/pages/order/detail?orderId=${orderId}` });
+  };
+
   return (
     <View className="points-ledger-page">
-      {/* 筛选器 */}
       <View className="filter-bar">
-        <View
-          className={`filter-item ${activeFilter === 'all' ? 'active' : ''}`}
-          onClick={() => handleFilterChange('all')}
-        >
-          <Text>全部</Text>
+        <View className="filter-row">
+          {['all', 'earn', 'spend', 'expire', 'refund'].map((type) => (
+            <View
+              key={type}
+              className={`filter-item ${activeFilter === type ? 'active' : ''}`}
+              onClick={() => handleFilterChange(type)}
+            >
+              <Text>
+                {type === 'all' ? '全部' : getTypeLabel(type)}
+              </Text>
+            </View>
+          ))}
         </View>
-        <View
-          className={`filter-item ${activeFilter === 'earn' ? 'active' : ''}`}
-          onClick={() => handleFilterChange('earn')}
-        >
-          <Text>获得</Text>
-        </View>
-        <View
-          className={`filter-item ${activeFilter === 'spend' ? 'active' : ''}`}
-          onClick={() => handleFilterChange('spend')}
-        >
-          <Text>消费</Text>
-        </View>
-        <View
-          className={`filter-item ${activeFilter === 'expire' ? 'active' : ''}`}
-          onClick={() => handleFilterChange('expire')}
-        >
-          <Text>过期</Text>
+        <View className="filter-row secondary">
+          {['all', 'pending', 'confirmed'].map((status) => (
+            <View
+              key={status}
+              className={`filter-item ${activeStatus === status ? 'active' : ''}`}
+              onClick={() => handleStatusChange(status)}
+            >
+              <Text>
+                {status === 'all' ? '全部状态' : status === 'pending' ? '待入账' : '已入账'}
+              </Text>
+            </View>
+          ))}
         </View>
       </View>
 
-      {/* 流水列表 */}
       {loading && items.length === 0 ? (
         <View className="loading-state">加载中...</View>
       ) : items.length === 0 ? (
@@ -127,13 +154,21 @@ const PointsLedger = () => {
                   {getTypeLabel(item.type)}
                 </Text>
                 <View className="item-info">
-                  <Text className="item-source">{item.source}</Text>
+                  <Text className="item-source">{formatDescription(item)}</Text>
                   <Text className="item-date">{formatDate(item.created_at)}</Text>
+                  {item.reference_order_id && (
+                    <Text
+                      className="item-link"
+                      onClick={() => handleGoOrder(item.reference_order_id)}
+                    >
+                      查看订单 →
+                    </Text>
+                  )}
                 </View>
               </View>
               <View className="item-right">
-                <Text className={`points-change ${item.points > 0 ? 'positive' : 'negative'}`}>
-                  {item.points > 0 ? '+' : ''}{item.points}
+                <Text className={`points-change ${item.delta > 0 ? 'positive' : 'negative'}`}>
+                  {item.delta > 0 ? '+' : ''}{item.delta}
                 </Text>
                 <Text className="balance-after">余额 {item.balance_after}</Text>
               </View>
