@@ -3,8 +3,10 @@ import Taro from '@tarojs/taro';
 import { useEffect, useState } from 'react';
 
 import { giftCardService } from '../../services/api';
-import type { GiftCard } from '../../types';
+import type { GiftCard, GiftCardDeliveryMode } from '../../types';
 import '../address/address.scss';
+
+const getBalanceNumber = (balance: string | null) => Number(balance ?? 0);
 
 const GiftCardMine = () => {
   const [cards, setCards] = useState<GiftCard[]>([]);
@@ -49,17 +51,29 @@ const GiftCardMine = () => {
   return (
     <View className="address-page">
       <View className="address-list">
-        {cards.map((card) => (
+        {cards.map((card) => {
+          const balanceAmount = getBalanceNumber(card.balance);
+          const templateName = card.template_name || '礼品卡';
+          const expireText = card.expires_at || '长期有效';
+          const deliveryModes: GiftCardDeliveryMode[] =
+            card.delivery_modes && card.delivery_modes.length > 0
+              ? card.delivery_modes
+              : ['digital_share', 'printable'];
+          const deliveryText = deliveryModes
+            .map((mode) => (mode === 'printable' ? '打印卡' : '数字分享'))
+            .join('、');
+          return (
           <View className="address-card" key={card.card_number}>
             <View className="address-main">
-              <Text className="address-name">{card.template_name}</Text>
-              <Text className="address-phone">余额 ¥{card.balance}</Text>
+              <Text className="address-name">{templateName}</Text>
+              <Text className="address-phone">余额 ¥{card.balance ?? '--'}</Text>
             </View>
             <Text className="address-detail">卡号：{card.card_number}</Text>
-            <Text className="address-detail">有效期至：{card.expires_at}</Text>
+            <Text className="address-detail">有效期至：{expireText}</Text>
             <Text className="address-detail">状态：{card.status}</Text>
+            <Text className="address-detail">可分享方式：{deliveryText}</Text>
             <View className="card-actions">
-              {card.status === 'active' && parseFloat(card.balance) > 0 && (
+              {card.status === 'active' && balanceAmount > 0 && (
                 <Button
                   className="action-btn"
                   onClick={() => Taro.navigateTo({ url: '/pages/giftcard/share' })}
@@ -81,7 +95,8 @@ const GiftCardMine = () => {
               )}
             </View>
           </View>
-        ))}
+        );
+        })}
       </View>
 
       <View className="action-buttons">

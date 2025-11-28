@@ -9,26 +9,23 @@ export interface PublicConfig {
   home_slider: SliderItem[];
 }
 
-export type StockStatus = 'instock' | 'outofstock' | 'onbackorder';
-
 export interface ProductVariation {
   variation_id: number;
   attributes: Record<string, string>;
-  price: string;
-  stock_status: StockStatus;
+  price: string | number;
   image_url?: string;
+  in_stock?: boolean;
 }
 
 export interface Product {
   id: number;
   name: string;
-  type: 'variable' | 'simple';
+  type: 'variable' | 'simple' | 'variation';
   description?: string;
-  is_gift_card: boolean;
-  image_url: string;
-  price?: string; // 基础价格（兼容旧数据）
-  min_price?: number; // 最低价格
-  max_price?: number; // 最高价格
+  image_url: string | null;
+  price?: string | number;
+  min_price?: string | number;
+  max_price?: string | number;
   variations: ProductVariation[];
 }
 
@@ -128,29 +125,72 @@ export interface OrderDetail extends OrderCreated {
   tracking_company?: string;
 }
 
+export type GiftCardDeliveryMode = 'digital_share' | 'printable';
+
 export interface GiftCard {
   card_number: string;
-  balance: string;
-  expires_at: string;
-  status: 'active' | 'used' | 'expired';
-  template_name: string;
-  can_reset_pin: boolean;
+  status: string;
+  bind_status: 'unbound' | 'bound' | string;
+  template_type: string;
+  initial_amount: string | null;
+  balance: string | null;
+  expires_at: string | null;
+  purchaser_id?: number;
+  redeemer_id?: number | null;
+  currency?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  template_id?: number;
+  template_name?: string;
+  delivery_modes?: GiftCardDeliveryMode[];
+  print_template_url?: string | null;
+  can_reset_pin?: boolean;
+}
+
+export interface GiftCardTemplate {
+  id: number;
+  name: string;
+  type: string;
+  fixed_amount?: string | null;
+  currency?: string | null;
+  product_id?: number | null;
+  variation_ids?: number[];
+  bundle_items?: Record<string, any> | null;
+  delivery_modes?: string[];
+  valid_days: number;
+  share_template_config?: Record<string, any> | null;
+  print_template_url?: string | null;
 }
 
 export interface GiftCardShareResult {
+  card_number: string;
+  template_name?: string | null;
   share_token: string;
-  share_url: string;
-  expires_at: string;
+  delivery_mode: GiftCardDeliveryMode | string;
+  channel: string;
+  expires_at?: string | null;
+  share_url?: string | null;
+  qrcode_url?: string | null;
+  print_template_url?: string | null;
+  allowed_delivery_modes?: GiftCardDeliveryMode[];
 }
 
 export interface GiftCardShareDetail {
   card_number: string;
-  balance: string;
-  template_name: string;
-  sender_nickname?: string;
-  delivery_mode: 'link' | 'qrcode' | 'passcode';
-  status: 'active' | 'claimed' | 'expired';
-  expires_at: string;
+  template_id: number;
+  template_type: string;
+  initial_amount: string | null;
+  balance: string | null;
+  expires_at: string | null;
+  share_channel: string | null;
+  share_token_expires_at: string | null;
+  status: string;
+  bind_status: string;
+  template: GiftCardTemplate | null;
+  template_name?: string | null;
+  sender_nickname?: string | null;
+  delivery_mode?: 'link' | 'qrcode' | 'passcode' | string | null;
+  share_url?: string | null;
 }
 
 export interface CommissionRecord {
@@ -189,20 +229,65 @@ export interface AgentDownline {
 export interface PointsBalance {
   available: number;
   pending: number;
-  expiring_soon: number;
-  expiring_date?: string;
+  frozen?: number;
+  expiring_soon?: number;
+  expiring_date?: string | null;
+  recent_earnings?: number;
+  total_earned: number;
+  total_spent: number;
 }
 
 export interface PointsLedgerItem {
   id: number;
-  user_id: number;
-  points: number;
   type: 'earn' | 'spend' | 'expire' | 'refund';
-  source: string;
-  source_id?: number;
+  delta: number;
   balance_after: number;
-  expires_at?: string;
+  status: 'pending' | 'confirmed' | string;
+  channel?: string;
+  reference_order_id?: number | null;
+  reservation_id?: string | null;
+  expire_at?: string | null;
   created_at: string;
+  description?: string;
+}
+
+export interface PointsRule {
+  rule_id: string;
+  title: string;
+  description: string;
+  status: 'active' | 'inactive';
+}
+
+export interface PointsMission {
+  mission_id: string;
+  title: string;
+  description: string;
+  reward_points: number;
+  status: 'available' | 'completed' | 'claimed' | 'locked';
+  progress: number;
+  goal: number;
+  expires_at?: string | null;
+  completed_at?: string | null;
+}
+
+export interface PointsRedeemOption {
+  option_id: string;
+  type: 'coupon' | 'gift_card' | 'product' | 'other';
+  title: string;
+  description?: string;
+  cost_points: number;
+  stock?: number | null;
+  status: 'active' | 'coming_soon' | 'sold_out';
+  meta?: Record<string, any>;
+}
+
+export interface PointsRedeemResult {
+  option_id: string;
+  cost_points: number;
+  new_balance: number;
+  coupon_code?: string;
+  gift_card_number?: string;
+  message?: string;
 }
 
 export interface AddressFormState extends ShippingAddress {
