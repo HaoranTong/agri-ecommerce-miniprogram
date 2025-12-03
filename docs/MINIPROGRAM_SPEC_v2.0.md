@@ -348,20 +348,11 @@ export interface Address {
 
 ### 3. **虚拟购物卡赠礼（`src/pages/giftcard/share.tsx`）**
 
-- 入口位于 `giftcard/mine.tsx`，在卡片操作区提供「赠礼/打印礼包」按钮
-- 分享前必须调用 `giftCardService.createShareToken` 生成一次性口令，再触发微信分享或生成二维码
-- 成功生成后需展示包含模板名称、面值、口令有效期的确认弹窗，并可复制分享口令
-
-```ts
-// src/pages/giftcard/share.tsx
-const handleShare = async (cardId: number) => {
-  const token = await giftCardService.createShareToken({ card_id: cardId });
-  await Taro.showShareImageMenu({
-    path: `/pages/giftcard/claim?token=${token}`,
-  });
-  Taro.showToast({ title: '已生成分享口令' });
-};
-```
+- 入口位于 `shopping-card/mine.tsx`，“更多操作”或卡片按钮进入分享页
+- 分享页需先拉取后台模板列表（图案 + 默认祝福语），用户只能选择模板，不可上传自定义素材
+- 祝福语字段可沿用默认、编辑或清空；预览使用同一模板生成电子二维码和 PDF
+- 点击生成后调用 `giftCardService.createShareToken({ card_number, template, message })`，返回 `share_token`、二维码地址、PDF 下载地址
+- 展示成功弹窗：包含模板预览、有效期、复制二维码/PDF 链接、可直接触发微信分享
 
 > 分享日志需写入 `giftcard/share_logs`，撤销接口 `giftCardService.revokeShare` 成功后刷新列表
 
@@ -369,18 +360,18 @@ const handleShare = async (cardId: number) => {
 
 ### 4. **虚拟购物卡领取（`src/pages/giftcard/claim.tsx`）**
 
-- 受赠人需输入分享口令与手机号，前端做基础格式校验后再调用接口
-- 成功领取后调用 `giftCardService.claimSharedCard`，并在结果页提示设置 PIN
-- 失败时需结合 `error-map.ts` 映射错误码（如 `GIFT_CARD_TOKEN_EXPIRED`）展示友好提示
+- 分享二维码 / PDF 均跳转到同一领取入口
+- 若未登录，先走微信登录；登录后展示确认提示页（说明领取后卡片将自动进入“购物卡中心”，并提示如何查找/使用）
+- 用户点击“确认领取”后调用 `giftCardService.claimSharedCard({ token })`，成功即绑定当前账号，并 `redirectTo('/pages/shopping-card/mine?highlight=new')`
+- 失败时需结合 `error-map.ts` 映射错误码（如 `share_token_invalid`）展示友好提示
 
 ```ts
-const handleClaim = async () => {
+const handleConfirm = async () => {
   try {
-    await giftCardService.claimSharedCard({ token: form.token, phone: form.phone });
-    Taro.redirectTo({ url: '/pages/giftcard/mine' });
+    await giftCardService.claimSharedCard({ token });
+    Taro.redirectTo({ url: '/pages/shopping-card/mine?highlight=new' });
   } catch (error) {
-    const message = resolveErrorMessage(errorCodeOf(error));
-    Taro.showToast({ title: message, icon: 'none' });
+    Taro.showToast({ title: resolveErrorMessage(errorCodeOf(error)), icon: 'none' });
   }
 };
 ```
@@ -456,7 +447,7 @@ import styles from './detail.scss';
 
 ### 1. **安全**
 
-- 不在前端存储敏感信息（如 PIN），PIN 重置仅通过 `giftCardService.resetPin`
+- 不在前端存储敏感信息（如 share_token），所有分享链接只保存在后端
 - 所有 API 调用走 HTTPS，并附带 `Authorization` 头（除公开接口外）
 - 用户输入做长度/格式校验（使用 Zod 或自定义 validator）
 - 分享口令必须在领取或撤销后立即失效，前端收到成功响应需主动刷新

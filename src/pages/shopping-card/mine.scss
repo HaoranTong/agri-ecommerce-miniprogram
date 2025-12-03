@@ -1,0 +1,422 @@
+.manage-redirect {
+  margin-top: 24rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.08);
+  text-align: center;
+
+  .redirect-title {
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #111;
+  }
+
+  .redirect-desc {
+    margin-top: 8rpx;
+    font-size: 26rpx;
+    color: #666;
+  }
+
+  .redirect-btn {
+    margin-top: 20rpx;
+    width: 100%;
+    height: 88rpx !important;
+    border-radius: 44rpx !important;
+    background: linear-gradient(135deg, #5c6ac4, #3a4ed5) !important;
+    color: #fff !important;
+    font-size: 30rpx !important;
+    border: none !important;
+
+    &::after {
+      border: none !important;
+    }
+  }
+}
+
+.giftcard-mine-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f8fbff 0%, #f5f5f5 100%);
+  padding: 24rpx;
+  box-sizing: border-box;
+
+  &.loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30rpx;
+    color: #888;
+  }
+
+  .summary-card {
+    background: linear-gradient(135deg, #5c6bc0 0%, #8e99f3 100%);
+    border-radius: 24rpx;
+    padding: 32rpx;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+    margin-bottom: 24rpx;
+
+    .summary-subtitle {
+      font-size: 26rpx;
+      opacity: 0.85;
+    }
+
+    .summary-title {
+      font-size: 40rpx;
+      font-weight: 600;
+    }
+
+    .summary-stats {
+      display: flex;
+      justify-content: space-between;
+      gap: 24rpx;
+
+      .stat {
+        flex: 1;
+
+        .stat-value {
+          display: block;
+          font-size: 36rpx;
+          font-weight: 700;
+        }
+
+        .stat-label {
+          display: block;
+          font-size: 24rpx;
+          opacity: 0.9;
+          margin-top: 6rpx;
+        }
+      }
+    }
+  }
+
+  .quick-actions {
+    background: #fff;
+    border-radius: 24rpx;
+    box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.08);
+    margin-bottom: 24rpx;
+
+    .quick-item {
+      display: flex;
+      align-items: center;
+      padding: 24rpx;
+      border-bottom: 1px solid #f2f3f8;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .quick-icon {
+        width: 72rpx;
+        height: 72rpx;
+        border-radius: 20rpx;
+        background: #f5f7ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36rpx;
+        margin-right: 20rpx;
+      }
+
+      .quick-info {
+        flex: 1;
+
+        .quick-label {
+          display: block;
+          font-size: 30rpx;
+          color: #333;
+          font-weight: 600;
+          margin-bottom: 6rpx;
+        }
+
+        .quick-desc {
+          display: block;
+          font-size: 24rpx;
+          color: #999;
+        }
+      }
+
+      .quick-arrow {
+        font-size: 28rpx;
+        color: #bbb;
+      }
+    }
+  }
+
+  .giftcard-highlight {
+    background: #fff8e1;
+    border: 1px solid #ffe082;
+    color: #8d6e63;
+    padding: 20rpx 24rpx;
+    border-radius: 16rpx;
+    margin-bottom: 24rpx;
+
+    .highlight-title {
+      font-size: 30rpx;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 4rpx;
+    }
+
+    .highlight-text {
+      font-size: 24rpx;
+    }
+  }
+
+  .empty-block {
+    background: #fff;
+    border-radius: 24rpx;
+    padding: 80rpx 24rpx;
+    text-align: center;
+    margin-bottom: 24rpx;
+
+    .empty-title {
+      font-size: 32rpx;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 12rpx;
+    }
+
+    .empty-desc {
+      font-size: 26rpx;
+      color: #999;
+    }
+  }
+
+  .card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  .giftcard-card {
+    background: #fff;
+    border-radius: 24rpx;
+    padding: 24rpx;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+
+    .giftcard-card__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16rpx;
+
+      .giftcard-card__name {
+        font-size: 32rpx;
+        font-weight: 600;
+        color: #333;
+        display: block;
+        margin-bottom: 8rpx;
+      }
+
+      .giftcard-card__number {
+        font-size: 24rpx;
+        color: #999;
+      }
+
+      .giftcard-status-pill {
+        padding: 8rpx 20rpx;
+        border-radius: 999rpx;
+        font-size: 24rpx;
+        font-weight: 600;
+        background: #f1f1f7;
+        color: #555;
+
+        &.status-shared {
+          background: rgba(255, 193, 7, 0.16);
+          color: #ffb300;
+        }
+
+        &.status-bound {
+          background: rgba(30, 136, 229, 0.12);
+          color: #1e88e5;
+        }
+
+        &.status-consumed {
+          background: rgba(76, 175, 80, 0.12);
+          color: #388e3c;
+        }
+      }
+    }
+
+    .giftcard-amount-row {
+      display: flex;
+      align-items: baseline;
+      gap: 12rpx;
+      margin-bottom: 12rpx;
+
+      .amount-value {
+        font-size: 48rpx;
+        color: #5c6bc0;
+        font-weight: 700;
+      }
+
+      .amount-label {
+        font-size: 24rpx;
+        color: #999;
+      }
+    }
+
+    .giftcard-card__meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 26rpx;
+      color: #666;
+      margin-bottom: 8rpx;
+    }
+
+    .giftcard-message {
+      font-size: 24rpx;
+      color: #999;
+      background: #f7f7fb;
+      padding: 12rpx 16rpx;
+      border-radius: 12rpx;
+      margin: 12rpx 0;
+    }
+
+    .status-tip {
+      display: block;
+      font-size: 24rpx;
+      margin: 8rpx 0;
+      padding: 12rpx 16rpx;
+      border-radius: 12rpx;
+      background: #f4f6ff;
+      color: #5c6bc0;
+
+      &.warning {
+        background: rgba(255, 193, 7, 0.16);
+        color: #b28704;
+      }
+
+      &.pending {
+        background: rgba(255, 152, 0, 0.16);
+        color: #9d5a00;
+      }
+
+      &.danger {
+        background: rgba(244, 67, 54, 0.16);
+        color: #c62828;
+      }
+
+      &.info {
+        background: rgba(76, 175, 80, 0.14);
+        color: #2e7d32;
+      }
+
+      &.muted {
+        background: #f5f5f5;
+        color: #999;
+      }
+    }
+
+    .share-history-block {
+      margin-top: 16rpx;
+      background: #f8f9ff;
+      border-radius: 16rpx;
+      padding: 16rpx;
+
+      .history-toggle {
+        display: flex;
+        justify-content: space-between;
+        font-size: 26rpx;
+        color: #5c6bc0;
+
+        &__arrow {
+          font-size: 24rpx;
+          color: #7c89ff;
+        }
+      }
+
+      .share-history-list {
+        margin-top: 12rpx;
+        display: flex;
+        flex-direction: column;
+        gap: 8rpx;
+
+        .share-history-item {
+          font-size: 24rpx;
+          color: #555;
+          display: flex;
+          justify-content: space-between;
+
+          .share-history-time {
+            color: #999;
+          }
+        }
+      }
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 16rpx;
+      margin-top: 16rpx;
+
+      .action-btn {
+        flex: 1;
+        height: 72rpx;
+        font-size: 26rpx;
+        border: none;
+        border-radius: 16rpx;
+
+        &.primary {
+          background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+          color: #fff;
+        }
+
+        &.secondary {
+          background: #f5f7fb;
+          color: #5c6bc0;
+        }
+
+        &.danger {
+          background: #ffe9e9;
+          color: #e53935;
+        }
+
+        &::after {
+          border: none;
+        }
+      }
+    }
+  }
+
+  .manage-redirect {
+    margin-top: 24px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+    text-align: center;
+
+    .redirect-title {
+      font-size: 30px;
+      font-weight: 600;
+      color: #2f7a3d;
+      margin-bottom: 8px;
+    }
+
+    .redirect-desc {
+      font-size: 26px;
+      color: #666;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .redirect-btn {
+      width: 100%;
+      height: 88px !important;
+      border-radius: 44px !important;
+      background: linear-gradient(135deg, #4ecdc4 0%, #2f7a3d 100%) !important;
+      color: #fff !important;
+      font-size: 30px !important;
+      border: none !important;
+
+      &::after {
+        border: none !important;
+      }
+    }
+  }
+}
+

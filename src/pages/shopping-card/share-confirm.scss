@@ -1,0 +1,210 @@
+.share-confirm-page {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding-bottom: 120rpx;
+
+  &.loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    color: #999;
+    font-size: 28rpx;
+  }
+
+  .card-summary {
+    background: #fff;
+    padding: 40rpx;
+    margin-bottom: 20rpx;
+
+    .summary-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20rpx;
+
+      .summary-title {
+        font-size: 36rpx;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .summary-balance {
+        font-size: 48rpx;
+        font-weight: 700;
+        color: #ff6b6b;
+      }
+    }
+
+    .summary-info {
+      .info-item {
+        display: block;
+        font-size: 26rpx;
+        color: #999;
+        margin-top: 10rpx;
+      }
+    }
+  }
+
+  .order-details {
+    background: #fff;
+    padding: 40rpx;
+    margin-bottom: 20rpx;
+
+    .details-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30rpx;
+      padding-bottom: 20rpx;
+      border-bottom: 1rpx solid #eee;
+
+      .details-title {
+        font-size: 32rpx;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .order-number {
+        font-size: 24rpx;
+        color: #999;
+      }
+    }
+
+    .order-items {
+      margin-bottom: 30rpx;
+
+      .order-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 20rpx 0;
+        border-bottom: 1rpx solid #f5f5f5;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .item-info {
+          flex: 1;
+
+          .item-name {
+            display: block;
+            font-size: 28rpx;
+            color: #333;
+            margin-bottom: 8rpx;
+          }
+
+          .item-variation {
+            display: block;
+            font-size: 24rpx;
+            color: #999;
+            margin-bottom: 8rpx;
+          }
+
+          .item-quantity {
+            display: inline-block;
+            font-size: 24rpx;
+            color: #999;
+          }
+        }
+
+        .item-price {
+          font-size: 28rpx;
+          font-weight: 600;
+          color: #333;
+        }
+      }
+    }
+
+    .order-totals {
+      padding-top: 20rpx;
+      border-top: 1rpx solid #eee;
+
+      .total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16rpx;
+
+        &.final {
+          margin-top: 20rpx;
+          padding-top: 20rpx;
+          border-top: 2rpx solid #eee;
+        }
+
+        .total-label {
+          font-size: 28rpx;
+          color: #666;
+        }
+
+        .total-value {
+          font-size: 28rpx;
+          color: #333;
+
+          &.discount {
+            color: #ff6b6b;
+          }
+
+          &.final {
+            font-size: 36rpx;
+            font-weight: 700;
+            color: #ff6b6b;
+          }
+        }
+      }
+    }
+  }
+
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 100rpx 40rpx;
+
+    .back-btn {
+      margin-top: 40rpx;
+      width: 300rpx;
+      height: 80rpx;
+      line-height: 80rpx;
+      background: #667eea;
+      color: #fff;
+      border-radius: 40rpx;
+      font-size: 28rpx;
+      border: none;
+    }
+  }
+
+  .action-buttons {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    gap: 20rpx;
+    padding: 20rpx;
+    background: #fff;
+    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
+
+    .btn {
+      flex: 1;
+      height: 88rpx;
+      line-height: 88rpx;
+      border-radius: 44rpx;
+      font-size: 32rpx;
+      border: none;
+
+      &.btn-back {
+        background: #f5f5f5;
+        color: #666;
+      }
+
+      &.btn-confirm {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+      }
+    }
+  }
+}
+

@@ -109,6 +109,8 @@ export interface CreateOrderPayload {
   giftcard_mode?: GiftCardPurchaseFlow;
   giftcard_template_id?: number;
   giftcard_payload?: GiftCardOrderPayload;
+  is_gift_card_order?: boolean;
+  giftcard_hint?: string;
   remark?: string;
 }
 
@@ -133,15 +135,74 @@ export interface OrderItemSummary {
 export interface OrderDetail extends OrderCreated {
   items?: OrderItemSummary[];
   created_at?: string;
+  original_total?: string;
+  discount_total?: string;
   shipping_address?: ShippingAddress;
   payment_proof_url?: string;
   payment_proof_submitted_at?: string;
   has_payment_proof?: boolean;
   tracking_number?: string;
   tracking_company?: string;
+  message?: string;
+  coupon_info?: {
+    code: string;
+    discount_amount: string;
+    applied_at?: string;
+  } | null;
+  gift_card_info?: {
+    card_number: string;
+    used_amount: string;
+    remaining_balance: string;
+  } | null;
+  points_usage?: {
+    points_used: number;
+    discount_amount: string;
+  } | null;
+  is_gift_card_order?: boolean;
+  giftcard_mode?: string | null;
 }
 
 export type GiftCardDeliveryMode = 'digital_share' | 'printable';
+
+export type GiftCardShareState = 'none' | 'shared' | 'bound' | 'consumed' | 'expired';
+
+export interface GiftCardShareMeta {
+  message?: string | null;
+  theme?: string | null;
+  format?: 'qr' | 'pdf' | 'both';
+  template?: {
+    print_template_url?: string | null;
+    share_template_config?: Record<string, any> | null;
+  } | null;
+}
+
+export interface GiftCardShareSnapshot {
+  card_number: string;
+  template_name?: string | null;
+  initial_amount?: string | null;
+  balance?: string | null;
+  expires_at?: string | null;
+  message?: string | null;
+  theme?: string | null;
+  order_id?: number | string | null;
+}
+
+export interface GiftCardShareLogEntry {
+  id: number;
+  delivery_mode: GiftCardDeliveryMode | string;
+  channel: string;
+  share_token?: string | null;
+  print_package_url?: string | null;
+  ip_address?: string | null;
+  created_at: string;
+}
+
+export interface GiftCardRedeemResult {
+  card_number: string;
+  status: string;
+  order_id?: number;
+  order_number?: string;
+}
 
 export interface GiftCard {
   card_number: string;
@@ -160,7 +221,15 @@ export interface GiftCard {
   template_name?: string;
   delivery_modes?: GiftCardDeliveryMode[];
   print_template_url?: string | null;
-  can_reset_pin?: boolean;
+  share_state?: GiftCardShareState;
+  share_meta?: GiftCardShareMeta | null;
+  shared_at?: string | null;
+  shared_count?: number;
+  share_token_expires_at?: string | null;
+  share_channel?: string | null;
+  card_snapshot?: GiftCardShareSnapshot | null;
+  share_history?: GiftCardShareLogEntry[];
+  purchase_order_id?: number | null;
 }
 
 export interface GiftCardBundleItem {
@@ -205,8 +274,14 @@ export interface GiftCardTemplate {
 
 export interface GiftCardPurchaseResult {
   card_number: string;
-  card_pin: string;
   template: GiftCardTemplate;
+}
+
+export interface GiftCardShareStyle {
+  id: string;
+  name: string;
+  preview_image?: string;
+  config: Record<string, any>;
 }
 
 export interface GiftCardShareResult {
@@ -217,9 +292,16 @@ export interface GiftCardShareResult {
   channel: string;
   expires_at?: string | null;
   share_url?: string | null;
-  qrcode_url?: string | null;
+  mini_program_path?: string | null;
+  mini_program_qr?: string | null;
+  qr_payload?: string | null;
+  qr_image_url?: string | null; // 带模板图案的二维码图片URL
   print_template_url?: string | null;
   allowed_delivery_modes?: GiftCardDeliveryMode[];
+  share_meta?: GiftCardShareMeta | null;
+  share_state?: GiftCardShareState;
+  card_snapshot?: GiftCardShareSnapshot | null;
+  share_history?: GiftCardShareLogEntry[];
 }
 
 export interface GiftCardShareDetail {
@@ -238,6 +320,12 @@ export interface GiftCardShareDetail {
   sender_nickname?: string | null;
   delivery_mode?: 'link' | 'qrcode' | 'passcode' | string | null;
   share_url?: string | null;
+  mini_program_path?: string | null;
+  qr_payload?: string | null;
+  share_meta?: GiftCardShareMeta | null;
+  share_state?: GiftCardShareState;
+  card_snapshot?: GiftCardShareSnapshot | null;
+  share_history?: GiftCardShareLogEntry[];
 }
 
 export interface CommissionRecord {

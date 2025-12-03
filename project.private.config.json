@@ -9,7 +9,7 @@
     "preloadBackgroundData": false,
     "autoAudits": false,
     "useApiHook": true,
-    "useApiHostProcess": true,
+    "useApiHostProcess": false,
     "showShadowRootInWxmlPanel": false,
     "useStaticServer": false,
     "useLanDebug": false,

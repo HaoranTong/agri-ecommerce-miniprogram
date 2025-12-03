@@ -1,96 +1,70 @@
-import { Image, Swiper, SwiperItem, Text, View } from '@tarojs/components';
-import Taro, { useDidShow } from '@tarojs/taro';
+import { Image, Text, View } from '@tarojs/components';
+import Taro, { usePullDownRefresh } from '@tarojs/taro';
 import { useEffect, useState } from 'react';
 
-import TestUserSelector from '../../components/TestUserSelector';
-import { configService, productService } from '../../services/api';
-import type { Product, PublicConfig } from '../../types';
-import './index.scss';
+import { productService } from '../../services/api';
+import type { Product } from '../../types';
+import './redeem.scss';
 
-const Index = () => {
+const ProductRedeem = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [banner, setBanner] = useState<PublicConfig | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadData = async () => {
+  const loadProducts = async (showSkeleton = true) => {
     try {
-      const [productList, config] = await Promise.all([
-        productService.getProducts(),
-        configService.getPublicConfig()
-      ]);
+      if (showSkeleton) {
+        setLoading(true);
+      }
+      const productList = await productService.getRedeemableProducts();
       setProducts(Array.isArray(productList) ? productList : []);
-      const normalizedConfig = config
-        ? {
-            ...config,
-            home_slider: Array.isArray(config.home_slider) ? config.home_slider : []
-          }
-        : null;
-      setBanner(normalizedConfig);
     } catch (error) {
-      console.error('加载首页数据失败', error);
+      console.error('获取积分兑换商品列表失败', error);
       Taro.showToast({ title: '加载失败，请稍后重试', icon: 'none' });
     } finally {
-      setLoading(false);
+      if (showSkeleton) {
+        setLoading(false);
+      }
+      Taro.stopPullDownRefresh();
     }
   };
 
   useEffect(() => {
-    loadData();
+    loadProducts();
   }, []);
 
-  useDidShow(() => {
-    const guide = Taro.getStorageSync('GIFT_CARD_FLOW_HINT');
-    if (guide?.message) {
-      Taro.showModal({
-        title: '礼品卡购卡提示',
-        content: guide.message,
-        showCancel: false,
-        confirmText: '知道了'
-      });
-      Taro.removeStorageSync('GIFT_CARD_FLOW_HINT');
-    }
+  usePullDownRefresh(() => {
+    loadProducts(false);
   });
 
   const handleProductSelect = (product: Product) => {
     Taro.navigateTo({
-      url: `/pages/product/detail?id=${product.id}`
+      url: `/pages/product/detail?id=${product.id}&from=points_redeem`
     });
   };
 
   const handleVariantSelect = (product: Product, variation: any) => {
     // 跳转到详情页并预选规格
     Taro.navigateTo({
-      url: `/pages/product/detail?id=${product.id}&variation_id=${variation.variation_id}`
+      url: `/pages/product/detail?id=${product.id}&variation_id=${variation.variation_id}&from=points_redeem`
     });
   };
 
-  const slides = banner && Array.isArray(banner.home_slider) ? banner.home_slider : [];
-
   return (
-    <View className='index-page'>
-      {/* 轮播图 */}
-      {slides.length > 0 && (
-        <Swiper className='hero-swiper' circular autoplay indicatorDots>
-          {slides.map((slide, index) => {
-            const slideImg = slide?.img || '';
-            return (
-            <SwiperItem key={index}>
-              <Image
-                className='hero-image'
-                src={slideImg}
-                mode='aspectFill'
-                onClick={() => slide.link && Taro.navigateTo({ url: slide.link })}
-              />
-            </SwiperItem>
-          );
-          })}
-        </Swiper>
+    <View className='product-redeem-page'>
+      <View className='page-header'>
+        <Text className='page-title'>积分兑换商品</Text>
+        <Text className='page-subtitle'>使用积分兑换心仪商品</Text>
+      </View>
+
+      {loading && products.length === 0 && (
+        <View className='loading'>加载中...</View>
       )}
 
-      {loading && <View className='loading'>加载中...</View>}
-
       {!loading && products.length === 0 && (
-        <View className='empty'>暂无商品，敬请期待</View>
+        <View className='empty'>
+          <Text className='empty-text'>暂无可兑换商品</Text>
+          <Text className='empty-tip'>请稍后再来查看</Text>
+        </View>
       )}
 
       {/* 商品列表 */}
@@ -112,8 +86,13 @@ const Index = () => {
                 <Text className='product-name'>{product.name}</Text>
                 <View className='price-row'>
                   <Text className='price-range'>
-                    ¥{product.min_price} - ¥{product.max_price}
+                    {product.min_price === product.max_price
+                      ? `¥${product.min_price}`
+                      : `¥${product.min_price} - ¥${product.max_price}`}
                   </Text>
+                  {product.type === 'variable' && (
+                    <Text className='price-tip'>起</Text>
+                  )}
                 </View>
                 
                 {/* 推荐规格 */}
@@ -140,11 +119,8 @@ const Index = () => {
           );
         })}
       </View>
-      
-      {/* 测试用户选择器 */}
-      <TestUserSelector />
     </View>
   );
 };
 
-export default Index;
+export default ProductRedeem;

@@ -17,8 +17,11 @@ import type {
   CreateOrderPayload,
   GiftCard,
   GiftCardPurchaseResult,
+  GiftCardRedeemResult,
   GiftCardShareDetail,
+  GiftCardShareLogEntry,
   GiftCardShareResult,
+  GiftCardShareStyle,
   GiftCardTemplate,
   LoginResponse,
   OrderCreated,
@@ -43,6 +46,13 @@ interface PointsService {
   }>;
   spend: (points: number, reason: string) => Promise<{ new_balance: number; deducted: number }>;
   getRules: () => Promise<PointsRule[]>;
+  getSettings: () => Promise<{
+    enable_points_discount: boolean;
+    redeem_rate: number;
+    min_points_to_use: number;
+    max_discount_percent: number;
+    min_order_amount_to_use: number;
+  }>;
   getMissions: () => Promise<PointsMission[]>;
   claimMission: (
     missionId: string
@@ -138,6 +148,18 @@ export const request = async <T = any>({
     headers.Authorization = `Bearer ${token}`;
   }
 
+  const finalUrl = resolveUrl(url);
+
+  if (isDev && !suppressLog) {
+    console.info('[API Debug]', {
+      method,
+      url: finalUrl,
+      hasToken: !!token,
+      nodeEnv: process.env.NODE_ENV,
+      apiBase: API_BASE
+    });
+  }
+
   // 对需要认证的请求记录 token 状态
   if (!suppressLog && (url.includes('/cart') || url.includes('/orders'))) {
     console.log(`[API] ${method} ${url}`, {
@@ -152,7 +174,7 @@ export const request = async <T = any>({
 
   try {
     const response = await Taro.request<T>({
-      url: resolveUrl(url),
+      url: finalUrl,
       method,
       data,
       header: headers
@@ -267,6 +289,18 @@ export const productService = {
       }
       throw error;
     }
+  },
+  async getRedeemableProducts(): Promise<Product[]> {
+    try {
+      const response = await request<{ success: boolean; data: Product[] }>({
+        url: API_ENDPOINTS.productsRedeem,
+        method: 'GET'
+      });
+      return response.data || [];
+    } catch (error) {
+      console.error('获取积分兑换商品列表失败', error);
+      throw error;
+    }
   }
 };
 
@@ -285,6 +319,41 @@ export const userService = {
       method: 'PUT',
       data,
       showLoading: true
+    });
+    return response.data;
+  },
+  getAddresses: async () => {
+    const response = await request<{
+      success: boolean;
+      data: {
+        addresses: Array<{
+          id: string;
+          name: string;
+          phone: string;
+          province: string;
+          city: string;
+          district: string;
+          detail_address: string;
+          postcode: string;
+          isDefault: boolean;
+          created_at: string;
+        }>;
+        default_address: {
+          id: string;
+          name: string;
+          phone: string;
+          province: string;
+          city: string;
+          district: string;
+          detail_address: string;
+          postcode: string;
+          isDefault: boolean;
+          created_at: string;
+        } | null;
+      };
+    }>({
+      url: API_ENDPOINTS.userAddresses,
+      method: 'GET'
     });
     return response.data;
   }
@@ -364,6 +433,44 @@ export const orderService = {
       Taro.showToast({ title: message, icon: 'none' });
       throw new Error(message);
     }
+  },
+  applyCoupon: async (orderId: number | string, couponCode: string) => {
+    const response = await request<{
+      success: boolean;
+      data: {
+        order_id: number;
+        coupon_code: string;
+        discount_amount: string;
+        original_total: string;
+        final_total: string;
+        coupon_description?: string;
+      };
+    }>({
+      url: API_ENDPOINTS.applyCouponToOrder(orderId),
+      method: 'POST',
+      data: { coupon_code: couponCode },
+      showLoading: true
+    });
+    return response.data;
+  },
+  applyGiftCard: async (orderId: number | string, cardNumber: string) => {
+    const response = await request<{
+      success: boolean;
+      data: {
+        order_id: number;
+        card_number: string;
+        used_amount: string;
+        remaining_balance: string;
+        original_total: string;
+        final_total: string;
+      };
+    }>({
+      url: API_ENDPOINTS.applyGiftCardToOrder(orderId),
+      method: 'POST',
+      data: { card_number: cardNumber },
+      showLoading: true
+    });
+    return response.data;
   }
 };
 
@@ -413,21 +520,48 @@ export const giftCardService = {
     });
     return response.data;
   },
-  redeem: async (card_number: string, card_pin: string) => {
-    const response = await request<{ success: boolean; data?: { card_number: string; status: string }; message?: string }>({
+  redeem: async (card_number: string) => {
+    const response = await request<{ success: boolean; data?: GiftCardRedeemResult; message?: string }>({
       url: API_ENDPOINTS.redeemGiftCard,
       method: 'POST',
-      data: { card_number, card_pin },
+      data: { card_number },
       showLoading: true
     });
     return response.data;
   },
-  share: async (card_number: string, delivery_mode: string, channel?: string) => {
+  share: async (options: {
+    card_number: string;
+    delivery_mode?: string;
+    channel?: string;
+    message?: string;
+    theme?: string;
+    format?: 'qr' | 'pdf' | 'both';
+  }) => {
     const response = await request<{ success: boolean; data: GiftCardShareResult }>({
       url: API_ENDPOINTS.shareGiftCard,
       method: 'POST',
-      data: { card_number, delivery_mode, channel },
-      showLoading: true
+      data: { ...options, format: options.format || 'both' },
+      showLoading: false // 关闭自动loading，由页面自己控制
+    });
+    // 处理响应：如果返回的是 { success: true, data: {...} }，则返回 data
+    if (response && typeof response === 'object' && 'data' in response && 'success' in response) {
+      return (response as { success: boolean; data: GiftCardShareResult }).data;
+    }
+    // 如果直接返回的是数据对象，直接返回
+    return response as any as GiftCardShareResult;
+  },
+  listShareStyles: async () => {
+    const response = await request<{ success: boolean; data: GiftCardShareStyle[] }>({
+      url: API_ENDPOINTS.shareStyles,
+      method: 'GET',
+      suppressErrorToast: true
+    });
+    return response.data ?? [];
+  },
+  revokeShare: async (card_number: string) => {
+    const response = await request<{ success: boolean; data: { card_number: string; share_state?: string } }>({
+      url: API_ENDPOINTS.revokeGiftCardShare(card_number),
+      method: 'POST'
     });
     return response.data;
   },
@@ -438,22 +572,58 @@ export const giftCardService = {
     });
     return response.data;
   },
-  claim: async (token: string, pin_code?: string) => {
-    const payload = pin_code ? { pin_code } : undefined;
+  claim: async (token: string) => {
     const response = await request<{ success: boolean; data: { card_number: string; status: string } }>({
       url: API_ENDPOINTS.claimGiftCard(token),
       method: 'POST',
-      data: payload,
       showLoading: true
     });
     return response.data;
   },
-  resetPin: (cardId: number | string, newPin: string) =>
-    request({
-      url: API_ENDPOINTS.resetGiftCardPin(cardId),
+  getShareHistory: async (card_number: string) => {
+    const response = await request<{
+      success: boolean;
+      data: { card_number: string; share_history: GiftCardShareLogEntry[] };
+    }>({
+      url: API_ENDPOINTS.giftCardShareHistory(card_number),
+      method: 'GET',
+      showLoading: true
+    });
+    return response.data?.share_history ?? [];
+  },
+  // 获取储值购物卡列表（只返回储值卡，用于支付）
+  getStoredValueCards: async () => {
+    const cards = await giftCardService.listMine();
+    // 筛选出储值购物卡（template_type === 'fixed_amount'）且余额大于0的卡片
+    return cards.filter(
+      (card) =>
+        card.template_type === 'fixed_amount' &&
+        parseFloat(card.balance || '0') > 0 &&
+        card.status === 'active'
+    );
+  }
+};
+
+export const couponService = {
+  validate: async (code: string) => {
+    const response = await request<{
+      success: boolean;
+      data: {
+        code: string;
+        discount_type: string;
+        amount: string;
+        description?: string;
+        minimum_amount?: string | null;
+        maximum_amount?: string | null;
+      };
+    }>({
+      url: API_ENDPOINTS.validateCoupon,
       method: 'POST',
-      data: { new_pin: newPin }
-    })
+      data: { code },
+      showLoading: true
+    });
+    return response.data;
+  }
 };
 
 export const referralService = {
@@ -521,6 +691,22 @@ export const pointsService: PointsService = {
       method: 'GET'
     });
     return response.data ?? [];
+  },
+  getSettings: async () => {
+    const response = await request<{
+      success: boolean;
+      data: {
+        enable_points_discount: boolean;
+        redeem_rate: number;
+        min_points_to_use: number;
+        max_discount_percent: number;
+        min_order_amount_to_use: number;
+      };
+    }>({
+      url: API_ENDPOINTS.pointsSettings,
+      method: 'GET'
+    });
+    return response.data;
   },
   getMissions: async () => {
     const response = await request<{ success: boolean; data: PointsMission[] }>({

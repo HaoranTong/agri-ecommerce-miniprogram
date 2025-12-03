@@ -43,7 +43,7 @@ const CustomCheckout = () => {
         setLoading(false);
         Taro.showToast({ title: '请先选择组合商品', icon: 'none' });
         setTimeout(() => {
-          Taro.redirectTo({ url: `/pages/giftcard/custom-builder?id=${templateId}` });
+          Taro.redirectTo({ url: `/pages/shopping-card/custom-builder?id=${templateId}` });
         }, 1000);
         return;
       }

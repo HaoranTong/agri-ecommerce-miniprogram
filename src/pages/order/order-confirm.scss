@@ -38,31 +38,6 @@
     line-height: 1.5;
   }
 
-  .hint-actions {
-    margin-top: 12px;
-    display: flex;
-    gap: 12px;
-  }
-
-  .hint-btn {
-    flex: 1;
-    height: 72px !important;
-    border-radius: 36px !important;
-    background: linear-gradient(135deg, #ff8f5c 0%, #ff5c96 100%) !important;
-    color: #fff !important;
-    font-size: 26px !important;
-    border: none !important;
-
-    &.secondary {
-      background: rgba(255, 255, 255, 0.9) !important;
-      color: #c2571a !important;
-      border: 1px solid rgba(194, 87, 26, 0.3) !important;
-    }
-
-    &::after {
-      border: none !important;
-    }
-  }
 }
 
 .card {
@@ -184,6 +159,10 @@
         font-weight: bold;
       }
       
+        &.discount {
+          color: #ff6b6b;
+        }
+        
       &.amount {
         font-size: 40px;
         color: #ff6b6b;
@@ -244,6 +223,31 @@
     
     &:active {
       opacity: 0.85;
+    }
+  }
+
+  &.triple {
+    .nav-btn {
+      flex: 1;
+      height: 80px !important;
+      border-radius: 40px !important;
+      font-size: 28px !important;
+      font-weight: 600 !important;
+      border: none !important;
+      color: #fff !important;
+      background: linear-gradient(135deg, #7f7fff 0%, #5a6bff 100%) !important;
+
+      &:nth-child(2) {
+        background: linear-gradient(135deg, #4ecdc4 0%, #2f9e99 100%) !important;
+      }
+
+      &:nth-child(3) {
+        background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%) !important;
+      }
+
+      &::after {
+        border: none !important;
+      }
     }
   }
 }

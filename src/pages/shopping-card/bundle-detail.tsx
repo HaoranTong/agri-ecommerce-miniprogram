@@ -86,7 +86,7 @@ const BundleDetail = () => {
 
   const handleCheckout = () => {
     if (!template) return;
-    Taro.navigateTo({ url: `/pages/giftcard/bundle-checkout?id=${template.id}` });
+    Taro.navigateTo({ url: `/pages/shopping-card/bundle-checkout?id=${template.id}` });
   };
 
   if (loading) {

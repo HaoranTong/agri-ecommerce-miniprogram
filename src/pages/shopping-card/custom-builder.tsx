@@ -218,7 +218,7 @@ const CustomBuilder = () => {
       totalQuantity
     });
 
-    Taro.navigateTo({ url: `/pages/giftcard/custom-checkout?id=${template.id}` });
+    Taro.navigateTo({ url: `/pages/shopping-card/custom-checkout?id=${template.id}` });
   };
 
   if (loading) {
@@ -229,7 +229,7 @@ const CustomBuilder = () => {
     return (
       <View className='custom-builder-page empty-state'>
         <Text className='empty-text'>{error || '模板不存在'}</Text>
-        <Button onClick={() => Taro.reLaunch({ url: '/pages/giftcard/templates' })}>返回模板列表</Button>
+        <Button onClick={() => Taro.reLaunch({ url: '/pages/shopping-card/templates' })}>返回模板列表</Button>
       </View>
     );
   }

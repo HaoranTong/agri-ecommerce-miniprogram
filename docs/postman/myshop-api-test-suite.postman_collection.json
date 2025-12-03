@@ -26,6 +26,107 @@
           },
           "response": []
         },
+            {
+              "name": "Get Gift Card Share History",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+                ],
+                "url": {
+                  "protocol": "https",
+                  "host": ["agri-ecommerce", "test"],
+                  "path": ["wp-json", "myshop", "v1", "gift-cards", "{{card_number}}", "share-history"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('状态码为200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+        {
+          "name": "Get Gift Card Share History",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "gift-cards", "{{card_number}}", "share-history"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('返回分享记录数组', function () {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(Array.isArray(json.data.share_history)).to.eql(true);",
+                  "});",
+                  "pm.environment.set('gift_card_share_history_size', Array.isArray(json.data.share_history) ? json.data.share_history.length : 0);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+                      "const json = pm.response.json();",
+                      "pm.test('返回分享记录数组', function () {",
+                      "  pm.expect(json.success).to.eql(true);",
+                      "  pm.expect(Array.isArray(json.data.share_history)).to.eql(true);",
+                      "});",
+                      "pm.environment.set('gift_card_share_history_size', Array.isArray(json.data.share_history) ? json.data.share_history.length : 0);"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "Revoke Gift Card Share",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+                ],
+                "url": {
+                  "protocol": "https",
+                  "host": ["agri-ecommerce", "test"],
+                  "path": ["wp-json", "myshop", "v1", "gift-cards", "share", "{{card_number}}", "revoke"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('状态码为200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "const json = pm.response.json();",
+                      "pm.test('撤销后share_state为none或expired', function () {",
+                      "  pm.expect(json.success).to.eql(true);",
+                      "  pm.expect(['none','expired']).to.include(json.data.share_state);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
         {
           "name": "Get User Profile",
           "request": {
@@ -256,10 +357,13 @@
                   "  pm.response.to.have.status(200);",
                   "});",
                   "const json = pm.response.json();",
-                  "pm.test(\"成功返回礼品卡号和密码\", function () {",
+                  "pm.test(\"成功返回礼品卡号\", function () {",
                   "  pm.expect(json.success).to.eql(true);",
                   "  pm.expect(json.data).to.have.property('card_number');",
-                  "  pm.expect(json.data).to.have.property('card_pin');",
+                  "});",
+                  "pm.test(\"PIN 为空或缺省\", function () {",
+                  "  const pin = json.data ? json.data.card_pin : null;",
+                  "  pm.expect(pin === null || pin === undefined || pin === '').to.eql(true);",
                   "});",
                   "if (json && json.data) {",
                   "  pm.environment.set('card_number', json.data.card_number || '');",
@@ -282,7 +386,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"card_number\": \"{{card_number}}\",\n  \"delivery_mode\": \"digital_share\",\n  \"channel\": \"miniprogram\"\n}"
+              "raw": "{\n  \"card_number\": \"{{card_number}}\",\n  \"delivery_mode\": \"digital_share\",\n  \"channel\": \"miniprogram\",\n  \"message\": \"节日快乐，收下这份心意！\",\n  \"theme\": \"default\",\n  \"format\": \"both\"\n}"
             },
             "url": {
               "protocol": "https",
@@ -303,6 +407,10 @@
                   "pm.test(\"生成分享令牌\", function () {",
                   "  pm.expect(json.success).to.eql(true);",
                   "  pm.expect(json.data).to.have.property('share_token');",
+                  "});",
+                  "pm.test(\"返回分享历史数组\", function () {",
+                  "  const history = json.data ? json.data.share_history : null;",
+                  "  pm.expect(Array.isArray(history)).to.eql(true);",
                   "});",
                   "if (json && json.data) {",
                   "  pm.environment.set('gift_card_share_token', json.data.share_token || '');",
@@ -342,6 +450,10 @@
                   "  pm.test(\"卡号与环境变量一致\", function () {",
                   "    pm.expect(json.data.card_number).to.eql(pm.environment.get('card_number'));",
                   "  });",
+                  "  pm.test(\"返回卡片快照与历史\", function () {",
+                  "    pm.expect(json.data).to.have.property('card_snapshot');",
+                  "    pm.expect(Array.isArray(json.data.share_history)).to.eql(true);",
+                  "  });",
                   "}"
                 ]
               }
@@ -350,7 +462,7 @@
           "response": []
         },
         {
-          "name": "Claim Shared Gift Card",
+          "name": "Revoke Gift Card Share",
           "request": {
             "method": "POST",
             "header": [
@@ -359,7 +471,40 @@
             "url": {
               "protocol": "https",
               "host": ["agri-ecommerce", "test"],
-              "path": ["wp-json", "myshop", "v1", "gift-cards", "share", "{{gift_card_share_token}}", "claim"]
+              "path": ["wp-json", "myshop", "v1", "gift-cards", "share", "{{card_number}}", "revoke"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('撤销后share_state为none或expired', function () {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(['none','expired']).to.include(json.data.share_state);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Redeem Shared Gift Card (Recipient)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "gift-cards", "share", "{{gift_card_share_token}}", "redeem"]
             }
           },
           "event": [
@@ -395,7 +540,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"card_number\": \"{{card_number}}\",\n  \"card_pin\": \"{{card_pin}}\"\n}"
+              "raw": "{\n  \"card_number\": \"{{card_number}}\"\n}"
             },
             "url": {
               "protocol": "https",
@@ -455,6 +600,10 @@
                   "  const target = json.data.find(item => item.card_number === pm.environment.get('card_number'));",
                   "  if (target) {",
                   "    pm.environment.set('gift_card_last_known_status', target.status || '');",
+                  "    pm.test('包含分享字段', function () {",
+                  "      pm.expect(target).to.have.property('share_state');",
+                  "      pm.expect(target).to.have.property('card_snapshot');",
+                  "    });",
                   "  }",
                   "}"
                 ]

@@ -11,18 +11,23 @@ const ProductDetail = () => {
     const routerParams = Taro.getCurrentInstance().router?.params ?? {};
     return {
       productId: Number(routerParams.id || routerParams.productId || 0),
-      variationId: routerParams.variation_id ? Number(routerParams.variation_id) : null
+      variationId: routerParams.variation_id ? Number(routerParams.variation_id) : null,
+      fromPointsRedeem: routerParams.from === 'points_redeem' // 是否从积分兑换页面跳转
     };
   }, []);
 
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
   const [loading, setLoading] = useState(true);
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     const loadProduct = async () => {
       try {
-        const products = await productService.getProducts();
+        // 如果是从积分兑换页面跳转，使用积分兑换商品列表（只包含允许的变体）
+        const products = params.fromPointsRedeem
+          ? await productService.getRedeemableProducts()
+          : await productService.getProducts();
         const found = products.find((item) => item.id === params.productId) || null;
         setProduct(found);
 
@@ -54,7 +59,7 @@ const ProductDetail = () => {
     };
 
     loadProduct();
-  }, [params.productId, params.variationId]);
+  }, [params.productId, params.variationId, params.fromPointsRedeem]);
 
   const handleVariationSelect = (variation: ProductVariation) => {
     setSelectedVariation(variation);
@@ -73,7 +78,7 @@ const ProductDetail = () => {
     });
 
     try {
-      await cartService.addToCart(selectedVariation.variation_id, 1);
+      await cartService.addToCart(selectedVariation.variation_id, quantity);
       
       // 显示成功提示，并提供跳转选项
       Taro.showModal({
@@ -99,8 +104,12 @@ const ProductDetail = () => {
       return;
     }
 
+    const price = typeof selectedVariation.price === 'string' 
+      ? selectedVariation.price 
+      : String(selectedVariation.price || 0);
+
     Taro.navigateTo({
-      url: `/pages/order/create?variation_id=${selectedVariation.variation_id}&product_name=${product?.name}`
+      url: `/pages/order/create?variation_id=${selectedVariation.variation_id}&product_name=${encodeURIComponent(product?.name || '商品')}&price=${price}`
     });
   };
 
@@ -226,6 +235,26 @@ const ProductDetail = () => {
               {!variation.in_stock && <Text className='spec-badge'>缺货</Text>}
             </View>
           ))}
+        </View>
+      </View>
+
+      {/* 数量选择 */}
+      <View className='spec-section'>
+        <Text className='section-title'>购买数量</Text>
+        <View className='quantity-selector'>
+          <View 
+            className={`quantity-btn ${quantity <= 1 ? 'disabled' : ''}`}
+            onClick={() => quantity > 1 && setQuantity(quantity - 1)}
+          >
+            <Text className='btn-text'>-</Text>
+          </View>
+          <Text className='quantity-value'>{quantity}</Text>
+          <View 
+            className='quantity-btn'
+            onClick={() => setQuantity(quantity + 1)}
+          >
+            <Text className='btn-text'>+</Text>
+          </View>
         </View>
       </View>
 

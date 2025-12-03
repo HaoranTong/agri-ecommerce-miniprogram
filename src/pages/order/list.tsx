@@ -1,6 +1,6 @@
 import { Button, Text, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { orderService } from '../../services/api';
 import type { OrderDetail } from '../../types';
@@ -9,6 +9,11 @@ import './list.scss';
 const OrderList = () => {
   const [orders, setOrders] = useState<OrderDetail[]>([]);
   const [loading, setLoading] = useState(true);
+  const params = useMemo(() => Taro.getCurrentInstance().router?.params ?? {}, []);
+  const filterGiftCardOnly = params.filter === 'giftcard' || params.scene === 'giftcard';
+  const [filterMode, setFilterMode] = useState<'all' | 'giftcard'>(
+    filterGiftCardOnly ? 'giftcard' : 'all'
+  );
 
   const loadOrders = async () => {
     try {
@@ -22,6 +27,13 @@ const OrderList = () => {
     }
   };
 
+  const displayOrders = useMemo(() => {
+    if (filterMode === 'giftcard') {
+      return orders.filter((order) => order.is_gift_card_order);
+    }
+    return orders;
+  }, [orders, filterMode]);
+
   useEffect(() => {
     loadOrders();
   }, []);
@@ -34,12 +46,32 @@ const OrderList = () => {
     );
   }
 
-  if (!orders.length) {
+  const renderFilterTabs = () => (
+    <View className='filter-tabs'>
+      {['all', 'giftcard'].map((mode) => (
+        <View
+          key={mode}
+          className={`filter-tab ${filterMode === mode ? 'active' : ''}`}
+          onClick={() => setFilterMode(mode as 'all' | 'giftcard')}
+        >
+          {mode === 'all' ? '全部' : '购物卡'}
+        </View>
+      ))}
+    </View>
+  );
+
+  if (!displayOrders.length) {
     return (
       <View className='order-list-page'>
+        {renderFilterTabs()}
+        {filterMode === 'giftcard' && (
+          <View className='filter-tip'>仅展示与购物卡相关的订单</View>
+        )}
         <View className='empty-state'>
           <Text className='empty-icon'>📦</Text>
-          <Text className='empty-text'>暂无订单记录</Text>
+          <Text className='empty-text'>
+            {filterMode === 'giftcard' ? '暂无购物卡相关订单' : '暂无订单记录'}
+          </Text>
           <Button className='go-shopping' onClick={() => Taro.switchTab({ url: '/pages/index/index' })}>
             去逛逛
           </Button>
@@ -94,7 +126,11 @@ const OrderList = () => {
 
   return (
     <View className='order-list-page'>
-      {orders.map((order) => (
+      {renderFilterTabs()}
+      {filterMode === 'giftcard' && (
+        <View className='filter-tip'>仅展示与购物卡相关的订单</View>
+      )}
+      {displayOrders.map((order) => (
         <View className='order-card' key={order.order_id} onClick={() => Taro.navigateTo({ url: `/pages/order/detail?orderId=${order.order_id}` })}>
           {/* 订单头部 */}
           <View className='order-header'>
@@ -109,6 +145,11 @@ const OrderList = () => {
               )}
             </View>
           </View>
+          {order.is_gift_card_order && (
+            <View className='order-tags'>
+              <Text className='giftcard-tag'>购物卡</Text>
+            </View>
+          )}
 
           {/* 订单商品 */}
           <View className='order-items'>

@@ -34,7 +34,7 @@ const UserProfile = () => {
       const cards = await giftCardService.listMine();
       setGiftCardCount(Array.isArray(cards) ? cards.length : 0);
     } catch (error) {
-      console.error('获取礼品卡数量失败', error);
+      console.error('获取购物卡数量失败', error);
       setGiftCardCount(0);
     }
   };
@@ -110,9 +110,9 @@ const UserProfile = () => {
           <Text className='stat-label'>我的积分</Text>
         </View>
         <View className='stat-divider' />
-        <View className='stat-item' onClick={() => handleNavigate('/pages/giftcard/mine')}>
+        <View className='stat-item' onClick={() => handleNavigate('/pages/shopping-card/mine')}>
           <Text className='stat-value'>{giftCardCount ?? '--'}</Text>
-          <Text className='stat-label'>礼品卡</Text>
+          <Text className='stat-label'>购物卡</Text>
         </View>
       </View>
 

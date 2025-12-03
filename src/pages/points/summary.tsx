@@ -123,10 +123,10 @@ const PointsSummary = () => {
           <Text className='action-title'>任务中心</Text>
           <Text className='action-desc'>完成任务赚积分</Text>
         </View>
-        <View className='action-item' onClick={() => handleNavigate('/pages/points/redeem')}>
+        <View className='action-item' onClick={() => handleNavigate('/pages/product/redeem')}>
           <Text className='action-icon'>🎁</Text>
           <Text className='action-title'>积分兑换</Text>
-          <Text className='action-desc'>兑换礼品或券</Text>
+          <Text className='action-desc'>兑换商品</Text>
         </View>
         <View className='action-item' onClick={() => handleNavigate('/pages/points/rules')}>
           <Text className='action-icon'>📘</Text>

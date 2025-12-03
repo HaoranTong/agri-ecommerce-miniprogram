@@ -94,15 +94,15 @@ const GiftCardTemplates = () => {
   const presentPurchaseResult = async (result: GiftCardPurchaseResult) => {
     const modalResult = await Taro.showModal({
       title: '购卡成功',
-      content: `卡号：${result.card_number}\nPIN：${result.card_pin}\n可在“我的礼品卡”查看并分享。`,
+      content: `卡号：${result.card_number}\n已自动加入“我的购物卡”，可在卡包中查看和分享。`,
       confirmText: '去分享',
       cancelText: '查看礼品卡'
     });
 
     if (modalResult.confirm) {
-      Taro.navigateTo({ url: `/pages/giftcard/share?card=${result.card_number}` });
+      Taro.navigateTo({ url: '/pages/shopping-card/share-list' });
     } else {
-      Taro.navigateTo({ url: '/pages/giftcard/mine?highlight=new' });
+      Taro.navigateTo({ url: '/pages/shopping-card/mine?highlight=new' });
     }
   };
 
@@ -155,6 +155,27 @@ const GiftCardTemplates = () => {
     }
   };
 
+  const redirectToCustomFlow = async (template: GiftCardTemplate) => {
+    const modal = await Taro.showModal({
+      title: '任意组合礼品卡',
+      content: '任意组合礼品卡需要像普通购物一样挑选商品。完成选品后，在提交订单时勾选“购买礼品卡”。是否立即前往首页？',
+      cancelText: '稍后再去',
+      confirmText: '去首页'
+    });
+    if (!modal.confirm) return;
+
+    Taro.setStorageSync('PENDING_GIFTCARD_ORDER', {
+      flow: 'custom',
+      templateId: template.id,
+      templateName: template.name,
+      autoCheck: true
+    });
+    Taro.setStorageSync('GIFT_CARD_FLOW_HINT', {
+      message: `已开启「${template.name}」礼品卡模式，请从首页挑选商品并在下单页勾选“购买礼品卡”。`
+    });
+    Taro.switchTab({ url: '/pages/index/index' });
+  };
+
   const handlePurchase = (template: GiftCardTemplate) => {
     const flow = resolvePurchaseFlow(template);
     if (flow === 'stored_value') {
@@ -164,12 +185,12 @@ const GiftCardTemplates = () => {
     }
 
     if (flow === 'bundle') {
-      Taro.navigateTo({ url: `/pages/giftcard/bundle-detail?id=${template.id}` });
+      Taro.navigateTo({ url: `/pages/shopping-card/bundle-detail?id=${template.id}` });
       return;
     }
 
     if (flow === 'custom') {
-      Taro.navigateTo({ url: `/pages/giftcard/custom-builder?id=${template.id}` });
+      redirectToCustomFlow(template);
       return;
     }
 

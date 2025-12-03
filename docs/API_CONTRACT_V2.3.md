@@ -119,6 +119,46 @@
 
 ------
 
+### GET `/products/redeem`
+
+**用途**：获取支持积分兑换的商品列表，返回的商品和变体均已在后台积分管理插件中配置为可用积分兑换。
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 101,
+      "name": "五常稻花香大米",
+      "type": "variable",
+      "description": "产自黑龙江五常核心产区，一年一季新米，真空锁鲜",
+      "price": "58.00",
+      "min_price": "58.00",
+      "max_price": "88.00",
+      "image_url": "https://yourdomain.com/wp-content/uploads/2025/11/rice.jpg",
+      "variations": [
+        {
+          "variation_id": 205,
+          "attributes": {
+            "规格": "5kg",
+            "等级": "特级"
+          },
+          "price": 58,
+          "image_url": "https://.../5kg.jpg",
+          "in_stock": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+> ⚠️ 此接口返回的商品和变体均已在后台"积分管理 → 积分兑换商品设置"中配置。如果只配置了特定变体，则只返回这些变体；如果配置了商品但没有配置变体，则返回该商品的所有变体。接口会自动清理已下架或已删除的商品和变体，确保返回的数据是最新的。
+
+------
+
 ## 二、认证与用户
 
 ### POST `/auth/login`
@@ -251,6 +291,62 @@
 ```
 
 > ⚠️ 接口返回最新的整份用户资料，前端需用返回值刷新本地缓存。
+
+------
+
+### GET `/user/addresses`
+
+**用途**：获取当前登录用户的收货地址列表和默认地址，用于订单创建页面自动填充默认地址。
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "addresses": [
+      {
+        "id": "addr_1234567890",
+        "name": "张三",
+        "phone": "13800138000",
+        "province": "北京市",
+        "city": "北京市",
+        "district": "朝阳区",
+        "detail_address": "XX街道XX号",
+        "postcode": "100000",
+        "isDefault": true,
+        "created_at": "2025-01-20T10:00:00+08:00"
+      },
+      {
+        "id": "addr_0987654321",
+        "name": "李四",
+        "phone": "13900139000",
+        "province": "上海市",
+        "city": "上海市",
+        "district": "浦东新区",
+        "detail_address": "YY路YY号",
+        "postcode": "200000",
+        "isDefault": false,
+        "created_at": "2025-01-21T15:30:00+08:00"
+      }
+    ],
+    "default_address": {
+      "id": "addr_1234567890",
+      "name": "张三",
+      "phone": "13800138000",
+      "province": "北京市",
+      "city": "北京市",
+      "district": "朝阳区",
+      "detail_address": "XX街道XX号",
+      "postcode": "100000",
+      "isDefault": true,
+      "created_at": "2025-01-20T10:00:00+08:00"
+    }
+  }
+}
+```
+
+> ⚠️ 如果用户没有地址，`addresses` 返回空数组，`default_address` 返回 `null`。如果没有设置默认地址，`default_address` 返回第一个地址或 `null`。地址数据存储在 WordPress 用户元数据 `_myshop_addresses` 中，订单创建时自动保存新地址。
 
 ------
 
@@ -475,7 +571,7 @@
 }
 ```
 
-> 可选参数 `points_to_use` 将触发 `Order_Controller::calculate_points_discount`，若超过可用积分会直接返回错误。
+> 可选参数 `points_to_use` 将触发 `Order_Controller::calculate_points_discount`，若超过可用积分会直接返回错误。**积分扣除时机**：如果使用了积分抵扣，积分会在订单创建时立即扣除（不再等待订单状态变为 processing），确保积分余额准确。扣除记录写入 `myshop_point_ledger` 表，`channel` 为 `order_discount`，`type` 为 `spend`。
 
 ------
 
@@ -1061,7 +1157,7 @@
 
 #### 与下单抵扣的结合
 
-- `POST /orders` 支持 `points_to_use` 字段，后端调用 `Points_Service::reserve_points` 预占积分，订单完成后转为 `confirmed` 状态；若订单取消则自动释放。
+- `POST /orders` 支持 `points_to_use` 字段，**积分在订单创建时立即扣除**（不再预占），扣除记录状态为 `confirmed`，确保积分余额准确。若订单取消则通过退款机制退还积分。
 - `myshop_points_ledger` 中 `reservation_id` 可追踪每次下单抵扣记录，便于在流水详情中跳转到订单页面。
 - 前端在订单确认页展示「可用积分/本单最多可抵扣」提示，调用 `GET /points/balance` 获取 `available` 值并计算最大抵扣额度。
 
@@ -1413,7 +1509,7 @@
 ```json
 {
   "error_code": "invalid_card",
-  "message": "卡号或密码错误",
+  "message": "卡号无法使用",
   "status": 400
 }
 ```
@@ -1424,18 +1520,16 @@
 | ---------------------- | --------- | ------------------------------ | ------------------------ |
 | `invalid_token`        | 401       | "Token 无效或已过期"           | JWT 失效                 |
 | `missing_param`        | 400       | "缺少参数: {field}"            | 请求体缺失必填字段       |
-| `invalid_card`         | 400       | "卡号或密码错误"               | 卡不存在或 PIN 错        |
+| `invalid_card`         | 400       | "卡号无法使用"                 | 卡不存在或未绑定当前用户 |
 | `gift_card_not_found`  | 404       | "购物卡不存在"                 | card_number 无效         |
 | `not_card_owner`       | 403       | "无权操作此购物卡"             | 非购卡人重置密码         |
 | `card_already_bound`   | 409       | "该购物卡已被其他账号绑定"     | 兑换已绑定账户           |
 | `already_redeemed`     | 409       | "购物卡已被兑换"               | 卡状态非 active          |
 | `card_expired`         | 410       | "购物卡已过期"                 | 超过有效期               |
-| `card_locked`          | 423       | "购物卡已锁定，请联系客服"     | 连续输错 PIN 或后台锁定  |
+| `card_locked`          | 423       | "购物卡已锁定，请联系客服"     | 后台主动锁定             |
 | `insufficient_card_balance` | 409  | "购物卡余额不足"               | 抵扣金额超出余额         |
 | `share_token_active`   | 409       | "当前赠礼链接仍在有效期内"     | 生成分享包时重复创建     |
 | `share_token_invalid`  | 410       | "分享链接已失效，请联系购卡人重新生成" | 受赠人使用过期/失效链接 |
-| `pin_reveal_limit_reached` | 423  | "PIN 已超过查看次数"          | 购卡人尝试重复查看 PIN   |
-| `verification_required` | 401      | "需要先通过二次验证"           | 再次查看 PIN 前未完成验证 |
 | `invalid_verification_code` | 400  | "验证码错误或已失效"          | 二次验证验证码错误       |
 | `points_not_enough`    | 409       | "可用积分不足"                 | 预占/抵扣积分超出可用额度 |
 | `points_action_invalid`| 400       | "积分操作类型不支持"          | `action` 非 reserve/confirm/release |

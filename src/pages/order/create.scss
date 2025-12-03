@@ -12,6 +12,50 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   }
 
+  .giftcard-toggle-card {
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .toggle-texts {
+      flex: 1;
+
+      .toggle-title {
+        font-size: 30px;
+        font-weight: 700;
+        color: #222;
+      }
+
+      .toggle-desc {
+        font-size: 24px;
+        color: #555;
+        margin-top: 8px;
+        line-height: 1.6;
+      }
+    }
+
+    .giftcard-notice {
+      display: block;
+      margin-top: 16px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      background: #ecfff5;
+      color: #1dbf73;
+      font-size: 24px;
+      line-height: 1.5;
+    }
+
+    .giftcard-note {
+      display: block;
+      margin-top: 10px;
+      font-size: 22px;
+      color: #8a8a8a;
+    }
+  }
+
   /* 标题样式 - 醒目显示 */
   .section-title {
     display: block;
@@ -211,5 +255,134 @@
     color: #999;
     font-size: 24px;
     margin-top: 12px;
+  }
+  
+  /* 积分抵扣卡片 */
+  .points-card {
+    .points-info-row,
+    .points-discount-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      font-size: 28px;
+      
+      .points-label {
+        color: #666;
+      }
+      
+      .points-value {
+        color: #333;
+        font-weight: 500;
+      }
+      
+      .points-discount {
+        color: #ff6b6b;
+        font-weight: bold;
+        font-size: 30px;
+      }
+    }
+    
+    .points-input-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 0;
+      margin: 12px 0;
+      border-top: 1px solid #f0f0f0;
+      border-bottom: 1px solid #f0f0f0;
+      
+      .points-label {
+        min-width: 140px;
+        color: #666;
+        font-size: 28px;
+        flex-shrink: 0;
+      }
+      
+      .points-input {
+        flex: 1;
+        height: 70px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 0 20px;
+        font-size: 28px;
+        background: #f8f8f8;
+        box-sizing: border-box;
+        
+        &:focus {
+          border-color: #1a73e8;
+          background: #fff;
+        }
+      }
+      
+      .points-btn {
+        height: 70px !important;
+        line-height: 70px !important;
+        padding: 0 24px !important;
+        font-size: 26px !important;
+        border-radius: 8px !important;
+        background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%) !important;
+        color: white !important;
+        border: none !important;
+        flex-shrink: 0 !important;
+        
+        &::after {
+          border: none !important;
+        }
+        
+        &.clear {
+          background: #e0e0e0 !important;
+          color: #666 !important;
+        }
+      }
+    }
+    
+    .points-tip-row {
+      margin-top: 12px;
+      padding: 8px 0;
+      
+      .points-tip-text {
+        font-size: 24px;
+        color: #999;
+      }
+    }
+    
+    .points-tip {
+      display: block;
+      margin-top: 12px;
+      padding: 12px;
+      background: #fff3cd;
+      border-radius: 8px;
+      color: #856404;
+      font-size: 24px;
+      line-height: 1.5;
+    }
+  }
+  
+  /* 订单总额卡片 */
+  .total-card {
+    .total-row {
+      .total-label {
+        font-size: 32px;
+        font-weight: bold;
+        color: #333;
+      }
+      
+      .total-value {
+        font-size: 40px;
+        font-weight: bold;
+        color: #ff6b6b;
+        
+        &.discount {
+          color: #ff6b6b;
+          font-size: 32px;
+        }
+        
+        &.final {
+          color: #ff6b6b;
+          font-size: 44px;
+        }
+      }
+    }
   }
 }

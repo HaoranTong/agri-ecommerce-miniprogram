@@ -2,6 +2,7 @@ export default defineAppConfig({
   pages: [
     'pages/index/index',
     'pages/product/detail',
+    'pages/product/redeem',
     'pages/order/create',
     'pages/order/order-confirm',
     'pages/order/payment',
@@ -11,16 +12,21 @@ export default defineAppConfig({
     'pages/address/list',
     'pages/address/edit',
     'pages/address/select',
-    'pages/giftcard/templates',
-    'pages/giftcard/bundle-detail',
-    'pages/giftcard/bundle-checkout',
-    'pages/giftcard/custom-builder',
-    'pages/giftcard/custom-checkout',
-    'pages/giftcard/mine',
-    'pages/giftcard/redeem',
-    'pages/giftcard/share',
-    'pages/giftcard/claim',
-    'pages/giftcard/detail',
+    'pages/shopping-card/templates',
+    'pages/shopping-card/bundle-detail',
+    'pages/shopping-card/bundle-checkout',
+    'pages/shopping-card/custom-builder',
+    'pages/shopping-card/custom-checkout',
+    'pages/shopping-card/mine',
+    'pages/shopping-card/redeem',
+    'pages/shopping-card/share',
+    'pages/shopping-card/share-list',
+    'pages/shopping-card/share-confirm',
+    'pages/shopping-card/share-setup',
+    'pages/shopping-card/share-result',
+    'pages/shopping-card/claim',
+    'pages/shopping-card/detail',
+    'pages/shopping-card/manage',
     'pages/referral/index',
     'pages/agent/dashboard',
     'pages/agent/apply',
@@ -70,9 +76,9 @@ export default defineAppConfig({
     borderStyle: 'black'
   },
   networkTimeout: {
-    request: 6000,
-    connectSocket: 6000,
-    uploadFile: 6000,
-    downloadFile: 6000
+    request: 60000,
+    connectSocket: 60000,
+    uploadFile: 60000,
+    downloadFile: 60000
   }
 });

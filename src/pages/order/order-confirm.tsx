@@ -26,17 +26,47 @@ const OrderConfirm = () => {
     return id;
   }, [pageParams]);
   const fromParam = pageParams.from as string | undefined;
-  const isGiftCardOrder = Boolean(fromParam && fromParam.startsWith('giftcard'));
-  const giftcardFlowText = useMemo(() => {
-    if (!isGiftCardOrder || !fromParam) return '礼品卡订单';
-    if (fromParam === 'giftcard_bundle') return '固定组合礼品卡订单';
-    if (fromParam === 'giftcard_custom') return '任意组合礼品卡订单';
-    if (fromParam === 'giftcard_stored_value') return '储值卡订单';
-    return '礼品卡订单';
-  }, [fromParam, isGiftCardOrder]);
   
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const derivedGiftcardMode = useMemo(() => {
+    if (order?.giftcard_mode) {
+      return order.giftcard_mode;
+    }
+    if (fromParam && fromParam.startsWith('giftcard')) {
+      return fromParam;
+    }
+    return '';
+  }, [order?.giftcard_mode, fromParam]);
+
+  const isGiftCardOrder = useMemo(() => {
+    if (order?.is_gift_card_order) {
+      return true;
+    }
+    return derivedGiftcardMode !== '';
+  }, [order?.is_gift_card_order, derivedGiftcardMode]);
+
+  const giftcardFlowText = useMemo(() => {
+    if (!isGiftCardOrder) return '购物卡订单';
+    switch (derivedGiftcardMode) {
+      case 'giftcard_bundle':
+        return '固定组合购物卡订单';
+      case 'giftcard_custom':
+        return '任意组合购物卡订单';
+      case 'giftcard_stored_value':
+        return '储值购物卡订单';
+      default:
+        return '购物卡订单';
+    }
+  }, [derivedGiftcardMode, isGiftCardOrder]);
+
+  const toNumber = (value?: string | number | null) => {
+    if (typeof value === 'number') return value;
+    if (!value) return 0;
+    const num = Number(value);
+    return Number.isNaN(num) ? 0 : num;
+  };
 
   const loadOrder = useCallback(async () => {
     if (!orderId) {
@@ -71,6 +101,13 @@ const OrderConfirm = () => {
     );
   }
 
+  const goodsTotal = toNumber(order.original_total ?? order.total);
+  const payableTotal = toNumber(order.total);
+  const couponDiscount = order.coupon_info ? toNumber(order.coupon_info.discount_amount) : 0;
+  const pointsUsed = order.points_usage?.points_used ?? 0;
+  const pointsDiscountAmount = toNumber(order.points_usage?.discount_amount);
+  const hasPointsDiscount = pointsUsed > 0 && pointsDiscountAmount > 0;
+
   return (
     <View className='order-confirm-page'>
       <Text className='page-title'>请确认订单信息</Text>
@@ -91,8 +128,8 @@ const OrderConfirm = () => {
           </View>
         ))}
         <View className='total-row'>
-          <Text className='label'>订单总额</Text>
-          <Text className='amount'>¥{order.total}</Text>
+          <Text className='label'>商品金额</Text>
+          <Text className='amount'>¥{goodsTotal.toFixed(2)}</Text>
         </View>
       </View>
 
@@ -107,29 +144,33 @@ const OrderConfirm = () => {
           <Text className='label'>支付状态</Text>
           <Text className='value status'>{getStatusText(order.status)}</Text>
         </View>
+        {order.coupon_info && couponDiscount > 0 && (
+          <View className='info-row'>
+            <Text className='label'>优惠券</Text>
+            <Text className='value discount'>-¥{couponDiscount.toFixed(2)}</Text>
+          </View>
+        )}
+        {hasPointsDiscount && (
+          <View className='info-row'>
+            <Text className='label'>积分抵扣</Text>
+            <Text className='value discount'>
+              -¥{pointsDiscountAmount.toFixed(2)}（{pointsUsed} 积分）
+            </Text>
+          </View>
+        )}
+        <View className='info-row total'>
+          <Text className='label'>应付金额</Text>
+          <Text className='value amount'>¥{payableTotal.toFixed(2)}</Text>
+        </View>
       </View>
 
-      {/* 礼品卡提示 */}
+      {/* 购物卡提示 */}
       {isGiftCardOrder && (
         <View className='giftcard-hint-card'>
           <Text className='hint-title'>{giftcardFlowText}温馨提示</Text>
-          <Text className='hint-item'>1. 该订单无需填写收货地址，支付审核通过后系统会自动生成礼品卡。</Text>
-          <Text className='hint-item'>2. 礼品卡将投放到“我的礼品卡”，可随时查看卡号/PIN 并分享。</Text>
-          <Text className='hint-item'>3. 有任何问题可在支付凭证备注受赠人信息，方便客服处理。</Text>
-          <View className='hint-actions'>
-            <Button
-              className='hint-btn secondary'
-              onClick={() => Taro.navigateTo({ url: '/pages/giftcard/templates' })}
-            >
-              查看其他礼品卡
-            </Button>
-            <Button
-              className='hint-btn'
-              onClick={() => Taro.navigateTo({ url: '/pages/giftcard/mine' })}
-            >
-              我的礼品卡
-            </Button>
-          </View>
+          <Text className='hint-item'>1. 审核通过后，购物卡会自动保存到“我的购物卡”，无需再填写收货地址。</Text>
+          <Text className='hint-item'>2. 卡片会绑定当前账号，可在购物卡中心随时分享、转赠或兑换。</Text>
+          <Text className='hint-item'>3. 兑换商品时填写收货信息即可生成 0 元订单，无需再次上传支付凭证。</Text>
         </View>
       )}
 
@@ -157,22 +198,34 @@ const OrderConfirm = () => {
       )}
 
       {/* 操作按钮 */}
-      <View className='action-buttons'>
-        <Button className='modify-btn' onClick={() => Taro.switchTab({ url: '/pages/cart/index' })}>
-          修改订单
-        </Button>
-        {!isGiftCardOrder && (
+      {isGiftCardOrder ? (
+        <View className='action-buttons triple'>
+          <Button className='nav-btn' onClick={() => Taro.switchTab({ url: '/pages/index/index' })}>
+            首页
+          </Button>
+          <Button className='nav-btn' onClick={() => Taro.navigateTo({ url: '/pages/shopping-card/mine' })}>
+            购物卡
+          </Button>
+          <Button className='nav-btn' onClick={() => Taro.switchTab({ url: '/pages/user/profile' })}>
+            我的
+          </Button>
+        </View>
+      ) : (
+        <View className='action-buttons'>
+          <Button className='modify-btn' onClick={() => Taro.switchTab({ url: '/pages/cart/index' })}>
+            修改订单
+          </Button>
           <Button className='modify-btn' onClick={() => Taro.navigateBack()}>
             修改收货地址
           </Button>
-        )}
-        <Button 
-          className='pay-btn' 
-          onClick={() => Taro.redirectTo({ url: `/pages/order/payment?orderId=${order.order_id}` })}
-        >
-          去支付
-        </Button>
-      </View>
+          <Button
+            className='pay-btn'
+            onClick={() => Taro.redirectTo({ url: `/pages/order/payment?orderId=${order.order_id}` })}
+          >
+            去支付
+          </Button>
+        </View>
+      )}
     </View>
   );
 };

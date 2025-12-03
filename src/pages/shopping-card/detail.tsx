@@ -35,7 +35,7 @@ const GiftCardDetail = () => {
 
   const handleClaim = () => {
     if (!token) return;
-    Taro.redirectTo({ url: `/pages/giftcard/claim?token=${token}` });
+    Taro.redirectTo({ url: `/pages/shopping-card/claim?token=${token}` });
   };
 
   const getStatusText = (status: string) => {
