@@ -193,7 +193,7 @@ const GiftCardShare = () => {
     } finally {
       setLoading(false);
     }
-  }, [presetCardFromRoute]);
+  }, [presetCardFromRoute, isShareableCard]);
 
   useEffect(() => {
     loadCards();
