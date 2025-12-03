@@ -1,4 +1,4 @@
-import { Button, Image, Text, View, Canvas } from '@tarojs/components';
+import { Button, Image, Text, View } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import QRCode from 'qrcode-generator';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -255,7 +255,7 @@ const GiftCardShareResult = () => {
     );
   }
 
-  const cardSnapshot = shareResult.card_snapshot;
+  // const cardSnapshot = shareResult.card_snapshot;
 
   return (
     <View className='share-result-page'>

@@ -86,6 +86,7 @@ const GiftCardShare = () => {
     return candidates.filter((mode): mode is GiftCardDeliveryMode => Boolean(MODE_META[mode as GiftCardDeliveryMode]));
   };
 
+  // 函数不依赖可变外部值，移除不必要依赖
   const isShareableCard = useCallback(
     (card: GiftCard) => card.status === 'active' && getBalanceNumber(card.balance) > 0 && card.share_state !== 'consumed',
     []

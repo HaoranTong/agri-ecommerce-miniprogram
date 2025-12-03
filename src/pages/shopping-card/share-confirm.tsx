@@ -1,4 +1,4 @@
-import { Button, Image, Text, View } from '@tarojs/components';
+import { Button, Text, View } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import { useCallback, useEffect, useState } from 'react';
 

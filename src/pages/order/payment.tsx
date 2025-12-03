@@ -126,8 +126,8 @@ const OrderPayment = () => {
     try {
       Taro.showLoading({ title: '验证中...', mask: true });
       
-      // 先验证优惠券
-      const couponData = await couponService.validate(couponCode.trim());
+      // 先验证优惠券（仅校验，不保留未使用的返回值）
+      await couponService.validate(couponCode.trim());
       
       // 应用到订单
       const result = await orderService.applyCoupon(orderId, couponCode.trim());
