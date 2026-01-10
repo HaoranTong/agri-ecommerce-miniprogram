@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { couponService, giftCardService, orderService } from '../../services/api';
 import type { GiftCard, OrderDetail } from '../../types';
+import { showErrorToast, analyzeError } from '../../utils/errorHandler';
+import EmptyState from '../../components/EmptyState';
 import './payment.scss';
 
 const OrderPayment = () => {
@@ -83,7 +85,8 @@ const OrderPayment = () => {
       }
     } catch (error) {
       console.error('[OrderConfirm] 获取订单失败', error);
-      Taro.showToast({ title: '获取订单失败', icon: 'none' });
+      const appError = analyzeError(error);
+      showErrorToast(appError, '获取订单信息失败');
     } finally {
       setLoading(false);
     }
@@ -103,7 +106,8 @@ const OrderPayment = () => {
       } catch (error) {
         console.error('加载储值卡失败', error);
         if (showSpinner) {
-          Taro.showToast({ title: '加载储值卡失败', icon: 'none' });
+          const appError = analyzeError(error);
+          showErrorToast(appError, '加载储值卡失败');
         }
       } finally {
         if (showSpinner) setLoadingCards(false);
@@ -151,8 +155,9 @@ const OrderPayment = () => {
       });
     } catch (error: any) {
       Taro.hideLoading();
-      const errorMsg = error?.message || '优惠券验证失败';
-      Taro.showToast({ title: errorMsg, icon: 'none', duration: 2000 });
+      const appError = analyzeError(error);
+      const customMessage = '优惠券验证失败';
+      showErrorToast(appError, customMessage);
     }
   };
 
@@ -193,8 +198,9 @@ const OrderPayment = () => {
       }
     } catch (error: any) {
       Taro.hideLoading();
-      const errorMsg = error?.message || '使用购物卡失败';
-      Taro.showToast({ title: errorMsg, icon: 'none', duration: 2000 });
+      const appError = analyzeError(error);
+      const customMessage = '使用购物卡失败';
+      showErrorToast(appError, customMessage);
     }
   };
 
@@ -213,7 +219,13 @@ const OrderPayment = () => {
   if (!order) {
     return (
       <View className='order-detail-page'>
-        <View className='empty-state'>未找到订单信息</View>
+        <EmptyState
+          type='default'
+          title='未找到订单信息'
+          description='订单可能已被删除或不存在，请检查后重试'
+          actionText='返回首页'
+          actionUrl='/pages/index/index'
+        />
       </View>
     );
   }
@@ -242,16 +254,15 @@ const OrderPayment = () => {
       Taro.hideLoading();
       console.error('上传付款凭证失败', error);
       
-      // 根据错误类型提供更友好的提示
-      const errorMsg = error?.errMsg || error?.message || '上传失败';
-      if (errorMsg.includes('timeout')) {
+      const appError = analyzeError(error);
+      if (appError.type === 'network') {
         Taro.showModal({
           title: '上传超时',
           content: '网络连接超时，请检查网络后重试。如多次失败，请联系客服直接发送凭证。',
           showCancel: false
         });
       } else {
-        Taro.showToast({ title: '上传失败，请重试', icon: 'none' });
+        showErrorToast(appError, '上传失败，请重试');
       }
     }
   };
@@ -380,7 +391,7 @@ const OrderPayment = () => {
                 placeholder='请输入优惠券号码'
                 value={couponCode}
                 onInput={(e) => setCouponCode(e.detail.value)}
-                maxLength={50}
+                maxlength={50}
               />
               <Button className='modal-confirm-btn' onClick={handleApplyCoupon}>
                 确认使用

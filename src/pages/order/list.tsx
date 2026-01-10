@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { orderService } from '../../services/api';
 import type { OrderDetail } from '../../types';
+import Skeleton from '../../components/Skeleton';
 import './list.scss';
 
 const OrderList = () => {
@@ -41,7 +42,9 @@ const OrderList = () => {
   if (loading) {
     return (
       <View className='order-list-page'>
-        <View className='loading'>订单加载中...</View>
+        <View className='skeleton-section'>
+          <Skeleton type='order' count={3} />
+        </View>
       </View>
     );
   }

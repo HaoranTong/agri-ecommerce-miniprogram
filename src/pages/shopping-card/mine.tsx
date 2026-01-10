@@ -4,31 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { giftCardService } from '../../services/api';
 import type { GiftCard } from '../../types';
+import Skeleton from '../../components/Skeleton';
 import './mine.scss';
-
-// 移除未使用的工具函数以消除 lint 警告
-// const getBalanceNumber = (balance: string | null) => Number(balance ?? 0);
-
-// const SHARE_STATE_LABELS: Record<string, string> = {
-//   none: '未分享',
-//   shared: '已分享',
-//   bound: '待兑换',
-//   consumed: '已兑换',
-//   expired: '已过期'
-// };
-
-// const formatDateTime = (value?: string | null) => {
-//   if (!value) return '—';
-//   const safeValue = value.replace(/-/g, '/');
-//   const date = new Date(safeValue);
-//   if (Number.isNaN(date.getTime())) {
-//     return value;
-//   }
-//   const pad = (num: number) => (num < 10 ? `0${num}` : `${num}`);
-//   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(
-//     date.getHours()
-//   )}:${pad(date.getMinutes())}`;
-// };
 
 const QUICK_ACTIONS = [
   {
@@ -125,7 +102,13 @@ const GiftCardMine = () => {
   }, [cards]);
 
   if (loading) {
-    return <View className='giftcard-mine-page loading-state'>购物卡加载中...</View>;
+    return (
+      <View className='giftcard-mine-page'>
+        <View className='skeleton-section'>
+          <Skeleton type='card' count={3} />
+        </View>
+      </View>
+    );
   }
 
   if (!cards.length) {

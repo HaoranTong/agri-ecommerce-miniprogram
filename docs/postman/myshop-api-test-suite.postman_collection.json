@@ -24,43 +24,6 @@
               "path": ["wp-json", "myshop", "v1", "auth", "login"]
             }
           },
-          "response": []
-        },
-            {
-              "name": "Get Gift Card Share History",
-              "request": {
-                "method": "GET",
-                "header": [
-                  { "key": "Authorization", "value": "Bearer {{auth_token}}" }
-                ],
-                "url": {
-                  "protocol": "https",
-                  "host": ["agri-ecommerce", "test"],
-                  "path": ["wp-json", "myshop", "v1", "gift-cards", "{{card_number}}", "share-history"]
-                }
-              },
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "type": "text/javascript",
-                    "exec": [
-                      "pm.test('状态码为200', function () {",
-                      "  pm.response.to.have.status(200);",
-                      "});",
-        {
-          "name": "Get Gift Card Share History",
-          "request": {
-            "method": "GET",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
-            ],
-            "url": {
-              "protocol": "https",
-              "host": ["agri-ecommerce", "test"],
-              "path": ["wp-json", "myshop", "v1", "gift-cards", "{{card_number}}", "share-history"]
-            }
-          },
           "event": [
             {
               "listen": "test",
@@ -71,62 +34,20 @@
                   "  pm.response.to.have.status(200);",
                   "});",
                   "const json = pm.response.json();",
-                  "pm.test('返回分享记录数组', function () {",
+                  "pm.test('登录成功返回token', function () {",
                   "  pm.expect(json.success).to.eql(true);",
-                  "  pm.expect(Array.isArray(json.data.share_history)).to.eql(true);",
+                  "  pm.expect(json.data).to.have.property('token');",
                   "});",
-                  "pm.environment.set('gift_card_share_history_size', Array.isArray(json.data.share_history) ? json.data.share_history.length : 0);"
+                  "if (json && json.data && json.data.token) {",
+                  "  pm.environment.set('auth_token', 'Bearer ' + json.data.token);",
+                  "  pm.environment.set('user_id', json.data.user_id || '');",
+                  "}"
                 ]
               }
             }
           ],
           "response": []
-        }
-                      "const json = pm.response.json();",
-                      "pm.test('返回分享记录数组', function () {",
-                      "  pm.expect(json.success).to.eql(true);",
-                      "  pm.expect(Array.isArray(json.data.share_history)).to.eql(true);",
-                      "});",
-                      "pm.environment.set('gift_card_share_history_size', Array.isArray(json.data.share_history) ? json.data.share_history.length : 0);"
-                    ]
-                  }
-                }
-              ],
-              "response": []
-            },
-            {
-              "name": "Revoke Gift Card Share",
-              "request": {
-                "method": "POST",
-                "header": [
-                  { "key": "Authorization", "value": "Bearer {{auth_token}}" }
-                ],
-                "url": {
-                  "protocol": "https",
-                  "host": ["agri-ecommerce", "test"],
-                  "path": ["wp-json", "myshop", "v1", "gift-cards", "share", "{{card_number}}", "revoke"]
-                }
-              },
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "type": "text/javascript",
-                    "exec": [
-                      "pm.test('状态码为200', function () {",
-                      "  pm.response.to.have.status(200);",
-                      "});",
-                      "const json = pm.response.json();",
-                      "pm.test('撤销后share_state为none或expired', function () {",
-                      "  pm.expect(json.success).to.eql(true);",
-                      "  pm.expect(['none','expired']).to.include(json.data.share_state);",
-                      "});"
-                    ]
-                  }
-                }
-              ],
-              "response": []
-            },
+        },
         {
           "name": "Get User Profile",
           "request": {
@@ -156,19 +77,6 @@
               "protocol": "https",
               "host": ["agri-ecommerce", "test"],
               "path": ["wp-json", "myshop", "v1", "products"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Product Detail",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "protocol": "https",
-              "host": ["agri-ecommerce", "test"],
-              "path": ["wp-json", "myshop", "v1", "products", "{{variation_id}}"]
             }
           },
           "response": []
@@ -203,7 +111,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"variation_id\": {{variation_id}},\n  \"quantity\": 1\n}"
+              "raw": "{\n  \"product_id\": {{product_id}},\n  \"quantity\": 1\n}"
             },
             "url": {
               "protocol": "https",
@@ -243,7 +151,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"variation_id\": {{variation_id}},\n  \"quantity\": 1,\n  \"shipping_address\": {\n    \"name\": \"张三\",\n    \"phone\": \"13800138000\",\n    \"province\": \"广东省\",\n    \"city\": \"深圳市\",\n    \"district\": \"南山区\",\n    \"detail_address\": \"科技园科兴科学园A4栋\",\n    \"postcode\": \"518000\"\n  }\n}"
+              "raw": "{\n  \"product_id\": {{product_id}},\n  \"quantity\": 1,\n  \"shipping_address\": {\n    \"name\": \"张三\",\n    \"phone\": \"13800138000\",\n    \"province\": \"广东省\",\n    \"city\": \"深圳市\",\n    \"district\": \"南山区\",\n    \"detail_address\": \"科技园科兴科学园A4栋\"\n  }\n}"
             },
             "url": {
               "protocol": "https",
@@ -267,36 +175,6 @@
             }
           },
           "response": []
-        },
-        {
-          "name": "Upload Payment Proof",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "order_id",
-                  "value": "{{order_id}}",
-                  "type": "text"
-                },
-                {
-                  "key": "proof_image",
-                  "src": "{{payment_image_path}}",
-                  "type": "file"
-                }
-              ]
-            },
-            "url": {
-              "protocol": "https",
-              "host": ["agri-ecommerce", "test"],
-              "path": ["wp-json", "myshop", "v1", "orders", "upload-payment-proof"]
-            }
-          },
-          "response": []
         }
       ]
     },
@@ -312,19 +190,6 @@
               "protocol": "https",
               "host": ["agri-ecommerce", "test"],
               "path": ["wp-json", "myshop", "v1", "gift-cards", "templates"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Gift Card Template Detail",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "protocol": "https",
-              "host": ["agri-ecommerce", "test"],
-              "path": ["wp-json", "myshop", "v1", "gift-cards", "templates", "{{gift_card_template_id}}"]
             }
           },
           "response": []
@@ -347,33 +212,6 @@
               "path": ["wp-json", "myshop", "v1", "gift-cards", "purchase"]
             }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"状态码为200\", function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const json = pm.response.json();",
-                  "pm.test(\"成功返回礼品卡号\", function () {",
-                  "  pm.expect(json.success).to.eql(true);",
-                  "  pm.expect(json.data).to.have.property('card_number');",
-                  "});",
-                  "pm.test(\"PIN 为空或缺省\", function () {",
-                  "  const pin = json.data ? json.data.card_pin : null;",
-                  "  pm.expect(pin === null || pin === undefined || pin === '').to.eql(true);",
-                  "});",
-                  "if (json && json.data) {",
-                  "  pm.environment.set('card_number', json.data.card_number || '');",
-                  "  pm.environment.set('card_pin', json.data.card_pin || '');",
-                  "  pm.environment.set('gift_card_template_id', json.data.template ? json.data.template.id : pm.environment.get('gift_card_template_id'));",
-                  "}"
-                ]
-              }
-            }
-          ],
           "response": []
         },
         {
@@ -386,7 +224,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"card_number\": \"{{card_number}}\",\n  \"delivery_mode\": \"digital_share\",\n  \"channel\": \"miniprogram\",\n  \"message\": \"节日快乐，收下这份心意！\",\n  \"theme\": \"default\",\n  \"format\": \"both\"\n}"
+              "raw": "{\n  \"card_number\": \"{{card_number}}\",\n  \"delivery_mode\": \"digital_share\",\n  \"channel\": \"wechat\"\n}"
             },
             "url": {
               "protocol": "https",
@@ -400,20 +238,15 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"状态码为200\", function () {",
+                  "pm.test('状态码为200', function () {",
                   "  pm.response.to.have.status(200);",
                   "});",
                   "const json = pm.response.json();",
-                  "pm.test(\"生成分享令牌\", function () {",
+                  "pm.test('生成分享令牌', function () {",
                   "  pm.expect(json.success).to.eql(true);",
-                  "  pm.expect(json.data).to.have.property('share_token');",
                   "});",
-                  "pm.test(\"返回分享历史数组\", function () {",
-                  "  const history = json.data ? json.data.share_history : null;",
-                  "  pm.expect(Array.isArray(history)).to.eql(true);",
-                  "});",
-                  "if (json && json.data) {",
-                  "  pm.environment.set('gift_card_share_token', json.data.share_token || '');",
+                  "if (json && json.data && json.data.share_token) {",
+                  "  pm.environment.set('gift_card_share_token', json.data.share_token);",
                   "}"
                 ]
               }
@@ -432,37 +265,10 @@
               "path": ["wp-json", "myshop", "v1", "gift-cards", "share", "{{gift_card_share_token}}"]
             }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"状态码为200\", function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const json = pm.response.json();",
-                  "pm.test(\"返回分享详情\", function () {",
-                  "  pm.expect(json.success).to.eql(true);",
-                  "  pm.expect(json.data).to.have.property('card_number');",
-                  "});",
-                  "if (json && json.data) {",
-                  "  pm.test(\"卡号与环境变量一致\", function () {",
-                  "    pm.expect(json.data.card_number).to.eql(pm.environment.get('card_number'));",
-                  "  });",
-                  "  pm.test(\"返回卡片快照与历史\", function () {",
-                  "    pm.expect(json.data).to.have.property('card_snapshot');",
-                  "    pm.expect(Array.isArray(json.data.share_history)).to.eql(true);",
-                  "  });",
-                  "}"
-                ]
-              }
-            }
-          ],
           "response": []
         },
         {
-          "name": "Revoke Gift Card Share",
+          "name": "Claim Shared Gift Card",
           "request": {
             "method": "POST",
             "header": [
@@ -471,63 +277,9 @@
             "url": {
               "protocol": "https",
               "host": ["agri-ecommerce", "test"],
-              "path": ["wp-json", "myshop", "v1", "gift-cards", "share", "{{card_number}}", "revoke"]
+              "path": ["wp-json", "myshop", "v1", "gift-cards", "share", "{{gift_card_share_token}}", "claim"]
             }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('状态码为200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const json = pm.response.json();",
-                  "pm.test('撤销后share_state为none或expired', function () {",
-                  "  pm.expect(json.success).to.eql(true);",
-                  "  pm.expect(['none','expired']).to.include(json.data.share_state);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "response": []
-        },
-        {
-          "name": "Redeem Shared Gift Card (Recipient)",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
-            ],
-            "url": {
-              "protocol": "https",
-              "host": ["agri-ecommerce", "test"],
-              "path": ["wp-json", "myshop", "v1", "gift-cards", "share", "{{gift_card_share_token}}", "redeem"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"状态码为200\", function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const json = pm.response.json();",
-                  "pm.test(\"领取状态为bound\", function () {",
-                  "  pm.expect(json.success).to.eql(true);",
-                  "  pm.expect(json.data).to.have.property('status', 'bound');",
-                  "});",
-                  "if (json && json.data && json.data.card_number) {",
-                  "  pm.environment.set('card_number', json.data.card_number);",
-                  "}"
-                ]
-              }
-            }
-          ],
           "response": []
         },
         {
@@ -548,25 +300,6 @@
               "path": ["wp-json", "myshop", "v1", "gift-cards", "redeem"]
             }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"状态码为200\", function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const json = pm.response.json();",
-                  "pm.test(\"礼品卡兑换成功\", function () {",
-                  "  pm.expect(json.success).to.eql(true);",
-                  "  pm.expect(json.data).to.have.property('status', 'redeemed');",
-                  "});",
-                  "pm.environment.set('gift_card_last_redeem_status', json && json.data ? json.data.status : '');"
-                ]
-              }
-            }
-          ],
           "response": []
         },
         {
@@ -582,34 +315,6 @@
               "path": ["wp-json", "myshop", "v1", "gift-cards"]
             }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"状态码为200\", function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const json = pm.response.json();",
-                  "pm.test(\"返回礼品卡列表\", function () {",
-                  "  pm.expect(json.success).to.eql(true);",
-                  "  pm.expect(Array.isArray(json.data)).to.eql(true);",
-                  "});",
-                  "if (json && Array.isArray(json.data)) {",
-                  "  const target = json.data.find(item => item.card_number === pm.environment.get('card_number'));",
-                  "  if (target) {",
-                  "    pm.environment.set('gift_card_last_known_status', target.status || '');",
-                  "    pm.test('包含分享字段', function () {",
-                  "      pm.expect(target).to.have.property('share_state');",
-                  "      pm.expect(target).to.have.property('card_snapshot');",
-                  "    });",
-                  "  }",
-                  "}"
-                ]
-              }
-            }
-          ],
           "response": []
         }
       ]
@@ -630,28 +335,6 @@
               "path": ["wp-json", "myshop", "v1", "points", "balance"]
             }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('状态码为200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const json = pm.response.json();",
-                  "pm.test('返回积分数据', function () {",
-                  "  pm.expect(json.success).to.eql(true);",
-                  "  pm.expect(json.data).to.have.property('available');",
-                  "});",
-                  "if (json && json.data) {",
-                  "  pm.environment.set('points_available', json.data.available || 0);",
-                  "}",
-                  "pm.environment.set('points_balance_after_spend', '');"
-                ]
-              }
-            }
-          ],
           "response": []
         },
         {
@@ -671,29 +354,6 @@
               ]
             }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('状态码为200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const json = pm.response.json();",
-                  "pm.test('返回积分流水数组', function () {",
-                  "  pm.expect(json.success).to.eql(true);",
-                  "  pm.expect(Array.isArray(json.data)).to.be.true;",
-                  "});",
-                  "if (json && Array.isArray(json.data) && json.data.length > 0) {",
-                  "  const latest = json.data[0];",
-                  "  pm.environment.set('points_last_entry_id', latest.id || '');",
-                  "  pm.environment.set('points_last_entry_delta', latest.delta || '');",
-                  "}"
-                ]
-              }
-            }
-          ],
           "response": []
         },
         {
@@ -707,7 +367,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"points\": {{points_seed_amount}},\n  \"reason\": \"{{points_seed_reason}}\",\n  \"target_openid\": \"{{points_seed_target_openid}}\"\n}"
+              "raw": "{\n  \"points\": {{points_seed_amount}},\n  \"reason\": \"{{points_seed_reason}}\",\n  \"target_user_id\": {{user_id}}\n}"
             },
             "url": {
               "protocol": "https",
@@ -715,30 +375,6 @@
               "path": ["wp-json", "myshop", "v1", "points", "grant"]
             }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('状态码为200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const json = pm.response.json();",
-                  "pm.test('发放成功', function () {",
-                  "  pm.expect(json.success).to.eql(true);",
-                  "  pm.expect(json.data).to.have.property('new_balance');",
-                  "});",
-                  "if (json && json.data) {",
-                  "  pm.environment.set('points_last_granted', json.data.granted || 0);",
-                  "  pm.environment.set('points_balance_after_grant', json.data.new_balance || 0);",
-                  "  pm.environment.set('points_available', json.data.new_balance || 0);",
-                  "}",
-                  "pm.environment.set('points_balance_after_spend', '');"
-                ]
-              }
-            }
-          ],
           "response": []
         },
         {
@@ -759,32 +395,6 @@
               "path": ["wp-json", "myshop", "v1", "points", "spend"]
             }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "  const json = pm.response.json();",
-                  "  pm.test('扣减成功', function () {",
-                  "    pm.expect(json.success).to.eql(true);",
-                  "    pm.expect(json.data).to.have.property('new_balance');",
-                  "  });",
-                  "  pm.environment.set('points_balance_after_spend', json.data.new_balance || 0);",
-                  "  pm.environment.set('points_available', json.data.new_balance || 0);",
-                  "} else {",
-                  "  const json = pm.response.json();",
-                  "  pm.test('余额不足提示', function () {",
-                  "    pm.expect(pm.response.code).to.eql(400);",
-                  "    pm.expect(json.code).to.be.oneOf(['insufficient_points','invalid_points']);",
-                  "  });",
-                  "}",
-                  "pm.environment.set('points_last_spend_code', pm.response.code);"
-                ]
-              }
-            }
-          ],
           "response": []
         }
       ]
@@ -834,7 +444,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"inviter_id\": {{user_id}},\n  \"channel\": \"wechat_moments\",\n  \"scene\": \"poster\",\n  \"landing_page\": \"/pages/index/index\",\n  \"extra\": {\n    \"campaign\": \"double11\"\n  }\n}"
+              "raw": "{\n  \"inviter_id\": {{user_id}},\n  \"channel\": \"wechat_moments\",\n  \"scene\": \"poster\",\n  \"landing_page\": \"/pages/index/index\"\n}"
             },
             "url": {
               "protocol": "https",
@@ -847,10 +457,10 @@
       ]
     },
     {
-      "name": "Referrals",
+      "name": "Analytics",
       "item": [
         {
-          "name": "Get Referral Code",
+          "name": "Channel Overview",
           "request": {
             "method": "GET",
             "header": [
@@ -859,72 +469,22 @@
             "url": {
               "protocol": "https",
               "host": ["agri-ecommerce", "test"],
-              "path": ["wp-json", "myshop", "v1", "referral", "code"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('状态码为200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const json = pm.response.json();",
-                  "pm.test('返回邀请码', function () {",
-                  "  pm.expect(json.success).to.eql(true);",
-                  "  pm.expect(json.data).to.have.property('referral_code');",
-                  "});",
-                  "if (json && json.data) {",
-                  "  pm.environment.set('referral_code', json.data.referral_code || '');",
-                  "}"
-                ]
-              }
-            }
-          ],
-          "response": []
-        },
-        {
-          "name": "List Referral Members",
-          "request": {
-            "method": "GET",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
-            ],
-            "url": {
-              "protocol": "https",
-              "host": ["agri-ecommerce", "test"],
-              "path": ["wp-json", "myshop", "v1", "referral", "members"],
+              "path": ["wp-json", "myshop", "v1", "analytics", "channel"],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "per_page", "value": "20" }
+                { "key": "from", "value": "{{range_from}}" },
+                { "key": "to", "value": "{{range_to}}" }
               ]
             }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('状态码为200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const json = pm.response.json();",
-                  "pm.test('返回成员列表', function () {",
-                  "  pm.expect(json.success).to.eql(true);",
-                  "  pm.expect(Array.isArray(json.data)).to.be.true;",
-                  "});",
-                  "pm.environment.set('referral_members_count', Array.isArray(json.data) ? json.data.length : 0);"
-                ]
-              }
-            }
-          ],
           "response": []
-        },
+        }
+      ]
+    },
+    {
+      "name": "Referrals",
+      "item": [
         {
-          "name": "Get Referral Summary",
+          "name": "Get My Downlines",
           "request": {
             "method": "GET",
             "header": [
@@ -933,32 +493,9 @@
             "url": {
               "protocol": "https",
               "host": ["agri-ecommerce", "test"],
-              "path": ["wp-json", "myshop", "v1", "referral", "summary"]
+              "path": ["wp-json", "myshop", "v1", "referrals", "my-downlines"]
             }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('状态码为200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const json = pm.response.json();",
-                  "pm.test('返回邀请统计', function () {",
-                  "  pm.expect(json.success).to.eql(true);",
-                  "  pm.expect(json.data).to.have.property('referral_code');",
-                  "});",
-                  "if (json && json.data) {",
-                  "  pm.environment.set('referral_code', json.data.referral_code || '');",
-                  "  pm.environment.set('referral_total_invitees', json.data.total_invitees || 0);",
-                  "  pm.environment.set('referral_last_summary', JSON.stringify(json.data));",
-                  "}"
-                ]
-              }
-            }
-          ],
           "response": []
         }
       ]
@@ -976,11 +513,7 @@
             "url": {
               "protocol": "https",
               "host": ["agri-ecommerce", "test"],
-              "path": ["wp-json", "myshop", "v1", "commissions"],
-              "query": [
-                { "key": "page", "value": "1" },
-                { "key": "per_page", "value": "20" }
-              ]
+              "path": ["wp-json", "myshop", "v1", "commissions"]
             }
           },
           "response": []
@@ -1015,53 +548,6 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"region_zone\": \"{{agent_region_zone}}\",\n  \"region_province\": \"{{agent_region_province}}\",\n  \"region_city\": \"{{agent_region_city}}\",\n  \"level\": 1,\n  \"parent_agent_code\": \"{{parent_agent_code}}\"\n}"
-            },
-            "url": {
-              "protocol": "https",
-              "host": ["agri-ecommerce", "test"],
-              "path": ["wp-json", "myshop", "v1", "agents", "apply"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('状态码为200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const json = pm.response.json();",
-                  "pm.test('返回代理编号', function () {",
-                  "  pm.expect(json.success).to.eql(true);",
-                  "  pm.expect(json.data).to.have.property('agent_code');",
-                  "  pm.expect(json.data).to.have.property('active_until');",
-                  "  pm.expect(json.data).to.have.property('is_active');",
-                  "});",
-                  "if (json && json.data) {",
-                  "  pm.environment.set('agent_code_last', json.data.agent_code || '');",
-                  "}",
-                  "if (!pm.environment.get('parent_agent_code')) {",
-                  "  pm.environment.set('parent_agent_code', json.data.agent_code || '');",
-                  "}",
-                  "pm.environment.set('agent_status_last', json.data.status || '');"
-                ]
-              }
-            }
-          ],
-          "response": []
-        },
-        {
-          "name": "Apply As Agent (Duplicate Region)",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
-            ],
-            "body": {
-              "mode": "raw",
               "raw": "{\n  \"region_zone\": \"{{agent_region_zone}}\",\n  \"region_province\": \"{{agent_region_province}}\",\n  \"region_city\": \"{{agent_region_city}}\",\n  \"level\": 1\n}"
             },
             "url": {
@@ -1070,23 +556,6 @@
               "path": ["wp-json", "myshop", "v1", "agents", "apply"]
             }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('状态码为409', function () {",
-                  "  pm.response.to.have.status(409);",
-                  "});",
-                  "const json = pm.response.json();",
-                  "pm.test('区域占用错误码', function () {",
-                  "  pm.expect(json.code || json.error_code).to.eql('region_occupied');",
-                  "});"
-                ]
-              }
-            }
-          ],
           "response": []
         },
         {
@@ -1099,35 +568,24 @@
             "url": {
               "protocol": "https",
               "host": ["agri-ecommerce", "test"],
-              "path": ["wp-json", "myshop", "v1", "agents", "profile"]
+              "path": ["wp-json", "myshop", "v1", "agents", "me"]
             }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('状态码为200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const json = pm.response.json();",
-                  "pm.test('返回代理档案', function () {",
-                  "  pm.expect(json.success).to.eql(true);",
-                  "  pm.expect(json.data).to.have.property('region_zone');",
-                  "  pm.expect(json.data).to.have.property('is_active');",
-                  "  pm.expect(json.data).to.have.property('active_until');",
-                  "});",
-                  "if (json && json.data) {",
-                  "  pm.environment.set('agent_profile_region_zone', json.data.region_zone || '');",
-                  "  pm.environment.set('agent_profile_region_province', json.data.region_province || '');",
-                  "  pm.environment.set('agent_profile_region_city', json.data.region_city || '');",
-                  "}",
-                  "pm.environment.set('agent_status_last', json.data ? json.data.status : '');"
-                ]
-              }
+          "response": []
+        },
+        {
+          "name": "Get Agent Downlines",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "protocol": "https",
+              "host": ["agri-ecommerce", "test"],
+              "path": ["wp-json", "myshop", "v1", "agents", "downlines"]
             }
-          ],
+          },
           "response": []
         },
         {
@@ -1141,50 +599,6 @@
               "protocol": "https",
               "host": ["agri-ecommerce", "test"],
               "path": ["wp-json", "myshop", "v1", "agents", "team-stats"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('状态码为200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const json = pm.response.json();",
-                  "pm.test('返回团队统计', function () {",
-                  "  pm.expect(json.success).to.eql(true);",
-                  "  pm.expect(json.data).to.have.property('direct_agents');",
-                  "  pm.expect(json.data).to.have.property('team_total_agents');",
-                  "});",
-                  "pm.environment.set('agent_direct_team_size', json && json.data ? json.data.direct_agents : '');"
-                ]
-              }
-            }
-          ],
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Analytics",
-      "item": [
-        {
-          "name": "Channel Overview",
-          "request": {
-            "method": "GET",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
-            ],
-            "url": {
-              "protocol": "https",
-              "host": ["agri-ecommerce", "test"],
-              "path": ["wp-json", "myshop", "v1", "analytics", "channel"],
-              "query": [
-                { "key": "from", "value": "{{range_from}}" },
-                { "key": "to", "value": "{{range_to}}" }
-              ]
             }
           },
           "response": []

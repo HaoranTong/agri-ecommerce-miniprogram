@@ -255,7 +255,7 @@ export interface GiftCardTemplate {
   currency?: string | null;
   product_id?: number | null;
   variation_ids?: number[];
-  bundle_items?: Record<string, any> | null;
+  bundle_items_config?: Record<string, any> | null;
   delivery_modes?: string[];
   valid_days: number;
   share_template_config?: Record<string, any> | null;
@@ -428,4 +428,41 @@ export interface PointsRedeemResult {
 export interface AddressFormState extends ShippingAddress {
   id?: number;
   isDefault?: boolean;
+}
+
+// 缺失的类型定义
+export interface InvitationSummary {
+  total_invitations: number;
+  first_order_count: number;
+  conversion_rate: string;
+  pending_invitations: number;
+}
+
+export interface ChannelAnalytics {
+  channel: string;
+  visits: number;
+  new_users: number;
+  first_orders: number;
+  gmv: string;
+}
+
+export interface PromoPoster {
+  poster_url: string;
+  mini_program_path: string;
+  scene: string;
+}
+
+export interface AgentApplication {
+  region_type: 'province' | 'city' | 'district';
+  region_code: string;
+  parent_agent_code?: string;
+  company_name?: string;
+  contact_name: string;
+  contact_phone: string;
+}
+
+export interface AgentApplicationResult {
+  agent_code: string;
+  status: 'pending' | 'approved' | 'rejected';
+  message?: string;
 }

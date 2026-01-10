@@ -1,0 +1,172 @@
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80rpx 40rpx;
+  text-align: center;
+  min-height: 400rpx;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 32rpx;
+  opacity: 0.6;
+}
+
+.empty-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 16rpx;
+  line-height: 1.4;
+}
+
+.empty-description {
+  font-size: 28rpx;
+  color: #666666;
+  line-height: 1.6;
+  margin-bottom: 48rpx;
+  max-width: 400rpx;
+}
+
+.empty-action {
+  background: #2f7a3d;
+  color: #ffffff;
+  border: none;
+  border-radius: 48rpx;
+  padding: 24rpx 48rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  min-width: 200rpx;
+  
+  &::after {
+    border: none;
+  }
+  
+  &:active {
+    background: #276636;
+    transform: scale(0.98);
+  }
+}
+
+// 不同类型的样式
+.empty-state--order {
+  .empty-icon {
+    font-size: 72rpx;
+  }
+  
+  .empty-title {
+    color: #444444;
+  }
+  
+  .empty-description {
+    color: #777777;
+  }
+}
+
+.empty-state--product {
+  .empty-icon {
+    font-size: 76rpx;
+  }
+  
+  .empty-title {
+    color: #555555;
+  }
+  
+  .empty-description {
+    color: #888888;
+  }
+}
+
+.empty-state--address {
+  .empty-icon {
+    font-size: 68rpx;
+  }
+  
+  .empty-title {
+    color: #4a4a4a;
+  }
+  
+  .empty-description {
+    color: #666666;
+  }
+}
+
+.empty-state--cart {
+  .empty-icon {
+    font-size: 84rpx;
+  }
+  
+  .empty-title {
+    color: #333333;
+  }
+  
+  .empty-description {
+    color: #666666;
+  }
+  
+  .empty-action {
+    background: #ff6b35;
+    
+    &:active {
+      background: #e55a2b;
+    }
+  }
+}
+
+// 响应式适配
+@media (width <= 750px) {
+  .empty-state {
+    padding: 60rpx 32rpx;
+    min-height: 300rpx;
+  }
+  
+  .empty-icon {
+    font-size: 64rpx;
+    margin-bottom: 24rpx;
+  }
+  
+  .empty-title {
+    font-size: 28rpx;
+    margin-bottom: 12rpx;
+  }
+  
+  .empty-description {
+    font-size: 24rpx;
+    margin-bottom: 32rpx;
+    max-width: 320rpx;
+  }
+  
+  .empty-action {
+    padding: 20rpx 40rpx;
+    font-size: 24rpx;
+    min-width: 160rpx;
+  }
+}
+
+// 深色模式适配
+@media (prefers-color-scheme: dark) {
+  .empty-state {
+    .empty-title {
+      color: #ffffff;
+    }
+    
+    .empty-description {
+      color: #cccccc;
+    }
+  }
+  
+  .empty-state--order,
+  .empty-state--product,
+  .empty-state--address,
+  .empty-state--cart {
+    .empty-title {
+      color: #ffffff;
+    }
+    
+    .empty-description {
+      color: #cccccc;
+    }
+  }
+}

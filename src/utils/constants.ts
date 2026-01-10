@@ -41,5 +41,11 @@ export const API_ENDPOINTS = {
   pointsMissions: '/points/missions',
   pointsClaimMission: (missionId: string) => `/points/missions/${missionId}/claim`,
   pointsRedeemOptions: '/points/redeem/options',
-  pointsRedeem: '/points/redeem'
+  pointsRedeem: '/points/redeem',
+  // 缺失的接口
+  invitationsSummary: '/invitations/summary',
+  invitationsTrack: '/invitations/track',
+  agentsApply: '/agents/apply',
+  analyticsChannel: '/analytics/channel',
+  promoPoster: '/promo/poster'
 } as const;

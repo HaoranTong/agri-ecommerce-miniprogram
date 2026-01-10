@@ -21,7 +21,8 @@
     "types": [
       "@tarojs/plugin-platform-weapp",
       "@tarojs/taro",
-      "node"
+      "node",
+      "jest"
     ],
     "paths": {
       // TS5090 leading './'

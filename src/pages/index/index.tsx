@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import TestUserSelector from '../../components/TestUserSelector';
 import { configService, productService } from '../../services/api';
 import type { Product, PublicConfig } from '../../types';
+import Skeleton from '../../components/Skeleton';
 import './index.scss';
 
 const Index = () => {
@@ -87,7 +88,11 @@ const Index = () => {
         </Swiper>
       )}
 
-      {loading && <View className='loading'>加载中...</View>}
+      {loading && (
+        <View className='skeleton-section'>
+          <Skeleton type='product' count={6} />
+        </View>
+      )}
 
       {!loading && products.length === 0 && (
         <View className='empty'>暂无商品，敬请期待</View>

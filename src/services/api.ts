@@ -10,9 +10,12 @@ import {
   type StoredUserInfo
 } from '../utils/storage';
 import type {
+  AgentApplication,
+  AgentApplicationResult,
   AgentDownline,
   AgentProfile,
   CartItem,
+  ChannelAnalytics,
   CommissionRecord,
   CreateOrderPayload,
   GiftCard,
@@ -23,6 +26,7 @@ import type {
   GiftCardShareResult,
   GiftCardShareStyle,
   GiftCardTemplate,
+  InvitationSummary,
   LoginResponse,
   OrderCreated,
   OrderDetail,
@@ -33,6 +37,7 @@ import type {
   PointsRedeemResult,
   PointsRule,
   Product,
+  PromoPoster,
   PublicConfig,
   ReferralDownline,
   UserProfile
@@ -354,6 +359,65 @@ export const userService = {
     }>({
       url: API_ENDPOINTS.userAddresses,
       method: 'GET'
+    });
+    return response.data;
+  }
+};
+
+export const invitationService = {
+  getSummary: async () => {
+    const response = await request<{ success: boolean; data: InvitationSummary }>({
+      url: API_ENDPOINTS.invitationsSummary,
+      method: 'GET'
+    });
+    return response.data;
+  },
+  track: async (params: {
+    channel?: string;
+    scene?: string;
+    referrer_code?: string;
+  }) => {
+    const response = await request<{ success: boolean; data: { tracked: boolean } }>({
+      url: API_ENDPOINTS.invitationsTrack,
+      method: 'POST',
+      data: params
+    });
+    return response.data;
+  }
+};
+
+export const analyticsService = {
+  getChannelAnalytics: async () => {
+    const response = await request<{ success: boolean; data: ChannelAnalytics[] }>({
+      url: API_ENDPOINTS.analyticsChannel,
+      method: 'GET'
+    });
+    return response.data ?? [];
+  }
+};
+
+export const promoService = {
+  getPoster: async (params: {
+    type?: string;
+    referrer_code?: string;
+    template_id?: string;
+  }) => {
+    const response = await request<{ success: boolean; data: PromoPoster }>({
+      url: API_ENDPOINTS.promoPoster,
+      method: 'GET',
+      data: params
+    });
+    return response.data;
+  }
+};
+
+export const agentApplicationService = {
+  apply: async (data: AgentApplication) => {
+    const response = await request<{ success: boolean; data: AgentApplicationResult }>({
+      url: API_ENDPOINTS.agentsApply,
+      method: 'POST',
+      data,
+      showLoading: true
     });
     return response.data;
   }

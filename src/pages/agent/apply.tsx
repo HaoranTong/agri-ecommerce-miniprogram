@@ -2,10 +2,12 @@ import { Button, Input, Picker, Text, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useState } from 'react';
 
+import { agentApplicationService } from '../../services/api';
+import type { AgentApplication } from '../../types';
 import './apply.scss';
 
 const AgentApply = () => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<AgentApplication>({
     region_type: 'city',
     region_code: '',
     parent_agent_code: '',
@@ -14,7 +16,7 @@ const AgentApply = () => {
     contact_phone: ''
   });
 
-  const regionTypes = ['province', 'city', 'district'];
+  const regionTypes = ['province', 'city', 'district'] as const;
   const regionTypeLabels = ['省级代理', '市级代理', '区县代理'];
 
   const handleRegionTypeChange = (e: any) => {
@@ -22,7 +24,7 @@ const AgentApply = () => {
     setFormData({ ...formData, region_type: regionTypes[index] });
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof AgentApplication, value: string) => {
     setFormData({ ...formData, [field]: value });
   };
 
@@ -38,34 +40,22 @@ const AgentApply = () => {
     }
 
     try {
-      Taro.showLoading({ title: '提交中...' });
-      
       // 调用后端 /agents/apply 接口
-      const res = await Taro.request({
-        url: 'https://agri-ecommerce.test/wp-json/myshop/v1/agents/apply',
-        method: 'POST',
-        header: {
-          'Authorization': `Bearer ${Taro.getStorageSync('MYSHOP_AUTH_TOKEN')}`,
-          'Content-Type': 'application/json'
-        },
-        data: formData
+      await agentApplicationService.apply(formData);
+      
+      Taro.showToast({
+        title: '申请成功！',
+        icon: 'success'
       });
-
-      Taro.hideLoading();
-
-      if (res.statusCode === 200) {
-        Taro.showToast({ title: '申请成功！', icon: 'success' });
-        setTimeout(() => {
-          Taro.navigateBack();
-        }, 1500);
-      } else {
-        const message = res.data?.message || '申请失败';
-        Taro.showToast({ title: message, icon: 'none' });
-      }
+      
+      setTimeout(() => {
+        Taro.navigateBack();
+      }, 1500);
+      
     } catch (error: any) {
-      Taro.hideLoading();
       console.error('代理申请失败', error);
-      Taro.showToast({ title: '申请失败，请稍后重试', icon: 'none' });
+      const message = error?.message || '申请失败，请稍后重试';
+      Taro.showToast({ title: message, icon: 'none' });
     }
   };
 
@@ -103,7 +93,7 @@ const AgentApply = () => {
           <Input
             className='form-input'
             placeholder='如果有推荐人，请填写其代理编码'
-            value={formData.parent_agent_code}
+            value={formData.parent_agent_code || ''}
             onInput={(e) => handleInputChange('parent_agent_code', e.detail.value)}
           />
         </View>
@@ -113,7 +103,7 @@ const AgentApply = () => {
           <Input
             className='form-input'
             placeholder='请输入公司全称'
-            value={formData.company_name}
+            value={formData.company_name || ''}
             onInput={(e) => handleInputChange('company_name', e.detail.value)}
           />
         </View>
