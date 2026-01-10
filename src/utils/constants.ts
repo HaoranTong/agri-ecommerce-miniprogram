@@ -1,6 +1,7 @@
 // src/utils/constants.ts
-const DEV_BASE_URL = 'https://agri-ecommerce.test';
-const PROD_BASE_URL = 'https://yourdomain.com';
+// 生产环境使用正式域名
+const DEV_BASE_URL = 'https://fanbao.com';
+const PROD_BASE_URL = 'https://fanbao.com';
 
 export const BASE_URL = process.env.NODE_ENV === 'development' ? DEV_BASE_URL : PROD_BASE_URL;
 
