@@ -45,7 +45,16 @@ import type {
 
 interface PointsService {
   getBalance: () => Promise<PointsBalance>;
-  getLedger: (params?: { page?: number; per_page?: number; type?: string; status?: string; from?: string; to?: string }) => Promise<{
+  getLedger: (
+    params?: {
+      page?: number;
+      per_page?: number;
+      type?: string;
+      status?: string;
+      from?: string;
+      to?: string;
+    }
+  ) => Promise<{
     items: PointsLedgerItem[];
     total: number;
   }>;
@@ -78,41 +87,134 @@ interface RequestOptions {
 
 const isDev = process.env.NODE_ENV !== 'production';
 
-const resolveUrl = (endpoint: string) =>
-  endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+/**
+ * =========================
+ * 多环境 API Base 自动选择（关键修改点）
+ * - develop（开发版/预览/真机调试）：走 dev.fanbaoer.com（Cloudflare Tunnel → 你本机）
+ * - trial（体验版）：走 staging.fanbaoer.com（预发布站点）
+ * - release（正式版）：走 fanbaoer.com（生产站点）
+ *
+ * 说明：
+ * 1) 小程序运行时可通过 Taro.getAccountInfoSync().miniProgram.envVersion 获取版本标识
+ * 2) 如果取不到（例如 H5/其他端），回退使用 constants 里的 API_BASE
+ * =========================
+ */
+type MiniEnvVersion = 'develop' | 'trial' | 'release' | 'unknown';
+
+const API_PREFIX = '/wp-json/myshop/v1';
+
+const normalizeNoTrailingSlash = (s: string) => s.replace(/\/+$/, '');
+
+const getMiniEnvVersion = (): MiniEnvVersion => {
+  try {
+    const info = (Taro.getAccountInfoSync && Taro.getAccountInfoSync()) as any;
+    const env = info?.miniProgram?.envVersion;
+    if (env === 'develop' || env === 'trial' || env === 'release') return env;
+  } catch (e) {
+    // ignore
+  }
+  return 'unknown';
+};
+
+const pickOriginByEnv = (env: MiniEnvVersion): string | null => {
+  if (env === 'develop') return 'https://dev.fanbaoer.com';
+  if (env === 'trial') return 'https://staging.fanbaoer.com';
+  if (env === 'release') return 'https://fanbaoer.com';
+  return null;
+};
+
+const safeExtractOrigin = (fullUrl: string): string => {
+  try {
+    return new URL(fullUrl).origin;
+  } catch (e) {
+    return '';
+  }
+};
+
+const computeApiBase = (): {
+  envVersion: MiniEnvVersion;
+  origin: string;
+  base: string;
+} => {
+  const envVersion = getMiniEnvVersion();
+  const mappedOrigin = pickOriginByEnv(envVersion);
+
+  // 优先使用小程序 envVersion 映射的域名
+  if (mappedOrigin) {
+    const origin = normalizeNoTrailingSlash(mappedOrigin);
+    return {
+      envVersion,
+      origin,
+      base: normalizeNoTrailingSlash(`${origin}${API_PREFIX}`)
+    };
+  }
+
+  // 取不到 envVersion（比如 H5），回退使用 constants 里的 API_BASE
+  const fallbackBase = normalizeNoTrailingSlash(API_BASE);
+  return {
+    envVersion,
+    origin: safeExtractOrigin(fallbackBase),
+    base: fallbackBase
+  };
+};
+
+const { envVersion: MINI_ENV_VERSION, origin: API_ORIGIN, base: EFFECTIVE_API_BASE } = computeApiBase();
+
+/**
+ * 统一 URL 解析：
+ * - 绝对 URL（http/https）直接用
+ * - 以 /wp-json/ 开头：认为是“站点级绝对路径”，拼接到 origin
+ * - 其他情况：认为是 “myshop/v1 内部相对路径”，拼接到 EFFECTIVE_API_BASE
+ */
+const resolveUrl = (endpoint: string) => {
+  if (!endpoint) return EFFECTIVE_API_BASE;
+
+  if (endpoint.startsWith('http')) return endpoint;
+
+  // 兼容：如果有人传了完整的 /wp-json/...（绝对路径），直接拼 origin
+  if (endpoint.startsWith('/wp-json/')) {
+    if (API_ORIGIN) return `${API_ORIGIN}${endpoint}`;
+    // origin 取不到就退回拼 base（虽然不理想，但保证不崩）
+    return `${EFFECTIVE_API_BASE}${endpoint}`;
+  }
+
+  // 常规：拼到 /wp-json/myshop/v1
+  if (endpoint.startsWith('/')) return `${EFFECTIVE_API_BASE}${endpoint}`;
+  return `${EFFECTIVE_API_BASE}/${endpoint}`;
+};
 
 let isRedirecting = false; // 防止重复跳转
 
 const handleUnauthorized = () => {
   if (isRedirecting) return; // 如果正在跳转，直接返回
-  
+
   isRedirecting = true;
   clearToken();
-  
+
   // 获取当前页面路径
   const pages = Taro.getCurrentPages();
   const currentPage = pages[pages.length - 1];
   const currentPath = currentPage?.route || '';
-  
+
   // 如果已经在登录页，不再跳转
   if (currentPath.includes('auth/login')) {
     isRedirecting = false;
     return;
   }
-  
+
   // 保存当前页面信息，登录后返回
-  const redirectData = { 
-    path: currentPath, 
-    params: JSON.stringify(currentPage?.options || {}) 
+  const redirectData = {
+    path: currentPath,
+    params: JSON.stringify(currentPage?.options || {})
   };
   console.log('[Auth] 保存返回路径:', redirectData);
-  
+
   try {
     Taro.setStorageSync('REDIRECT_AFTER_LOGIN', redirectData);
   } catch (e) {
     console.error('[Auth] 保存返回路径失败:', e);
   }
-  
+
   // 延迟跳转，确保当前请求完成
   setTimeout(() => {
     Taro.showToast({
@@ -120,16 +222,18 @@ const handleUnauthorized = () => {
       icon: 'none',
       duration: 1500
     });
-    
+
     setTimeout(() => {
-      Taro.reLaunch({ 
+      Taro.reLaunch({
         url: '/pages/auth/login'
-      }).then(() => {
-        isRedirecting = false;
-      }).catch((err) => {
-        console.error('[Auth] 跳转登录页失败:', err);
-        isRedirecting = false;
-      });
+      })
+        .then(() => {
+          isRedirecting = false;
+        })
+        .catch((err) => {
+          console.error('[Auth] 跳转登录页失败:', err);
+          isRedirecting = false;
+        });
     }, 1500);
   }, 100);
 };
@@ -155,13 +259,24 @@ export const request = async <T = any>({
 
   const finalUrl = resolveUrl(url);
 
+  // 无论生产/开发，第一次初始化时打印一次环境信息（方便你现场判断是否走对站点）
+  // 注意：这里只做轻量输出，不影响性能
+  if (!suppressLog && (url === API_ENDPOINTS.publicConfig || url === API_ENDPOINTS.login)) {
+    console.log('[API Env]', {
+      miniEnvVersion: MINI_ENV_VERSION,
+      effectiveBase: EFFECTIVE_API_BASE,
+      nodeEnv: process.env.NODE_ENV
+    });
+  }
+
   if (isDev && !suppressLog) {
     console.info('[API Debug]', {
       method,
       url: finalUrl,
       hasToken: !!token,
       nodeEnv: process.env.NODE_ENV,
-      apiBase: API_BASE
+      apiBase: EFFECTIVE_API_BASE,
+      miniEnvVersion: MINI_ENV_VERSION
     });
   }
 
@@ -229,7 +344,7 @@ export const authService = {
 
     // 后端返回格式：{ success: true, data: { token, user_id, openid } }
     const result = response.data;
-    
+
     if (!result || !result.token) {
       console.error('登录响应格式错误:', response);
       throw new Error('登录失败：未返回 token');
@@ -237,15 +352,15 @@ export const authService = {
 
     // 同步保存 token
     setToken(result.token);
-    
+
     // 立即验证是否保存成功
     const savedToken = getToken();
-    console.log('Token 保存验证:', { 
+    console.log('Token 保存验证:', {
       received: result.token.substring(0, 30) + '...',
       saved: savedToken ? savedToken.substring(0, 30) + '...' : 'NULL',
-      match: savedToken === result.token 
+      match: savedToken === result.token
     });
-    
+
     const storedUser: StoredUserInfo = {
       user_id: result.user_id,
       phone: result.phone,
@@ -253,7 +368,7 @@ export const authService = {
       invite_code: result.invite_code
     };
     setStoredUserInfo(storedUser);
-    
+
     return result;
   }
 };
@@ -262,7 +377,7 @@ export const configService = {
   getPublicConfig: async () => {
     try {
       return await request<PublicConfig>({
-      url: API_ENDPOINTS.publicConfig,
+        url: API_ENDPOINTS.publicConfig,
         method: 'GET',
         suppressErrorToast: isDev,
         suppressLog: isDev
@@ -372,11 +487,7 @@ export const invitationService = {
     });
     return response.data;
   },
-  track: async (params: {
-    channel?: string;
-    scene?: string;
-    referrer_code?: string;
-  }) => {
+  track: async (params: { channel?: string; scene?: string; referrer_code?: string }) => {
     const response = await request<{ success: boolean; data: { tracked: boolean } }>({
       url: API_ENDPOINTS.invitationsTrack,
       method: 'POST',
@@ -397,11 +508,7 @@ export const analyticsService = {
 };
 
 export const promoService = {
-  getPoster: async (params: {
-    type?: string;
-    referrer_code?: string;
-    template_id?: string;
-  }) => {
+  getPoster: async (params: { type?: string; referrer_code?: string; template_id?: string }) => {
     const response = await request<{ success: boolean; data: PromoPoster }>({
       url: API_ENDPOINTS.promoPoster,
       method: 'GET',
@@ -482,7 +589,7 @@ export const orderService = {
       filePath,
       name: 'proof_image',
       header: token ? { Authorization: `Bearer ${token}` } : {},
-      timeout: 60000  // 设置60秒超时
+      timeout: 60000 // 设置60秒超时
     });
 
     let data: any = {};
@@ -556,7 +663,7 @@ export const giftCardService = {
     return response.data ?? [];
   },
   getTemplateDetail: async (templateId: number) => {
-    const response = await request<{ success: boolean; data: GiftCardTemplate }>( {
+    const response = await request<{ success: boolean; data: GiftCardTemplate }>({
       url: `/gift-cards/templates/${templateId}`,
       method: 'GET',
       showLoading: true
@@ -607,11 +714,9 @@ export const giftCardService = {
       data: { ...options, format: options.format || 'both' },
       showLoading: false // 关闭自动loading，由页面自己控制
     });
-    // 处理响应：如果返回的是 { success: true, data: {...} }，则返回 data
     if (response && typeof response === 'object' && 'data' in response && 'success' in response) {
       return (response as { success: boolean; data: GiftCardShareResult }).data;
     }
-    // 如果直接返回的是数据对象，直接返回
     return response as any as GiftCardShareResult;
   },
   listShareStyles: async () => {
@@ -655,10 +760,8 @@ export const giftCardService = {
     });
     return response.data?.share_history ?? [];
   },
-  // 获取储值购物卡列表（只返回储值卡，用于支付）
   getStoredValueCards: async () => {
     const cards = await giftCardService.listMine();
-    // 筛选出储值购物卡（template_type === 'fixed_amount'）且余额大于0的卡片
     return cards.filter(
       (card) =>
         card.template_type === 'fixed_amount' &&
@@ -695,12 +798,12 @@ export const referralService = {
     request<{ downlines: ReferralDownline[] }>({
       url: API_ENDPOINTS.referrals,
       method: 'GET'
-    }).then(res => res.downlines),
+    }).then((res) => res.downlines),
   listCommissions: () =>
     request<{ commissions: CommissionRecord[] }>({
       url: API_ENDPOINTS.commissions,
       method: 'GET'
-    }).then(res => res.commissions)
+    }).then((res) => res.commissions)
 };
 
 export const agentService = {
@@ -713,12 +816,12 @@ export const agentService = {
     request<{ downlines: AgentDownline[] }>({
       url: API_ENDPOINTS.agentDownlines,
       method: 'GET'
-    }).then(res => res.downlines),
+    }).then((res) => res.downlines),
   listCommissions: () =>
     request<{ commissions: CommissionRecord[] }>({
       url: API_ENDPOINTS.agentCommissions,
       method: 'GET'
-    }).then(res => res.commissions)
+    }).then((res) => res.commissions)
 };
 
 export const pointsService: PointsService = {
