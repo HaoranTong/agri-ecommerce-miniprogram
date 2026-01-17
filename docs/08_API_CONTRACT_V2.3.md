@@ -526,6 +526,46 @@
 
 ------
 
+### PUT `/cart/{variation_id}`
+
+**用途**：更新购物车中指定 SKU 的数量
+
+**路径参数**：
+
+- `variation_id`: integer (required)
+
+**请求体**：
+
+```json
+{ "quantity": 2 }
+```
+
+**成功响应（200）**：同 GET `/cart`
+
+**失败示例（400）**：
+
+```json
+{
+  "error_code": "invalid_request",
+  "message": "缺少 variation_id 或 quantity",
+  "status": 400
+}
+```
+
+------
+
+### DELETE `/cart/{variation_id}`
+
+**用途**：移除购物车中指定 SKU
+
+**路径参数**：
+
+- `variation_id`: integer (required)
+
+**响应**：204 No Content
+
+------
+
 ## 五、订单
 
 ### POST `/orders`
@@ -687,6 +727,133 @@
   "error_code": "upload_failed",
   "message": "图片大小超出 5MB 限制",
   "status": 422
+}
+```
+
+------
+
+### POST `/orders/{order_id}/apply-coupon`
+
+**用途**：对指定订单应用优惠券
+
+**路径参数**：
+
+- `order_id`: integer (required)
+
+**请求体**：
+
+```json
+{
+  "coupon_code": "COUPON123"
+}
+```
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "order_id": 1001,
+    "coupon_code": "COUPON123",
+    "discount_amount": "10.00",
+    "original_total": "116.00",
+    "final_total": "106.00"
+  }
+}
+```
+
+**失败示例（404）**：
+
+```json
+{
+  "error_code": "coupon_not_found",
+  "message": "优惠券不存在",
+  "status": 404
+}
+```
+
+------
+
+### POST `/orders/{order_id}/apply-gift-card`
+
+**用途**：使用储值购物卡支付订单（可部分支付）
+
+**路径参数**：
+
+- `order_id`: integer (required)
+
+**请求体**：
+
+```json
+{
+  "card_number": "GC20251118001"
+}
+```
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "order_id": 1001,
+    "card_number": "GC20251118001",
+    "used_amount": "50.00",
+    "remaining_balance": "150.00",
+    "original_total": "116.00",
+    "final_total": "66.00"
+  }
+}
+```
+
+**失败示例（400）**：
+
+```json
+{
+  "error_code": "invalid_order_status",
+  "message": "当前订单状态不允许使用购物卡",
+  "status": 400
+}
+```
+
+------
+
+### POST `/coupons/validate`
+
+**用途**：验证优惠券是否可用
+
+**请求体**：
+
+```json
+{
+  "code": "COUPON123"
+}
+```
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "code": "COUPON123",
+    "discount_type": "fixed_cart",
+    "amount": 10,
+    "description": "新客专享",
+    "minimum_amount": null,
+    "maximum_amount": null
+  }
+}
+```
+
+**失败示例（400）**：
+
+```json
+{
+  "error_code": "coupon_invalid",
+  "message": "优惠券无效",
+  "status": 400
 }
 ```
 
@@ -880,6 +1047,27 @@
 
 ------
 
+### GET `/gift-cards/share-styles`
+
+**用途**：获取可用的分享样式列表（分享海报/卡片样式）
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "theme": "default",
+      "title": "默认样式",
+      "preview_url": "https://yourdomain.com/wp-content/plugins/myshop-core/assets/giftcard/share-default.json"
+    }
+  ]
+}
+```
+
+------
+
 ## 七、积分中心（二期）
 
 ### GET `/points/balance`
@@ -1010,6 +1198,27 @@
 ```
 
 > 旧文档中的 `/points/redeem`（reserve/confirm/release）尚未落地实现。
+
+------
+
+### GET `/points/settings`
+
+**用途**：获取积分抵扣相关配置（用于下单页计算抵扣规则）
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "enable_points_discount": true,
+    "redeem_rate": 100,
+    "min_points_to_use": 100,
+    "max_discount_percent": 50,
+    "min_order_amount_to_use": 0
+  }
+}
+```
 
 ------
 
