@@ -1,7 +1,11 @@
 // src/utils/constants.ts
-// 生产环境使用正式域名
-const DEV_BASE_URL = 'https://fanbao.com';
-const PROD_BASE_URL = 'https://fanbao.com';
+// 说明：
+// 1) 小程序端真实的多环境（develop/trial/release）由 src/service/api.ts 按 envVersion 运行时决定。
+// 2) 本文件的 BASE_URL/API_BASE 只作为“兜底回退”（例如 H5 端、或拿不到 envVersion 的场景）。
+// 3) 为避免开发态误打生产：development 兜底指向 staging，production 兜底指向生产。
+
+const DEV_BASE_URL = 'https://staging.fanbaoer.com';
+const PROD_BASE_URL = 'https://fanbaoer.com';
 
 export const BASE_URL = process.env.NODE_ENV === 'development' ? DEV_BASE_URL : PROD_BASE_URL;
 
