@@ -69,7 +69,8 @@ myshop-core/
 │   ├── commission-controller.php
 │   ├── agent-controller.php
 │   ├── analytics-controller.php
-│   └── promo-controller.php
+│   ├── promo-controller.php
+│   └── payment-controller.php
 │
 ├── db/                             # 数据库操作（CRUD）
 │   ├── class-myshop-db.php         # 数据库安装/升级
@@ -197,6 +198,29 @@ myshop-core/
 - 使用 WordPress REST API 注册：
 
 - 正确实现：在 class-myshop-loader.php 中注册
+
+### 3. **支付模块（`payment-controller.php`）**
+
+**目标**：统一支付入口，支持 `wechat` 与 `offline`，后续可扩展更多支付方式。
+
+**必须配置的常量（wp-config.php）：**
+
+- `MYSHOP_WECHAT_APP_ID`
+- `MYSHOP_WECHAT_MCH_ID`
+- `MYSHOP_WECHAT_SERIAL_NO`（商户证书序列号）
+- `MYSHOP_WECHAT_PRIVATE_KEY`（支持文件路径或私钥内容）
+- `MYSHOP_WECHAT_API_V3_KEY`（32 字节）
+- `MYSHOP_WECHAT_PLATFORM_SERIAL`（平台证书序列号）
+- `MYSHOP_WECHAT_PLATFORM_CERT`（支持文件路径或证书内容，旧方式）
+- `MYSHOP_WECHAT_PLATFORM_PUBLIC_KEY`（支持文件路径或公钥内容，新方式）
+- `MYSHOP_MINIAPP_APP_ID`（小程序 AppID，支持与支付 AppID 复用）
+- `MYSHOP_MINIAPP_APP_SECRET`（小程序 AppSecret，用于 code2session）
+- `MYSHOP_ALLOW_TEST_LOGIN`（允许测试登录，默认 false）
+
+**关键说明：**
+
+- 回调验签使用平台公钥/平台证书公钥，需匹配 `Wechatpay-Serial`。
+- 回调体需用 API v3 Key 解密（AES-256-GCM）。
 
   
 

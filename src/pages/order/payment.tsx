@@ -2,7 +2,7 @@ import { Button, Image, Input, Text, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { couponService, giftCardService, orderService } from '../../services/api';
+import { couponService, giftCardService, orderService, paymentService } from '../../services/api';
 import type { GiftCard, OrderDetail } from '../../types';
 import { showErrorToast, analyzeError } from '../../utils/errorHandler';
 import EmptyState from '../../components/EmptyState';
@@ -36,6 +36,9 @@ const OrderPayment = () => {
     used_amount: string;
     remaining_balance: string;
   } | null>(null);
+
+  const isPaid = order?.status === 'processing' || order?.status === 'completed';
+  const hasProof = Boolean(order?.has_payment_proof);
   
   // 计算最终应付金额
   const finalTotal = useMemo(() => {
@@ -267,6 +270,51 @@ const OrderPayment = () => {
     }
   };
 
+  const handleWechatPay = async () => {
+    if (!order) return;
+    if (finalTotal <= 0) {
+      Taro.showToast({ title: '订单已全额支付', icon: 'none' });
+      return;
+    }
+    if (hasProof) {
+      Taro.showModal({
+        title: '提示',
+        content: '您已上传过付款凭证，请勿重复支付。如有疑问请联系客服。',
+        showCancel: false
+      });
+      return;
+    }
+    if (isPaid) {
+      Taro.showToast({ title: '订单已支付', icon: 'none' });
+      return;
+    }
+
+    try {
+      const response = await paymentService.create(orderId, 'wechat');
+      if (!response?.payment_payload) {
+        throw new Error('微信支付参数缺失');
+      }
+
+      const payload = response.payment_payload;
+
+      await Taro.requestPayment({
+        timeStamp: payload.timeStamp,
+        nonceStr: payload.nonceStr,
+        package: payload.package,
+        signType: payload.signType,
+        paySign: payload.paySign
+      });
+
+      Taro.showToast({ title: '支付成功', icon: 'success' });
+      setTimeout(() => {
+        Taro.redirectTo({ url: `/pages/order/payment-success?orderId=${orderId}` });
+      }, 800);
+    } catch (error: any) {
+      const appError = analyzeError(error);
+      showErrorToast(appError, '微信支付失败');
+    }
+  };
+
   return (
     <View className='payment-page'>
       {/* 支付说明 */}
@@ -372,10 +420,15 @@ const OrderPayment = () => {
         )}
       </View>
 
-      {/* 上传凭证按钮 */}
-      <Button className='upload-btn' onClick={handleUpload}>
-        {finalTotal <= 0 ? '已全额支付' : '上传支付凭证'}
-      </Button>
+      {/* 支付操作 */}
+      <View className='pay-button-wrapper'>
+        <Button className='wechat-pay-btn' onClick={handleWechatPay} disabled={finalTotal <= 0 || hasProof || isPaid}>
+          {finalTotal <= 0 ? '已全额支付' : '微信支付'}
+        </Button>
+        <Button className='upload-btn' onClick={handleUpload} disabled={finalTotal <= 0}>
+          {finalTotal <= 0 ? '已全额支付' : '上传支付凭证'}
+        </Button>
+      </View>
 
       {/* 优惠券输入弹窗 */}
       {showCouponModal && (

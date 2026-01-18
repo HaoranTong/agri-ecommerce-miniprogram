@@ -859,6 +859,108 @@
 
 ------
 
+## 六A、支付模块（新增）
+
+> 说明：小程序内线上支付仅支持微信支付（`wechat`）；保留线下扫码支付（`offline`）作为可选方式。
+
+### POST `/payments/create`
+
+**用途**：创建支付单，返回前端拉起支付所需参数或线下支付信息。
+
+**请求体**：
+
+```json
+{
+  "order_id": 1001,
+  "provider": "wechat"
+}
+```
+
+`provider` 枚举：`wechat | offline`（后续可扩展 `balance | gift_card | other`）
+
+**成功响应（200）**：
+
+微信支付（小程序）：
+
+```json
+{
+  "success": true,
+  "provider": "wechat",
+  "payment_payload": {
+    "appId": "wx1234567890",
+    "timeStamp": "1700000000",
+    "nonceStr": "random-string",
+    "package": "prepay_id=wx1234567890",
+    "signType": "RSA",
+    "paySign": "signature"
+  }
+}
+```
+
+> `payment_payload` 直接透传给 `wx.requestPayment`，字段名与微信支付小程序规范一致。
+
+线下扫码支付：
+
+```json
+{
+  "success": true,
+  "provider": "offline",
+  "payment_qr_url": "https://yourdomain.com/uploads/pay-qr.jpg",
+  "customer_service_qr": "https://yourdomain.com/uploads/cs-qr.jpg",
+  "message": "请扫码向客服付款，并添加企业微信发送付款截图，我们将尽快为您发货。"
+}
+```
+
+**失败示例（400）**：
+
+```json
+{
+  "error_code": "payment_method_not_supported",
+  "message": "不支持的支付方式",
+  "status": 400
+}
+```
+
+------
+
+### GET `/payments/status`
+
+**用途**：查询订单支付状态（便于前端轮询或支付后补偿校验）
+
+**查询参数**：
+
+- `order_id`: integer (required)
+- `provider`: string (optional)
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "order_id": 1001,
+    "provider": "wechat",
+    "status": "paid",
+    "paid_at": "2025-11-20T12:45:11+08:00"
+  }
+}
+```
+
+`status` 枚举：`pending | paid | failed | canceled`
+
+------
+
+### POST `/payments/notify/wechat`
+
+**用途**：微信支付回调（服务端使用，前端不调用）
+
+**说明**：
+- 需验签（`Wechatpay-Timestamp` / `Wechatpay-Nonce` / `Wechatpay-Signature` / `Wechatpay-Serial`）
+- 需解密回调体 `resource`（AES-256-GCM，使用 API v3 Key）
+- 成功后将订单状态更新为已支付，并记录 `transaction_id`
+
+------
+
 ## 六、虚拟购物卡（二期）
 
 ### POST `/gift-cards/redeem`
@@ -1757,7 +1859,6 @@
 
 > 以下路径已预留，未来直接启用，**不得用于其他功能**：
 >
-> - `POST /payments/wechatpay/notify` ← 微信支付回调
 > - `POST /auth/phone-login` ← 手机号验证码登录
 > - `GET /members/benefits` ← 会员权益查询
 > - `POST /agents/apply` ← 代理商申请入口

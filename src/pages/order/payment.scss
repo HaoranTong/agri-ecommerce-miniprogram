@@ -386,6 +386,28 @@
   }
 }
 
+/* 支付按钮容器 */
+.pay-button-wrapper {
+  margin: 24px 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.wechat-pay-btn {
+  background: #07c160;
+  color: #fff;
+  border-radius: 12px;
+  font-size: 32px;
+  font-weight: 600;
+  height: 88px;
+  line-height: 88px;
+}
+
+.wechat-pay-btn[disabled] {
+  opacity: 0.6;
+}
+
 /* 加载和空状态 */
 .loading,
 .empty-state {

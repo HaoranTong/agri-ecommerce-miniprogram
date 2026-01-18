@@ -162,6 +162,35 @@ export interface OrderDetail extends OrderCreated {
   giftcard_mode?: string | null;
 }
 
+export type PaymentProvider = 'wechat' | 'offline';
+
+export interface PaymentCreateResponse {
+  success: boolean;
+  provider: PaymentProvider;
+  payment_intent_id?: string;
+  payment_payload?: {
+    appId?: string;
+    timeStamp: string;
+    nonceStr: string;
+    package: string;
+    signType: string;
+    paySign: string;
+  };
+  payment_qr_url?: string;
+  customer_service_qr?: string;
+  message?: string;
+}
+
+export interface PaymentStatusResponse {
+  success: boolean;
+  data: {
+    order_id: number;
+    provider?: PaymentProvider | string | null;
+    status: 'pending' | 'paid' | 'failed' | 'canceled';
+    paid_at?: string | null;
+  };
+}
+
 export type GiftCardDeliveryMode = 'digital_share' | 'printable';
 
 export type GiftCardShareState = 'none' | 'shared' | 'bound' | 'consumed' | 'expired';

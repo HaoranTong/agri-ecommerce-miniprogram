@@ -52,5 +52,7 @@ export const API_ENDPOINTS = {
   invitationsTrack: '/invitations/track',
   agentsApply: '/agents/apply',
   analyticsChannel: '/analytics/channel',
-  promoPoster: '/promo/poster'
+  promoPoster: '/promo/poster',
+  paymentsCreate: '/payments/create',
+  paymentsStatus: '/payments/status'
 } as const;

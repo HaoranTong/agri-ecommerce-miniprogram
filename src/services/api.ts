@@ -30,6 +30,8 @@ import type {
   LoginResponse,
   OrderCreated,
   OrderDetail,
+  PaymentCreateResponse,
+  PaymentStatusResponse,
   PointsBalance,
   PointsLedgerItem,
   PointsMission,
@@ -642,6 +644,26 @@ export const orderService = {
       showLoading: true
     });
     return response.data;
+  }
+};
+
+export const paymentService = {
+  create: async (orderId: number | string, provider: 'wechat' | 'offline') => {
+    const response = await request<PaymentCreateResponse>({
+      url: API_ENDPOINTS.paymentsCreate,
+      method: 'POST',
+      data: { order_id: orderId, provider },
+      showLoading: true
+    });
+    return response;
+  },
+  getStatus: async (orderId: number | string, provider?: 'wechat' | 'offline') => {
+    const response = await request<PaymentStatusResponse>({
+      url: API_ENDPOINTS.paymentsStatus,
+      method: 'GET',
+      data: { order_id: orderId, provider }
+    });
+    return response;
   }
 };
 
