@@ -204,6 +204,42 @@
   }
 }
 
+/* 支付方式选择 */
+.payment-method-card {
+  background: #fff;
+  margin: 20px 24px;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.method-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 16px;
+}
+
+.method-buttons {
+  display: flex;
+  gap: 16px;
+}
+
+.method-btn {
+  flex: 1;
+  height: 72px;
+  line-height: 72px;
+  border-radius: 12px;
+  background: #f5f5f5;
+  color: #333;
+  font-size: 28px;
+}
+
+.method-btn.active {
+  background: #07c160;
+  color: #fff;
+}
+
 /* 弹窗样式 */
 .modal-overlay {
   position: fixed;

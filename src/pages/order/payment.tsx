@@ -39,6 +39,7 @@ const OrderPayment = () => {
 
   const isPaid = order?.status === 'processing' || order?.status === 'completed';
   const hasProof = Boolean(order?.has_payment_proof);
+  const [paymentMode, setPaymentMode] = useState<'wechat' | 'offline'>('wechat');
   
   // 计算最终应付金额
   const finalTotal = useMemo(() => {
@@ -98,6 +99,12 @@ const OrderPayment = () => {
   useEffect(() => {
     loadOrder();
   }, [loadOrder]);
+  
+  useEffect(() => {
+    if (hasProof) {
+      setPaymentMode('offline');
+    }
+  }, [hasProof]);
 
   // 加载储值购物卡列表
   const fetchStoredCards = useCallback(
@@ -322,36 +329,72 @@ const OrderPayment = () => {
         <Text className='notice-title'>💳 支付说明</Text>
         <View className='notice-step'>
           <Text className='step-num'>1</Text>
-          <Text className='step-text'>长按下载保存收款二维码到相册</Text>
+          <Text className='step-text'>
+            {paymentMode === 'wechat'
+              ? '点击下方“微信支付”完成付款'
+              : '长按保存收款二维码到相册'}
+          </Text>
         </View>
         <View className='notice-step'>
           <Text className='step-num'>2</Text>
-          <Text className='step-text'>微信扫描保存到相册的收款码完成付款</Text>
+          <Text className='step-text'>
+            {paymentMode === 'wechat'
+              ? '完成支付后系统自动更新订单状态'
+              : '微信扫码相册中的收款码完成付款'}
+          </Text>
         </View>
         <View className='notice-step'>
           <Text className='step-num'>3</Text>
-          <Text className='step-text'>截图保存付款成功信息</Text>
+          <Text className='step-text'>
+            {paymentMode === 'wechat'
+              ? '如未跳转成功，请刷新订单状态'
+              : '截图保存付款成功页面'}
+          </Text>
         </View>
-        <View className='notice-step'>
-          <Text className='step-num'>4</Text>
-          <Text className='step-text'>点击下方按钮上传支付凭证（也可添加客服发送）</Text>
-        </View>
-      </View>
-
-      {/* 收款二维码 */}
-      <View className='qr-card'>
-        <Text className='qr-title'>微信收款码</Text>
-        {order.payment_qr_url ? (
-          <Image src={order.payment_qr_url} className='qr-image' mode='widthFix' />
-        ) : (
-          <View className='qr-placeholder'>
-            <Text>收款码未配置</Text>
+        {paymentMode === 'offline' && (
+          <View className='notice-step'>
+            <Text className='step-num'>4</Text>
+            <Text className='step-text'>点击下方按钮上传支付凭证（也可添加客服发送）</Text>
           </View>
         )}
       </View>
 
+      {/* 支付方式选择 */}
+      <View className='payment-method-card'>
+        <Text className='method-title'>选择支付方式</Text>
+        <View className='method-buttons'>
+          <Button
+            className={`method-btn ${paymentMode === 'wechat' ? 'active' : ''}`}
+            onClick={() => setPaymentMode('wechat')}
+            disabled={finalTotal <= 0 || isPaid}
+          >
+            微信支付
+          </Button>
+          <Button
+            className={`method-btn ${paymentMode === 'offline' ? 'active' : ''}`}
+            onClick={() => setPaymentMode('offline')}
+          >
+            扫码支付
+          </Button>
+        </View>
+      </View>
+
+      {/* 收款二维码 */}
+      {paymentMode === 'offline' && (
+        <View className='qr-card'>
+          <Text className='qr-title'>微信收款码</Text>
+          {order.payment_qr_url ? (
+            <Image src={order.payment_qr_url} className='qr-image' mode='widthFix' />
+          ) : (
+            <View className='qr-placeholder'>
+              <Text>收款码未配置</Text>
+            </View>
+          )}
+        </View>
+      )}
+
       {/* 客服二维码（可选） */}
-      {order.customer_service_qr && (
+      {paymentMode === 'offline' && order.customer_service_qr && (
         <View className='qr-card'>
           <Text className='qr-title'>客服企业微信（可选）</Text>
           <Image src={order.customer_service_qr} className='qr-image' mode='widthFix' />
@@ -422,12 +465,16 @@ const OrderPayment = () => {
 
       {/* 支付操作 */}
       <View className='pay-button-wrapper'>
-        <Button className='wechat-pay-btn' onClick={handleWechatPay} disabled={finalTotal <= 0 || hasProof || isPaid}>
-          {finalTotal <= 0 ? '已全额支付' : '微信支付'}
-        </Button>
-        <Button className='upload-btn' onClick={handleUpload} disabled={finalTotal <= 0}>
-          {finalTotal <= 0 ? '已全额支付' : '上传支付凭证'}
-        </Button>
+        {paymentMode === 'wechat' && (
+          <Button className='wechat-pay-btn' onClick={handleWechatPay} disabled={finalTotal <= 0 || hasProof || isPaid}>
+            {finalTotal <= 0 ? '已全额支付' : '微信支付'}
+          </Button>
+        )}
+        {paymentMode === 'offline' && (
+          <Button className='upload-btn' onClick={handleUpload} disabled={finalTotal <= 0}>
+            {finalTotal <= 0 ? '已全额支付' : '上传支付凭证'}
+          </Button>
+        )}
       </View>
 
       {/* 优惠券输入弹窗 */}
