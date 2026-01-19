@@ -40,6 +40,28 @@ const OrderPayment = () => {
   const isPaid = order?.status === 'processing' || order?.status === 'completed';
   const hasProof = Boolean(order?.has_payment_proof);
   const [paymentMode, setPaymentMode] = useState<'wechat' | 'offline'>('wechat');
+  const [debugOpen, setDebugOpen] = useState(true);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const BUILD_TAG = 'PAY_DEBUG_20260119_1';
+
+  const logPay = (message: string, payload?: Record<string, unknown>) => {
+    console.log(`[Payment] ${message}`, payload || {});
+    const time = new Date().toISOString().slice(11, 19);
+    let extra = '';
+    if (payload) {
+      try {
+        extra = JSON.stringify(payload);
+      } catch {
+        extra = '[unserializable]';
+      }
+    }
+    const line = extra ? `${time} ${message} ${extra}` : `${time} ${message}`;
+    setDebugLogs((prev) => {
+      const next = [...prev, line];
+      return next.slice(-30);
+    });
+    setDebugOpen(true);
+  };
   
   // 计算最终应付金额
   const finalTotal = useMemo(() => {
@@ -97,6 +119,7 @@ const OrderPayment = () => {
   }, [orderId]);
 
   useEffect(() => {
+    logPay('build tag', { tag: BUILD_TAG });
     loadOrder();
   }, [loadOrder]);
   
@@ -297,28 +320,85 @@ const OrderPayment = () => {
     }
 
     try {
-      const response = await paymentService.create(orderId, 'wechat');
+      try {
+        const pages = Taro.getCurrentPages();
+        const current = pages?.[pages.length - 1];
+        const routePayload = {
+          route: current?.route || '',
+          options: current?.options || {}
+        };
+        logPay('page route on pay', routePayload);
+        console.log('[Payment] page route on pay', routePayload);
+      } catch {
+        logPay('page route on pay', { route: 'unknown' });
+        console.log('[Payment] page route on pay', { route: 'unknown' });
+      }
+      try {
+        const info = (Taro.getAccountInfoSync && Taro.getAccountInfoSync()) as any;
+        const runtimeAppId = info?.miniProgram?.appId || '';
+        const runtimeEnv = info?.miniProgram?.envVersion || '';
+        logPay('miniapp runtime', { appId: runtimeAppId, envVersion: runtimeEnv });
+      } catch {
+        logPay('miniapp runtime', { appId: 'unknown' });
+      }
+      try {
+        const diag = await paymentService.diagnose();
+        logPay('payment diagnose', { diagnose: diag?.data || null });
+      } catch (diagError: any) {
+        logPay('payment diagnose failed', { error: diagError?.message || diagError });
+      }
+      logPay('start wechat pay', { orderId, finalTotal });
+      const response = await paymentService.create(orderId, 'wechat', { debug: true });
+      const debugInfo = response?.debug || null;
+      const debugPayment = (response as any)?.debug_payment || null;
+      logPay('wechat pay create response', {
+        hasPayload: Boolean(response?.payment_payload),
+        debugKeys: response ? Object.keys(response) : [],
+        debug: debugInfo,
+        debugPayment: debugPayment
+      });
+      if (debugInfo) {
+        logPay('wechat pay debug string', { debug: JSON.stringify(debugInfo) });
+      } else {
+        logPay('wechat pay debug missing', { responseKeys: response ? Object.keys(response) : [] });
+      }
+      if (debugPayment) {
+        logPay('wechat pay debug payment', { debugPayment: JSON.stringify(debugPayment) });
+      }
       if (!response?.payment_payload) {
         throw new Error('微信支付参数缺失');
       }
 
       const payload = response.payment_payload;
+      logPay('requestPayment payload', payload);
 
-      await Taro.requestPayment({
-        timeStamp: payload.timeStamp,
+      const paymentOption = {
+        timeStamp: String(payload.timeStamp),
         nonceStr: payload.nonceStr,
         package: payload.package,
         signType: payload.signType,
-        paySign: payload.paySign
-      });
+        paySign: payload.paySign,
+        appId: payload.appId
+      } as any;
+      await Taro.requestPayment(paymentOption);
 
       Taro.showToast({ title: '支付成功', icon: 'success' });
       setTimeout(() => {
         Taro.redirectTo({ url: `/pages/order/payment-success?orderId=${orderId}` });
       }, 800);
     } catch (error: any) {
+      const rawMessage =
+        error?.errMsg || error?.message || (typeof error === 'string' ? error : '');
+      logPay('wechat pay failed', { error: rawMessage || error });
       const appError = analyzeError(error);
       showErrorToast(appError, '微信支付失败');
+      if (rawMessage) {
+        Taro.showModal({
+          title: '支付失败详情',
+          content: rawMessage,
+          showCancel: false
+        });
+      }
     }
   };
 
@@ -365,18 +445,47 @@ const OrderPayment = () => {
         <View className='method-buttons'>
           <Button
             className={`method-btn ${paymentMode === 'wechat' ? 'active' : ''}`}
-            onClick={() => setPaymentMode('wechat')}
+            onClick={() => {
+              setPaymentMode('wechat');
+              logPay('select wechat pay');
+              handleWechatPay();
+            }}
             disabled={finalTotal <= 0 || isPaid}
           >
             微信支付
           </Button>
           <Button
             className={`method-btn ${paymentMode === 'offline' ? 'active' : ''}`}
-            onClick={() => setPaymentMode('offline')}
+            onClick={() => {
+              setPaymentMode('offline');
+              logPay('select offline pay');
+            }}
           >
             扫码支付
           </Button>
         </View>
+      </View>
+      <View className='debug-toolbar'>
+        <Button
+          className='debug-toggle'
+          size='mini'
+          onClick={() => setDebugOpen((prev) => !prev)}
+        >
+          日志
+        </Button>
+        {debugOpen && (
+          <View className='debug-panel'>
+            {debugLogs.length === 0 ? (
+              <Text className='debug-line'>暂无日志</Text>
+            ) : (
+              debugLogs.map((line, index) => (
+                <Text className='debug-line' key={`${line}-${index}`}>
+                  {line}
+                </Text>
+              ))
+            )}
+          </View>
+        )}
       </View>
 
       {/* 收款二维码 */}
@@ -465,11 +574,6 @@ const OrderPayment = () => {
 
       {/* 支付操作 */}
       <View className='pay-button-wrapper'>
-        {paymentMode === 'wechat' && (
-          <Button className='wechat-pay-btn' onClick={handleWechatPay} disabled={finalTotal <= 0 || hasProof || isPaid}>
-            {finalTotal <= 0 ? '已全额支付' : '微信支付'}
-          </Button>
-        )}
         {paymentMode === 'offline' && (
           <Button className='upload-btn' onClick={handleUpload} disabled={finalTotal <= 0}>
             {finalTotal <= 0 ? '已全额支付' : '上传支付凭证'}

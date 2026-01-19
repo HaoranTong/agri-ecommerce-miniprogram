@@ -16,6 +16,7 @@ const baseConfig = {
   sourceRoot: 'src',
   outputRoot: 'dist',
   framework: 'react',
+  plugins: ['@tarojs/plugin-framework-react'],
   compiler: {
     type: 'vite'
   },

@@ -186,6 +186,7 @@ const resolveUrl = (endpoint: string) => {
 };
 
 let isRedirecting = false; // 防止重复跳转
+let loadingCount = 0;
 
 const handleUnauthorized = () => {
   if (isRedirecting) return; // 如果正在跳转，直接返回
@@ -291,6 +292,7 @@ export const request = async <T = any>({
   }
 
   if (showLoading) {
+    loadingCount += 1;
     Taro.showLoading({ title: '加载中...', mask: true });
   }
 
@@ -330,8 +332,11 @@ export const request = async <T = any>({
     }
     throw error;
   } finally {
-    if (showLoading) {
-      Taro.hideLoading();
+    if (showLoading && loadingCount > 0) {
+      loadingCount -= 1;
+      if (loadingCount === 0) {
+        Taro.hideLoading();
+      }
     }
   }
 };
@@ -648,12 +653,46 @@ export const orderService = {
 };
 
 export const paymentService = {
-  create: async (orderId: number | string, provider: 'wechat' | 'offline') => {
+  create: async (
+    orderId: number | string,
+    provider: 'wechat' | 'offline',
+    options?: { debug?: boolean }
+  ) => {
+    const debugFlag = options?.debug ?? MINI_ENV_VERSION !== 'release';
     const response = await request<PaymentCreateResponse>({
       url: API_ENDPOINTS.paymentsCreate,
       method: 'POST',
-      data: { order_id: orderId, provider },
+      data: {
+        order_id: orderId,
+        provider,
+        ...(debugFlag ? { debug: 1 } : {})
+      },
       showLoading: true
+    });
+    return response;
+  },
+  diagnose: async () => {
+    const response = await request<{
+      success: boolean;
+      data: {
+        app_id_set: boolean;
+        app_secret_set: boolean;
+        mch_id_set: boolean;
+        serial_no_set: boolean;
+        platform_serial_set: boolean;
+        api_v3_key_length: number;
+        private_key_loaded: boolean;
+        platform_key_loaded: boolean;
+        openssl_available: boolean;
+        notify_url: string;
+        home_url: string;
+        site_url: string;
+        plugin_file: string;
+      };
+    }>({
+      url: API_ENDPOINTS.paymentsDiagnose,
+      method: 'GET',
+      suppressErrorToast: true
     });
     return response;
   },

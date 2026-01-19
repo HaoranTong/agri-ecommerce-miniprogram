@@ -173,12 +173,29 @@ export interface PaymentCreateResponse {
     timeStamp: string;
     nonceStr: string;
     package: string;
-    signType: string;
+    signType: 'RSA' | 'MD5';
     paySign: string;
   };
   payment_qr_url?: string;
   customer_service_qr?: string;
   message?: string;
+  debug?: {
+    host?: string;
+    server_name?: string;
+    home_url?: string;
+    site_url?: string;
+    wp_content_dir?: string;
+    plugin_file?: string;
+  };
+  debug_payment?: {
+    appid?: string;
+    mchid?: string;
+    openid_masked?: string;
+    order_id?: number;
+    out_trade_no?: string;
+    notify_url?: string;
+    prepay_id?: string;
+  };
 }
 
 export interface PaymentStatusResponse {
