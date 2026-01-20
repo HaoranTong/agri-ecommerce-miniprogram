@@ -29,7 +29,9 @@ const baseConfig = {
     data: '@use "src/styles/variables" as *;\n'
   },
   copy: {
-    patterns: [],
+    patterns: [
+      { from: 'saaa_config.json', to: 'dist/saaa_config.json' }
+    ],
     options: {}
   },
   cache: {

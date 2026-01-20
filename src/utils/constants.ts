@@ -55,5 +55,4 @@ export const API_ENDPOINTS = {
   promoPoster: '/promo/poster',
   paymentsCreate: '/payments/create',
   paymentsStatus: '/payments/status',
-  paymentsDiagnose: '/payments/diagnose'
 } as const;

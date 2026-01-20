@@ -12,7 +12,7 @@ const OrderDetail = () => {
 
   const orderId = useMemo(() => {
     const params = Taro.getCurrentInstance().router?.params ?? {};
-    return params.id || params.orderId || '';
+    return params.id || params.orderId || params.order_id || params.out_order_id || '';
   }, []);
 
   const getStatusInfo = (currentOrder: OrderDetailType) => {

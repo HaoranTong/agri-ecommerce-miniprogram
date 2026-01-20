@@ -16,10 +16,6 @@ const UserProfile = () => {
     try {
       setLoading(true);
       const data = await userService.getProfile();
-      console.log('[Profile] 加载用户数据:', data);
-      console.log('[Profile] 积分余额:', data.points_balance);
-      console.log('[Profile] 所有字段:', Object.keys(data));
-      console.log('[Profile] 是否有points_balance:', 'points_balance' in data);
       setProfile(data);
     } catch (error) {
       console.error('获取用户信息失败', error);
@@ -47,7 +43,6 @@ const UserProfile = () => {
 
   // 页面显示时重新加载数据（从编辑页面返回时会触发）
   Taro.useDidShow(() => {
-    console.log('[Profile] 页面显示，重新加载数据');
     loadProfile();
     loadGiftCardCount();
   });
@@ -97,9 +92,6 @@ const UserProfile = () => {
             {profile.nickname || profile.first_name || '未设置昵称'}
           </Text>
           <Text className='user-id'>ID: {profile.username}</Text>
-          {profile.is_test_user && (
-            <View className='test-badge'>🧪 {profile.test_code}</View>
-          )}
         </View>
       </View>
 

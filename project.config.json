@@ -33,7 +33,12 @@
   "simulatorPluginLibVersion": {},
   "packOptions": {
     "ignore": [],
-    "include": []
+    "include": [
+      {
+        "type": "file",
+        "value": "saaa_config.json"
+      }
+    ]
   },
   "editorSetting": {},
   "libVersion": "3.11.3"

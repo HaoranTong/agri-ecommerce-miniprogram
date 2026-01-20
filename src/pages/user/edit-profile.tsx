@@ -21,7 +21,6 @@ const EditProfile = () => {
   const loadProfile = async () => {
     try {
       const response = await userService.getProfile();
-      console.log('[EditProfile] 用户资料:', response);
       setProfile(response);
       setFormData({
         nickname: response.nickname || '',
@@ -64,9 +63,7 @@ const EditProfile = () => {
 
     try {
       setLoading(true);
-      console.log('[EditProfile] 提交数据:', formData);
       const result = await userService.updateProfile(formData);
-      console.log('[EditProfile] 保存结果:', result);
       
       // 更新本地状态
       setProfile(result);
@@ -130,11 +127,6 @@ const EditProfile = () => {
           />
         </View>
 
-        {profile?.is_test_user && (
-          <View className='test-user-badge'>
-            🧪 测试账号: {profile.test_code}
-          </View>
-        )}
       </View>
 
       <View className='button-group'>

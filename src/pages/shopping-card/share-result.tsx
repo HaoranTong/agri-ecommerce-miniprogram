@@ -59,20 +59,9 @@ const GiftCardShareResult = () => {
         format: 'both'
       });
       
-      console.log('分享API返回结果:', result);
-      console.log('二维码图片URL:', result?.qr_image_url);
-      console.log('二维码Payload:', result?.qr_payload);
-      
       if (result) {
         setShareResult(result);
-        // 在小程序环境中，不需要手动预加载图片，Image组件会自动处理
-        // 如果需要预加载，可以使用 Taro.downloadFile
-        if (result.qr_image_url || result.mini_program_qr) {
-          const imgUrl = result.qr_image_url || result.mini_program_qr;
-          console.log('图片URL:', imgUrl);
-          // 可选：使用 Taro.downloadFile 预加载（但不阻塞UI）
-          // Taro.downloadFile({ url: imgUrl }).catch(() => {});
-        }
+        // 在小程序环境中，Image 组件会自动处理图片预加载
       } else {
         throw new Error('API返回数据为空');
       }
@@ -95,12 +84,6 @@ const GiftCardShareResult = () => {
   const qrImageUrl = shareResult?.qr_image_url || shareResult?.mini_program_qr || '';
   const qrPayload = shareResult?.qr_payload || '';
   
-  // 调试信息
-  useEffect(() => {
-    if (qrImageUrl) {
-      console.log('二维码图片URL:', qrImageUrl);
-    }
-  }, [qrImageUrl]);
   const qrMatrix = useMemo(() => {
     if (qrImageUrl) return null; // 如果有图片URL，就不需要前端生成
     return buildQrMatrix(qrPayload);
@@ -134,8 +117,7 @@ const GiftCardShareResult = () => {
           } else {
             throw new Error('下载失败');
           }
-        } catch (error) {
-          console.error('下载图片失败', error);
+        } catch {
           // 如果下载失败，提示用户
           Taro.showToast({ title: '图片下载失败，请稍后重试', icon: 'none' });
           return;
@@ -163,7 +145,6 @@ const GiftCardShareResult = () => {
         Taro.showToast({ title: '已保存到相册', icon: 'success' });
       }
     } catch (error: any) {
-      console.error('保存失败', error);
       if (error.errMsg?.includes('auth deny')) {
         Taro.showModal({
           title: '需要授权',
@@ -209,8 +190,7 @@ const GiftCardShareResult = () => {
           } else {
             Taro.showToast({ title: '下载失败', icon: 'none' });
           }
-        } catch (error) {
-          console.error('下载图片失败', error);
+        } catch {
           Taro.showToast({ title: '图片加载失败，请使用保存功能', icon: 'none' });
         }
       } else {
@@ -218,7 +198,6 @@ const GiftCardShareResult = () => {
         Taro.showToast({ title: '请使用保存功能保存二维码', icon: 'none' });
       }
     } catch (error) {
-      console.error('分享失败', error);
       // 如果预览失败，提供保存选项
       Taro.showModal({
         title: '分享失败',
@@ -270,11 +249,7 @@ const GiftCardShareResult = () => {
               src={qrImageUrl}
               lazyLoad={false}
               showMenuByLongpress
-              onLoad={() => {
-                console.log('图片加载成功:', qrImageUrl);
-              }}
-              onError={(e) => {
-                console.error('图片加载失败:', qrImageUrl, e);
+              onError={() => {
                 Taro.showToast({ title: '图片加载失败，使用备用方案', icon: 'none', duration: 2000 });
               }}
             />

@@ -2,7 +2,6 @@ import { View, Button, Text } from '@tarojs/components';
 import { useState } from 'react';
 import Taro from '@tarojs/taro';
 
-import TestUserSelector from '../../components/TestUserSelector';
 import { authService } from '../../services/api';
 import { getToken } from '../../utils/storage';
 import './login.scss';
@@ -16,19 +15,9 @@ const Login = () => {
     try {
       setLoading(true);
       
-      // 检查是否选择了测试用户（从测试用户选择器中获取）
-      const testCode = Taro.getStorageSync('DEV_TEST_USER_CODE');
-      let code = '';
-      
-      if (testCode) {
-        // 使用测试用户代码
-        console.log('[Login] 使用测试用户:', testCode);
-        code = testCode;
-      } else {
-        // 使用真实微信登录
-        const loginRes = await Taro.login();
-        code = loginRes.code;
-      }
+      // 使用真实微信登录
+      const loginRes = await Taro.login();
+      const code = loginRes.code;
 
       if (!code) {
         Taro.showToast({ title: '获取登录凭证失败', icon: 'none' });
@@ -50,16 +39,12 @@ const Login = () => {
       setTimeout(() => {
         // 检查是否有需要返回的页面
         const redirect = Taro.getStorageSync('REDIRECT_AFTER_LOGIN');
-        console.log('[Login] 读取返回路径:', redirect);
-        
         if (redirect && redirect.path) {
           Taro.removeStorageSync('REDIRECT_AFTER_LOGIN');
           const params = JSON.parse(redirect.params || '{}');
           const query = Object.keys(params).map(k => `${k}=${params[k]}`).join('&');
           const url = query ? `/${redirect.path}?${query}` : `/${redirect.path}`;
-          
-          console.log('[Login] 准备跳转:', { path: redirect.path, params, url });
-          
+
           // 如果是 tabBar 页面，使用 switchTab，否则使用 redirectTo
           if (['pages/index/index', 'pages/order/list', 'pages/user/profile'].includes(redirect.path)) {
             Taro.switchTab({ url: `/${redirect.path}` });
@@ -106,9 +91,6 @@ const Login = () => {
         <Text className='text'>和</Text>
         <Text className='link'>《隐私政策》</Text>
       </View>
-      
-      {/* 测试用户选择器 */}
-      <TestUserSelector />
     </View>
   );
 };

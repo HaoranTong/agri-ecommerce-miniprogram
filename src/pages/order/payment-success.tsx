@@ -9,12 +9,12 @@ import './payment-success.scss';
 // 订单状态翻译
 const getStatusText = (status: string): string => {
   const statusMap: Record<string, string> = {
-    'pending': '待支付',
-    'processing': '处理中',
-    'completed': '已完成',
-    'cancelled': '已取消',
-    'refunded': '已退款',
-    'failed': '失败'
+    pending: '待支付',
+    processing: '待发货',
+    completed: '已完成',
+    cancelled: '已取消',
+    refunded: '已退款',
+    failed: '支付失败'
   };
   return statusMap[status] || status;
 };
@@ -80,7 +80,7 @@ const PaymentSuccess = () => {
     <View className='payment-success-page'>
       {/* 成功提示 - 压缩为两行 */}
       <View className='success-header'>
-        <Text className='success-title'>付款凭证已提交 • 等待管理员确认收款</Text>
+        <Text className='success-title'>支付成功 • 已完成扣款</Text>
       </View>
 
       {/* 订单信息卡片 */}
@@ -91,7 +91,7 @@ const PaymentSuccess = () => {
           <Text className='value'>{order.order_number}</Text>
         </View>
         <View className='info-row'>
-          <Text className='label'>支付状态：</Text>
+          <Text className='label'>订单状态：</Text>
           <Text className='value status'>{getStatusText(order.status)}</Text>
         </View>
         <View className='info-row'>
@@ -128,8 +128,7 @@ const PaymentSuccess = () => {
       <View className='tips-card'>
         <Text className='tips-title'>💡 温馨提示</Text>
         <View className='tips-list'>
-          <Text className='tips-item'>• 管理员确认收款后，将尽快为您安排发货</Text>
-          <Text className='tips-item'>• 如有问题，请及时联系客服</Text>
+          <Text className='tips-item'>• 订单已支付成功，商家将尽快安排发货</Text>
           <Text className='tips-item'>• 可在&quot;订单&quot;页面查看物流信息</Text>
           <Text className='tips-item'>• 如需修改收货信息，请立即联系客服</Text>
         </View>

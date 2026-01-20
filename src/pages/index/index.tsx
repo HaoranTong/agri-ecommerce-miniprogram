@@ -2,7 +2,6 @@ import { Image, Swiper, SwiperItem, Text, View } from '@tarojs/components';
 import Taro, { useDidShow } from '@tarojs/taro';
 import { useEffect, useState } from 'react';
 
-import TestUserSelector from '../../components/TestUserSelector';
 import { configService, productService } from '../../services/api';
 import type { Product, PublicConfig } from '../../types';
 import Skeleton from '../../components/Skeleton';
@@ -145,9 +144,6 @@ const Index = () => {
           );
         })}
       </View>
-      
-      {/* 测试用户选择器 */}
-      <TestUserSelector />
     </View>
   );
 };

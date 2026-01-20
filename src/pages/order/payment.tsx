@@ -1,4 +1,4 @@
-import { Button, Image, Input, Text, View } from '@tarojs/components';
+import { Button, Input, Text, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -12,7 +12,6 @@ const OrderPayment = () => {
   const orderId = useMemo(() => {
     const params = Taro.getCurrentInstance().router?.params ?? {};
     const id = params.orderId || params.id || '';
-    console.log('[OrderConfirm] 订单ID:', { params, orderId: id });
     return id;
   }, []);
   const [order, setOrder] = useState<OrderDetail | null>(null);
@@ -39,29 +38,6 @@ const OrderPayment = () => {
 
   const isPaid = order?.status === 'processing' || order?.status === 'completed';
   const hasProof = Boolean(order?.has_payment_proof);
-  const [paymentMode, setPaymentMode] = useState<'wechat' | 'offline'>('wechat');
-  const [debugOpen, setDebugOpen] = useState(true);
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
-  const BUILD_TAG = 'PAY_DEBUG_20260119_1';
-
-  const logPay = (message: string, payload?: Record<string, unknown>) => {
-    console.log(`[Payment] ${message}`, payload || {});
-    const time = new Date().toISOString().slice(11, 19);
-    let extra = '';
-    if (payload) {
-      try {
-        extra = JSON.stringify(payload);
-      } catch {
-        extra = '[unserializable]';
-      }
-    }
-    const line = extra ? `${time} ${message} ${extra}` : `${time} ${message}`;
-    setDebugLogs((prev) => {
-      const next = [...prev, line];
-      return next.slice(-30);
-    });
-    setDebugOpen(true);
-  };
   
   // 计算最终应付金额
   const finalTotal = useMemo(() => {
@@ -79,19 +55,13 @@ const OrderPayment = () => {
   const storedValueCardCount = storedValueCards.length;
 
   const loadOrder = useCallback(async () => {
-    console.log('[OrderConfirm] 开始加载订单:', orderId);
-    
     if (!orderId) {
-      console.error('[OrderConfirm] 订单ID为空');
       setLoading(false);
       return;
     }
 
     try {
       const data = await orderService.getOrderDetail(orderId);
-      console.log('[OrderConfirm] 订单数据:', data);
-      console.log('[OrderConfirm] 支付二维码:', data.payment_qr_url);
-      console.log('[OrderConfirm] 客服二维码:', data.customer_service_qr);
       setOrder(data);
       
       // 恢复优惠券和购物卡使用状态
@@ -119,16 +89,9 @@ const OrderPayment = () => {
   }, [orderId]);
 
   useEffect(() => {
-    logPay('build tag', { tag: BUILD_TAG });
     loadOrder();
   }, [loadOrder]);
   
-  useEffect(() => {
-    if (hasProof) {
-      setPaymentMode('offline');
-    }
-  }, [hasProof]);
-
   // 加载储值购物卡列表
   const fetchStoredCards = useCallback(
     async (showSpinner = false) => {
@@ -263,42 +226,7 @@ const OrderPayment = () => {
     );
   }
 
-  const handleUpload = async () => {
-    try {
-      const { tempFilePaths } = await Taro.chooseImage({ count: 1 });
-      if (!tempFilePaths || tempFilePaths.length === 0) {
-        return;
-      }
-
-      Taro.showLoading({ title: '上传中...', mask: true });
-      
-      await orderService.uploadPaymentProof(orderId, tempFilePaths[0]);
-      
-      Taro.hideLoading();
-      Taro.showToast({ title: '凭证已提交审核', icon: 'success' });
-      
-      // 跳转到订单详情页面
-      setTimeout(() => {
-        Taro.redirectTo({
-          url: `/pages/order/detail?orderId=${orderId}`
-        });
-      }, 1500);
-    } catch (error: any) {
-      Taro.hideLoading();
-      console.error('上传付款凭证失败', error);
-      
-      const appError = analyzeError(error);
-      if (appError.type === 'network') {
-        Taro.showModal({
-          title: '上传超时',
-          content: '网络连接超时，请检查网络后重试。如多次失败，请联系客服直接发送凭证。',
-          showCancel: false
-        });
-      } else {
-        showErrorToast(appError, '上传失败，请重试');
-      }
-    }
-  };
+  // 线下扫码与凭证上传已移除
 
   const handleWechatPay = async () => {
     if (!order) return;
@@ -320,67 +248,25 @@ const OrderPayment = () => {
     }
 
     try {
-      try {
-        const pages = Taro.getCurrentPages();
-        const current = pages?.[pages.length - 1];
-        const routePayload = {
-          route: current?.route || '',
-          options: current?.options || {}
-        };
-        logPay('page route on pay', routePayload);
-        console.log('[Payment] page route on pay', routePayload);
-      } catch {
-        logPay('page route on pay', { route: 'unknown' });
-        console.log('[Payment] page route on pay', { route: 'unknown' });
-      }
-      try {
-        const info = (Taro.getAccountInfoSync && Taro.getAccountInfoSync()) as any;
-        const runtimeAppId = info?.miniProgram?.appId || '';
-        const runtimeEnv = info?.miniProgram?.envVersion || '';
-        logPay('miniapp runtime', { appId: runtimeAppId, envVersion: runtimeEnv });
-      } catch {
-        logPay('miniapp runtime', { appId: 'unknown' });
-      }
-      try {
-        const diag = await paymentService.diagnose();
-        logPay('payment diagnose', { diagnose: diag?.data || null });
-      } catch (diagError: any) {
-        logPay('payment diagnose failed', { error: diagError?.message || diagError });
-      }
-      logPay('start wechat pay', { orderId, finalTotal });
-      const response = await paymentService.create(orderId, 'wechat', { debug: true });
-      const debugInfo = response?.debug || null;
-      const debugPayment = (response as any)?.debug_payment || null;
-      logPay('wechat pay create response', {
-        hasPayload: Boolean(response?.payment_payload),
-        debugKeys: response ? Object.keys(response) : [],
-        debug: debugInfo,
-        debugPayment: debugPayment
-      });
-      if (debugInfo) {
-        logPay('wechat pay debug string', { debug: JSON.stringify(debugInfo) });
-      } else {
-        logPay('wechat pay debug missing', { responseKeys: response ? Object.keys(response) : [] });
-      }
-      if (debugPayment) {
-        logPay('wechat pay debug payment', { debugPayment: JSON.stringify(debugPayment) });
-      }
+      const response = await paymentService.create(orderId, 'wechat');
       if (!response?.payment_payload) {
         throw new Error('微信支付参数缺失');
       }
 
       const payload = response.payment_payload;
-      logPay('requestPayment payload', payload);
-
       const paymentOption = {
         timeStamp: String(payload.timeStamp),
         nonceStr: payload.nonceStr,
         package: payload.package,
-        signType: payload.signType,
-        paySign: payload.paySign,
-        appId: payload.appId
-      } as any;
-      await Taro.requestPayment(paymentOption);
+        signType: payload.signType as 'MD5' | 'HMAC-SHA256' | 'RSA',
+        paySign: payload.paySign
+      };
+      
+      try {
+        await Taro.requestPayment(paymentOption);
+      } catch (err: any) {
+        throw err;
+      }
 
       Taro.showToast({ title: '支付成功', icon: 'success' });
       setTimeout(() => {
@@ -389,7 +275,6 @@ const OrderPayment = () => {
     } catch (error: any) {
       const rawMessage =
         error?.errMsg || error?.message || (typeof error === 'string' ? error : '');
-      logPay('wechat pay failed', { error: rawMessage || error });
       const appError = analyzeError(error);
       showErrorToast(appError, '微信支付失败');
       if (rawMessage) {
@@ -410,33 +295,21 @@ const OrderPayment = () => {
         <View className='notice-step'>
           <Text className='step-num'>1</Text>
           <Text className='step-text'>
-            {paymentMode === 'wechat'
-              ? '点击下方“微信支付”完成付款'
-              : '长按保存收款二维码到相册'}
+            点击下方“微信支付”完成付款
           </Text>
         </View>
         <View className='notice-step'>
           <Text className='step-num'>2</Text>
           <Text className='step-text'>
-            {paymentMode === 'wechat'
-              ? '完成支付后系统自动更新订单状态'
-              : '微信扫码相册中的收款码完成付款'}
+            完成支付后系统自动更新订单状态
           </Text>
         </View>
         <View className='notice-step'>
           <Text className='step-num'>3</Text>
           <Text className='step-text'>
-            {paymentMode === 'wechat'
-              ? '如未跳转成功，请刷新订单状态'
-              : '截图保存付款成功页面'}
+            如未跳转成功，请刷新订单状态
           </Text>
         </View>
-        {paymentMode === 'offline' && (
-          <View className='notice-step'>
-            <Text className='step-num'>4</Text>
-            <Text className='step-text'>点击下方按钮上传支付凭证（也可添加客服发送）</Text>
-          </View>
-        )}
       </View>
 
       {/* 支付方式选择 */}
@@ -444,71 +317,16 @@ const OrderPayment = () => {
         <Text className='method-title'>选择支付方式</Text>
         <View className='method-buttons'>
           <Button
-            className={`method-btn ${paymentMode === 'wechat' ? 'active' : ''}`}
+            className='method-btn active'
             onClick={() => {
-              setPaymentMode('wechat');
-              logPay('select wechat pay');
               handleWechatPay();
             }}
             disabled={finalTotal <= 0 || isPaid}
           >
             微信支付
           </Button>
-          <Button
-            className={`method-btn ${paymentMode === 'offline' ? 'active' : ''}`}
-            onClick={() => {
-              setPaymentMode('offline');
-              logPay('select offline pay');
-            }}
-          >
-            扫码支付
-          </Button>
         </View>
       </View>
-      <View className='debug-toolbar'>
-        <Button
-          className='debug-toggle'
-          size='mini'
-          onClick={() => setDebugOpen((prev) => !prev)}
-        >
-          日志
-        </Button>
-        {debugOpen && (
-          <View className='debug-panel'>
-            {debugLogs.length === 0 ? (
-              <Text className='debug-line'>暂无日志</Text>
-            ) : (
-              debugLogs.map((line, index) => (
-                <Text className='debug-line' key={`${line}-${index}`}>
-                  {line}
-                </Text>
-              ))
-            )}
-          </View>
-        )}
-      </View>
-
-      {/* 收款二维码 */}
-      {paymentMode === 'offline' && (
-        <View className='qr-card'>
-          <Text className='qr-title'>微信收款码</Text>
-          {order.payment_qr_url ? (
-            <Image src={order.payment_qr_url} className='qr-image' mode='widthFix' />
-          ) : (
-            <View className='qr-placeholder'>
-              <Text>收款码未配置</Text>
-            </View>
-          )}
-        </View>
-      )}
-
-      {/* 客服二维码（可选） */}
-      {paymentMode === 'offline' && order.customer_service_qr && (
-        <View className='qr-card'>
-          <Text className='qr-title'>客服企业微信（可选）</Text>
-          <Image src={order.customer_service_qr} className='qr-image' mode='widthFix' />
-        </View>
-      )}
 
       {/* 优惠券和购物卡使用区域 */}
       <View className='payment-options-card'>
@@ -573,13 +391,7 @@ const OrderPayment = () => {
       </View>
 
       {/* 支付操作 */}
-      <View className='pay-button-wrapper'>
-        {paymentMode === 'offline' && (
-          <Button className='upload-btn' onClick={handleUpload} disabled={finalTotal <= 0}>
-            {finalTotal <= 0 ? '已全额支付' : '上传支付凭证'}
-          </Button>
-        )}
-      </View>
+      <View className='pay-button-wrapper' />
 
       {/* 优惠券输入弹窗 */}
       {showCouponModal && (

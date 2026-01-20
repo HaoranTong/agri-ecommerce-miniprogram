@@ -1,7 +1,6 @@
 import Taro from '@tarojs/taro';
 
 import { API_BASE, API_ENDPOINTS } from '../utils/constants';
-import { mockProducts, mockPublicConfig } from '../mock/data';
 import {
   clearToken,
   getToken,
@@ -10,8 +9,6 @@ import {
   type StoredUserInfo
 } from '../utils/storage';
 import type {
-  AgentApplication,
-  AgentApplicationResult,
   AgentDownline,
   AgentProfile,
   CartItem,
@@ -87,7 +84,6 @@ interface RequestOptions {
   suppressLog?: boolean;
 }
 
-const isDev = process.env.NODE_ENV !== 'production';
 
 /**
  * =========================
@@ -272,24 +268,7 @@ export const request = async <T = any>({
     });
   }
 
-  if (isDev && !suppressLog) {
-    console.info('[API Debug]', {
-      method,
-      url: finalUrl,
-      hasToken: !!token,
-      nodeEnv: process.env.NODE_ENV,
-      apiBase: EFFECTIVE_API_BASE,
-      miniEnvVersion: MINI_ENV_VERSION
-    });
-  }
-
-  // 对需要认证的请求记录 token 状态
-  if (!suppressLog && (url.includes('/cart') || url.includes('/orders'))) {
-    console.log(`[API] ${method} ${url}`, {
-      hasToken: !!token,
-      tokenPrefix: token ? token.substring(0, 20) + '...' : 'NONE'
-    });
-  }
+  // 发布版本移除调试日志输出
 
   if (showLoading) {
     loadingCount += 1;
@@ -360,14 +339,6 @@ export const authService = {
     // 同步保存 token
     setToken(result.token);
 
-    // 立即验证是否保存成功
-    const savedToken = getToken();
-    console.log('Token 保存验证:', {
-      received: result.token.substring(0, 30) + '...',
-      saved: savedToken ? savedToken.substring(0, 30) + '...' : 'NULL',
-      match: savedToken === result.token
-    });
-
     const storedUser: StoredUserInfo = {
       user_id: result.user_id,
       phone: result.phone,
@@ -381,41 +352,20 @@ export const authService = {
 };
 
 export const configService = {
-  getPublicConfig: async () => {
-    try {
-      return await request<PublicConfig>({
-        url: API_ENDPOINTS.publicConfig,
-        method: 'GET',
-        suppressErrorToast: isDev,
-        suppressLog: isDev
-      });
-    } catch (error) {
-      if (isDev) {
-        console.warn('使用 mock 公共配置数据', error);
-        return mockPublicConfig;
-      }
-      throw error;
-    }
-  }
+  getPublicConfig: () =>
+    request<PublicConfig>({
+      url: API_ENDPOINTS.publicConfig,
+      method: 'GET'
+    })
 };
 
 export const productService = {
   async getProducts(): Promise<Product[]> {
-    try {
-      const response = await request<{ products: Product[] }>({
-        url: API_ENDPOINTS.products,
-        method: 'GET',
-        suppressErrorToast: isDev,
-        suppressLog: isDev
-      });
-      return response.products;
-    } catch (error) {
-      if (isDev) {
-        console.warn('使用 mock 商品数据', error);
-        return mockProducts;
-      }
-      throw error;
-    }
+    const response = await request<{ products: Product[] }>({
+      url: API_ENDPOINTS.products,
+      method: 'GET'
+    });
+    return response.products;
   },
   async getRedeemableProducts(): Promise<Product[]> {
     try {
@@ -428,6 +378,55 @@ export const productService = {
       console.error('获取积分兑换商品列表失败', error);
       throw error;
     }
+  }
+};
+
+export const cartService = {
+  getCart: async (): Promise<CartItem[]> => {
+    const response = await request<{
+      success?: boolean;
+      data?: CartItem[] | { items?: CartItem[] };
+      items?: CartItem[];
+    }>({
+      url: API_ENDPOINTS.cart,
+      method: 'GET'
+    });
+
+    if (Array.isArray(response)) {
+      return response as CartItem[];
+    }
+
+    const data = (response as any)?.data;
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.items)) return data.items;
+    if (Array.isArray((response as any)?.items)) return (response as any).items;
+    return [];
+  },
+  addToCart: async (variationId: number, quantity: number) => {
+    return request<{ success?: boolean; data?: any }>({
+      url: API_ENDPOINTS.cart,
+      method: 'POST',
+      data: { variation_id: variationId, quantity }
+    });
+  },
+  updateCart: async (variationId: number, quantity: number) => {
+    return request<{ success?: boolean; data?: any }>({
+      url: API_ENDPOINTS.cart,
+      method: 'POST',
+      data: { variation_id: variationId, quantity }
+    });
+  },
+  removeFromCart: async (variationId: number) => {
+    return request<{ success?: boolean; data?: any }>({
+      url: API_ENDPOINTS.cartItem(variationId),
+      method: 'DELETE'
+    });
+  },
+  clearCart: async () => {
+    return request<{ success?: boolean; data?: any }>({
+      url: API_ENDPOINTS.cart,
+      method: 'DELETE'
+    });
   }
 };
 
@@ -526,47 +525,18 @@ export const promoService = {
 };
 
 export const agentApplicationService = {
-  apply: async (data: AgentApplication) => {
-    const response = await request<{ success: boolean; data: AgentApplicationResult }>({
-      url: API_ENDPOINTS.agentsApply,
+  create: async (orderId: number | string, provider: 'wechat' | 'offline') => {
+    const response = await request<PaymentCreateResponse>({
+      url: API_ENDPOINTS.paymentsCreate,
       method: 'POST',
-      data,
+      data: {
+        order_id: orderId,
+        provider
+      },
       showLoading: true
     });
-    return response.data;
-  }
-};
-
-export const cartService = {
-  getCart: () =>
-    request<CartItem[]>({
-      url: API_ENDPOINTS.cart,
-      method: 'GET'
-    }),
-  addToCart: (variation_id: number, quantity: number) =>
-    request<{ success: boolean }>({
-      url: API_ENDPOINTS.cart,
-      method: 'POST',
-      data: { variation_id, quantity },
-      showLoading: true
-    }),
-  updateCart: (variation_id: number, quantity: number) =>
-    request<{ success: boolean }>({
-      url: API_ENDPOINTS.cartItem(variation_id),
-      method: 'PUT',
-      data: { quantity },
-      showLoading: true
-    }),
-  removeFromCart: (variation_id: number) =>
-    request<{ success: boolean }>({
-      url: API_ENDPOINTS.cartItem(variation_id),
-      method: 'DELETE'
-    }),
-  clearCart: () =>
-    request<void>({
-      url: API_ENDPOINTS.cart,
-      method: 'DELETE'
-    })
+    return response;
+  },
 };
 
 export const orderService = {
@@ -653,46 +623,15 @@ export const orderService = {
 };
 
 export const paymentService = {
-  create: async (
-    orderId: number | string,
-    provider: 'wechat' | 'offline',
-    options?: { debug?: boolean }
-  ) => {
-    const debugFlag = options?.debug ?? MINI_ENV_VERSION !== 'release';
+  create: async (orderId: number | string, provider: 'wechat' | 'offline') => {
     const response = await request<PaymentCreateResponse>({
       url: API_ENDPOINTS.paymentsCreate,
       method: 'POST',
       data: {
         order_id: orderId,
-        provider,
-        ...(debugFlag ? { debug: 1 } : {})
+        provider
       },
       showLoading: true
-    });
-    return response;
-  },
-  diagnose: async () => {
-    const response = await request<{
-      success: boolean;
-      data: {
-        app_id_set: boolean;
-        app_secret_set: boolean;
-        mch_id_set: boolean;
-        serial_no_set: boolean;
-        platform_serial_set: boolean;
-        api_v3_key_length: number;
-        private_key_loaded: boolean;
-        platform_key_loaded: boolean;
-        openssl_available: boolean;
-        notify_url: string;
-        home_url: string;
-        site_url: string;
-        plugin_file: string;
-      };
-    }>({
-      url: API_ENDPOINTS.paymentsDiagnose,
-      method: 'GET',
-      suppressErrorToast: true
     });
     return response;
   },
