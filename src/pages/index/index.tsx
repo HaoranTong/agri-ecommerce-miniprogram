@@ -52,15 +52,17 @@ const Index = () => {
   });
 
   const handleProductSelect = (product: Product) => {
+    const fromCart = Boolean(Taro.getStorageSync('CART_CONTINUE_SHOPPING'));
     Taro.navigateTo({
-      url: `/pages/product/detail?id=${product.id}`
+      url: `/pages/product/detail?id=${product.id}${fromCart ? '&from=cart' : ''}`
     });
   };
 
   const handleVariantSelect = (product: Product, variation: any) => {
+    const fromCart = Boolean(Taro.getStorageSync('CART_CONTINUE_SHOPPING'));
     // 跳转到详情页并预选规格
     Taro.navigateTo({
-      url: `/pages/product/detail?id=${product.id}&variation_id=${variation.variation_id}`
+      url: `/pages/product/detail?id=${product.id}&variation_id=${variation.variation_id}${fromCart ? '&from=cart' : ''}`
     });
   };
 

@@ -1,6 +1,6 @@
 import { Button, Image, Swiper, SwiperItem, Text, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { cartService, productService } from '../../services/api';
 import type { Product, ProductVariation } from '../../types';
@@ -12,7 +12,8 @@ const ProductDetail = () => {
     return {
       productId: Number(routerParams.id || routerParams.productId || 0),
       variationId: routerParams.variation_id ? Number(routerParams.variation_id) : null,
-      fromPointsRedeem: routerParams.from === 'points_redeem' // 是否从积分兑换页面跳转
+      fromPointsRedeem: routerParams.from === 'points_redeem', // 是否从积分兑换页面跳转
+      fromCartContinue: routerParams.from === 'cart' || Boolean(Taro.getStorageSync('CART_CONTINUE_SHOPPING'))
     };
   }, []);
 
@@ -20,6 +21,17 @@ const ProductDetail = () => {
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+
+  const isVariationInStock = useCallback((variation: ProductVariation) => {
+    if (typeof variation.in_stock === 'boolean') {
+      return variation.in_stock;
+    }
+    const stockStatus = (variation as any).stock_status as string | undefined;
+    if (stockStatus) {
+      return stockStatus !== 'outofstock';
+    }
+    return true;
+  }, []);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -47,8 +59,9 @@ const ProductDetail = () => {
             }
           }
           
-          // 优先级3: 默认第一个
-          setSelectedVariation(targetVariation || found.variations[0]);
+          // 优先级3: 默认第一个有库存的规格
+          const fallbackVariation = found.variations.find((v) => isVariationInStock(v)) || found.variations[0];
+          setSelectedVariation(targetVariation || fallbackVariation);
         }
       } catch (error) {
         console.error('获取商品详情失败', error);
@@ -59,15 +72,20 @@ const ProductDetail = () => {
     };
 
     loadProduct();
-  }, [params.productId, params.variationId, params.fromPointsRedeem]);
+  }, [params.productId, params.variationId, params.fromPointsRedeem, isVariationInStock]);
 
   const handleVariationSelect = (variation: ProductVariation) => {
     setSelectedVariation(variation);
   };
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (autoReturnToCart = false) => {
     if (!selectedVariation) {
       Taro.showToast({ title: '请选择规格', icon: 'none' });
+      return;
+    }
+
+    if (!isVariationInStock(selectedVariation)) {
+      Taro.showToast({ title: '该规格已售罄', icon: 'none' });
       return;
     }
 
@@ -79,6 +97,14 @@ const ProductDetail = () => {
 
     try {
       await cartService.addToCart(selectedVariation.variation_id, quantity);
+
+      if (autoReturnToCart || params.fromCartContinue) {
+        Taro.showToast({ title: '已加入购物车', icon: 'success' });
+        setTimeout(() => {
+          Taro.switchTab({ url: '/pages/cart/index' });
+        }, 300);
+        return;
+      }
       
       // 显示成功提示，并提供跳转选项
       Taro.showModal({
@@ -104,12 +130,30 @@ const ProductDetail = () => {
       return;
     }
 
+    if (!isVariationInStock(selectedVariation)) {
+      Taro.showToast({ title: '该规格已售罄', icon: 'none' });
+      return;
+    }
+
+    if (params.fromCartContinue) {
+      handleAddToCart(true);
+      return;
+    }
+
     const price = typeof selectedVariation.price === 'string' 
       ? selectedVariation.price 
       : String(selectedVariation.price || 0);
 
+    const specInfo = getSpecInfo();
+    const specParts = [
+      specInfo.quality !== '-' ? specInfo.quality : '',
+      specInfo.packaging !== '-' ? specInfo.packaging : '',
+      specInfo.weight !== '-' ? specInfo.weight : ''
+    ].filter(Boolean);
+    const variationName = specParts.join('|');
+
     Taro.navigateTo({
-      url: `/pages/order/create?variation_id=${selectedVariation.variation_id}&product_name=${encodeURIComponent(product?.name || '商品')}&price=${price}`
+      url: `/pages/order/create?variation_id=${selectedVariation.variation_id}&product_name=${encodeURIComponent(product?.name || '商品')}&price=${price}&variation_name=${encodeURIComponent(variationName)}`
     });
   };
 
@@ -183,7 +227,10 @@ const ProductDetail = () => {
     { label: '保质期', value: '12个月（365天）' },
     { label: '原料产地', value: '黑龙江五常' },
     { label: '是否真空包装', value: specInfo.isVacuum },
-    { label: '库存状态', value: selectedVariation?.in_stock ? '现货' : '缺货' }
+    {
+      label: '库存状态',
+      value: selectedVariation ? (isVariationInStock(selectedVariation) ? '现货' : '缺货') : '-'
+    }
   ];
 
   return (
@@ -226,13 +273,13 @@ const ProductDetail = () => {
           {product.variations?.map((variation) => (
             <View
               key={variation.variation_id}
-              className={`spec-option ${selectedVariation?.variation_id === variation.variation_id ? 'active' : ''} ${!variation.in_stock ? 'disabled' : ''}`}
-              onClick={() => variation.in_stock && handleVariationSelect(variation)}
+              className={`spec-option ${selectedVariation?.variation_id === variation.variation_id ? 'active' : ''} ${!isVariationInStock(variation) ? 'disabled' : ''}`}
+              onClick={() => isVariationInStock(variation) && handleVariationSelect(variation)}
             >
               <Text className='spec-text'>
                 {Object.keys(variation.attributes).join(' ')}
               </Text>
-              {!variation.in_stock && <Text className='spec-badge'>缺货</Text>}
+              {!isVariationInStock(variation) && <Text className='spec-badge'>缺货</Text>}
             </View>
           ))}
         </View>

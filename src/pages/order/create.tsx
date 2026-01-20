@@ -57,7 +57,32 @@ const OrderCreate = () => {
   
   // 从商品详情直接购买
   const variationId = Number(params.variation_id || params.variationId || 0);
-  const productName = params.product_name || params.productName || '精选商品';
+  const rawProductName = String(params.product_name || params.productName || '精选商品');
+  const productName = (() => {
+    try {
+      return decodeURIComponent(rawProductName);
+    } catch {
+      return rawProductName;
+    }
+  })();
+  const rawVariationName = String(params.variation_name || params.variationName || '');
+  const variationName = (() => {
+    if (!rawVariationName) return '';
+    try {
+      return decodeURIComponent(rawVariationName);
+    } catch {
+      return rawVariationName;
+    }
+  })();
+  const formatProductDisplay = (name: string, specs?: string) => {
+    if (!specs) return name;
+    const rawParts = specs.split('|').map((part) => part.trim()).filter(Boolean);
+    const values = rawParts.map((part) => {
+      const match = part.match(/[:：]\s*(.+)$/);
+      return match ? match[1].trim() : part;
+    });
+    return `${name}（${values.join('|')}）`;
+  };
   const variationPrice = useMemo(() => {
     const price = params.price || params.variation_price;
     return price ? parseFloat(String(price)) : 0;
@@ -401,14 +426,20 @@ const OrderCreate = () => {
         // 清除缓存
         Taro.removeStorageSync('checkout_items');
         
-        Taro.showToast({ title: '订单创建成功', icon: 'success' });
+        const primaryOrderId = orderIds[0];
+        const message = orderIds.length > 1
+          ? `已创建${orderIds.length}笔订单，先去支付第一笔`
+          : '订单创建成功';
+        Taro.showToast({ title: message, icon: 'success' });
         
-        // 跳转到订单列表
-        setTimeout(() => {
-          Taro.redirectTo({
-            url: '/pages/order/list'
-          });
-        }, 1000);
+        // 直接跳转到支付页
+        if (primaryOrderId) {
+          setTimeout(() => {
+            Taro.navigateTo({
+              url: `/pages/order/payment?orderId=${primaryOrderId}`
+            });
+          }, 600);
+        }
       } else {
         // 从商品详情直接购买
         const order = await orderService.createOrder({
@@ -591,22 +622,12 @@ const OrderCreate = () => {
             <View key={index} className='checkout-item-block'>
               <View className='info-row'>
                 <Text className='label'>商品名称:</Text>
-                <Text className='value'>{item.product_name}</Text>
+                <Text className='value'>{formatProductDisplay(item.product_name, item.variation_name)}</Text>
               </View>
               <View className='info-row'>
                 <Text className='label'>商品编号:</Text>
                 <Text className='value'>{item.variation_id}</Text>
               </View>
-              {/* 将规格属性拆分为单独的行 */}
-              {item.variation_name.split(' | ').map((attr, attrIndex) => {
-                const [attrName, attrValue] = attr.split(': ');
-                return (
-                  <View key={attrIndex} className='info-row'>
-                    <Text className='label'>{attrName}:</Text>
-                    <Text className='value'>{attrValue}</Text>
-                  </View>
-                );
-              })}
               <View className='info-row'>
                 <Text className='label'>单价:</Text>
                 <Text className='value price'>¥{item.price}</Text>
@@ -626,7 +647,7 @@ const OrderCreate = () => {
           <>
             <View className='info-row'>
               <Text>商品名称</Text>
-              <Text>{productName}</Text>
+              <Text>{formatProductDisplay(productName, variationName)}</Text>
             </View>
             <View className='info-row'>
               <Text>规格 ID</Text>

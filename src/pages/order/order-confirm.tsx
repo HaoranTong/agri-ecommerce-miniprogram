@@ -2,7 +2,7 @@ import { Button, Text, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { orderService } from '../../services/api';
+import { cartService, orderService } from '../../services/api';
 import type { OrderDetail } from '../../types';
 import './order-confirm.scss';
 
@@ -88,6 +88,69 @@ const OrderConfirm = () => {
   useEffect(() => {
     loadOrder();
   }, [loadOrder]);
+
+  const handleModifyOrder = async () => {
+    if (!order?.items || order.items.length === 0) {
+      Taro.switchTab({ url: '/pages/cart/index' });
+      return;
+    }
+
+    try {
+      Taro.showLoading({ title: '正在准备购物车...', mask: true });
+      const strategy = (pageParams.merge_cart as string)
+        || Taro.getStorageSync('CART_MERGE_STRATEGY')
+        || 'merge';
+
+      if (strategy === 'overwrite') {
+        await cartService.clearCart();
+        for (const item of order.items) {
+          await cartService.addToCart(item.variation_id, item.quantity);
+        }
+      } else {
+        const existing = await cartService.getCart();
+        const existingMap = new Map(existing.map((item) => [item.variation_id, item]));
+        for (const item of order.items) {
+          const current = existingMap.get(item.variation_id);
+          if (current) {
+            await cartService.updateCart(item.variation_id, current.quantity + item.quantity);
+          } else {
+            await cartService.addToCart(item.variation_id, item.quantity);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('准备购物车失败', error);
+      Taro.showToast({ title: '更新购物车失败', icon: 'none' });
+    } finally {
+      Taro.hideLoading();
+      Taro.switchTab({ url: '/pages/cart/index' });
+    }
+  };
+
+  const handleSelectAddress = () => {
+    Taro.navigateTo({
+      url: '/pages/address/select',
+      success: (res) => {
+        res.eventChannel.on('selectAddress', (addr: any) => {
+          setOrder((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              shipping_address: {
+                name: addr.name,
+                phone: addr.phone,
+                province: addr.province,
+                city: addr.city,
+                district: addr.district,
+                detail_address: addr.detail_address,
+                postcode: addr.postcode
+              }
+            };
+          });
+        });
+      }
+    });
+  };
 
   if (loading) {
     return <View className='loading'>加载中...</View>;
@@ -212,15 +275,15 @@ const OrderConfirm = () => {
         </View>
       ) : (
         <View className='action-buttons'>
-          <Button className='modify-btn' onClick={() => Taro.switchTab({ url: '/pages/cart/index' })}>
+          <Button className='modify-btn' onClick={handleModifyOrder}>
             修改订单
           </Button>
-          <Button className='modify-btn' onClick={() => Taro.navigateBack()}>
+          <Button className='modify-btn' onClick={handleSelectAddress}>
             修改收货地址
           </Button>
           <Button
             className='pay-btn'
-            onClick={() => Taro.redirectTo({ url: `/pages/order/payment?orderId=${order.order_id}` })}
+            onClick={() => Taro.navigateTo({ url: `/pages/order/payment?orderId=${order.order_id}` })}
           >
             去支付
           </Button>

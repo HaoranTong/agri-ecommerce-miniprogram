@@ -66,7 +66,7 @@ const OrderDetail = () => {
       });
       return;
     }
-    Taro.redirectTo({ url: `/pages/order/payment?orderId=${order?.order_id}` });
+    Taro.navigateTo({ url: `/pages/order/payment?orderId=${order?.order_id}` });
   };
 
   const handleContactService = () => {

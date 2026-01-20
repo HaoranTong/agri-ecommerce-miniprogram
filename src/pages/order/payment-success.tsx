@@ -76,11 +76,15 @@ const PaymentSuccess = () => {
     );
   }
 
+  const displayStatusText = order.status === 'pending'
+    ? '已支付'
+    : getStatusText(order.status);
+
   return (
     <View className='payment-success-page'>
       {/* 成功提示 - 压缩为两行 */}
       <View className='success-header'>
-        <Text className='success-title'>支付成功 • 已完成扣款</Text>
+        <Text className='success-title'>支付成功，等待发货</Text>
       </View>
 
       {/* 订单信息卡片 */}
@@ -92,7 +96,7 @@ const PaymentSuccess = () => {
         </View>
         <View className='info-row'>
           <Text className='label'>订单状态：</Text>
-          <Text className='value status'>{getStatusText(order.status)}</Text>
+          <Text className='value status'>{displayStatusText}</Text>
         </View>
         <View className='info-row'>
           <Text className='label'>订单金额：</Text>

@@ -6,7 +6,22 @@
   .cart-toolbar {
     padding: 20px;
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+
+    .add-item-btn {
+      height: 60px;
+      padding: 0 30px;
+      border-radius: 30px;
+      font-size: 26px;
+      color: #2f7a3d;
+      border: 1px solid rgba(47, 122, 61, 0.35);
+      background: #f2f9f4;
+
+      &::after {
+        border: none;
+      }
+    }
 
     .clear-cart-btn {
       height: 60px;

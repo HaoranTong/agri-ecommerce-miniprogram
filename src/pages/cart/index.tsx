@@ -31,6 +31,7 @@ const Cart = () => {
   }, [loadCart]);
 
   useDidShow(() => {
+    Taro.removeStorageSync('CART_CONTINUE_SHOPPING');
     loadCart();
   });
 
@@ -164,6 +165,15 @@ const Cart = () => {
   return (
     <View className='cart-page'>
       <View className='cart-toolbar'>
+        <Button
+          className='add-item-btn'
+          onClick={() => {
+            Taro.setStorageSync('CART_CONTINUE_SHOPPING', true);
+            Taro.switchTab({ url: '/pages/index/index' });
+          }}
+        >
+          继续选购
+        </Button>
         <Button
           className='clear-cart-btn'
           onClick={handleClearCart}
