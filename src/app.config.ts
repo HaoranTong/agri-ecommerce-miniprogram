@@ -80,5 +80,7 @@ export default defineAppConfig({
     connectSocket: 60000,
     uploadFile: 60000,
     downloadFile: 60000
-  }
+  },
+  // 启用组件按需注入，提升小程序启动性能
+  lazyCodeLoading: 'requiredComponents'
 });
