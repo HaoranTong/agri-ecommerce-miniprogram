@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
   products: '/products',
   productsRedeem: '/products/redeem',
   login: '/auth/login',
+  bindPhone: '/auth/phone',
   me: '/me',
   userAddresses: '/user/addresses',
   cart: '/cart',

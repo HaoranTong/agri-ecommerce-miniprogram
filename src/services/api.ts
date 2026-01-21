@@ -321,11 +321,21 @@ export const request = async <T = any>({
 };
 
 export const authService = {
-  async login(code: string) {
+  async login(
+    code: string,
+    wechatProfile?: {
+      nickname?: string;
+      avatar?: string;
+    }
+  ) {
     const response = await request<{ success: boolean; data: LoginResponse }>({
       url: API_ENDPOINTS.login,
       method: 'POST',
-      data: { code }
+      data: {
+        code,
+        ...(wechatProfile?.nickname ? { wechat_nickname: wechatProfile.nickname } : {}),
+        ...(wechatProfile?.avatar ? { wechat_avatar: wechatProfile.avatar } : {})
+      }
     });
 
     // 后端返回格式：{ success: true, data: { token, user_id, openid } }
@@ -343,11 +353,40 @@ export const authService = {
       user_id: result.user_id,
       phone: result.phone,
       wechat_nickname: result.wechat_nickname,
+      wechat_avatar: result.wechat_avatar,
       invite_code: result.invite_code
     };
     setStoredUserInfo(storedUser);
 
     return result;
+  },
+  async bindPhone(
+    code: string,
+    phoneCode?: string,
+    encryptedPayload?: { encryptedData: string; iv: string }
+  ) {
+    const response = await request<{ success: boolean; data?: { phone?: string } }>({
+      url: API_ENDPOINTS.bindPhone,
+      method: 'POST',
+      data: {
+        code,
+        ...(phoneCode ? { phone_code: phoneCode } : {}),
+        ...(encryptedPayload?.encryptedData ? { encrypted_data: encryptedPayload.encryptedData } : {}),
+        ...(encryptedPayload?.iv ? { iv: encryptedPayload.iv } : {})
+      },
+      showLoading: true
+    });
+
+    const phone = response?.data?.phone;
+    if (phone) {
+      const current = getStoredUserInfo() || ({} as StoredUserInfo);
+      setStoredUserInfo({
+        ...current,
+        phone
+      });
+    }
+
+    return response?.data;
   }
 };
 

@@ -54,6 +54,18 @@ const OrderPayment = () => {
 
   const storedValueCardCount = storedValueCards.length;
 
+  const earnedPoints = useMemo(() => {
+    if (!order) return 0;
+    const candidates = [
+      order.points_reward,
+      order.points_earned,
+      order.reward_points,
+      order.earned_points
+    ];
+    const found = candidates.find((value) => typeof value === 'number' && value > 0);
+    return found || 0;
+  }, [order]);
+
   const loadOrder = useCallback(async () => {
     if (!orderId) {
       setLoading(false);
@@ -360,6 +372,12 @@ const OrderPayment = () => {
             </Text>
           )}
         </Text>
+
+        {earnedPoints > 0 && (
+          <View className='points-earn-hint'>
+            本次购买可得积分：{earnedPoints}
+          </View>
+        )}
 
         {/* 使用情况提醒 */}
         {(couponInfo || giftCardInfo) && (

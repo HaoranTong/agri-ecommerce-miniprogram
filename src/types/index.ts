@@ -35,6 +35,7 @@ export interface LoginResponse {
   is_new: boolean;
   phone?: string;
   wechat_nickname?: string;
+  wechat_avatar?: string;
   invite_code?: string;
 }
 
@@ -158,6 +159,10 @@ export interface OrderDetail extends OrderCreated {
     points_used: number;
     discount_amount: string;
   } | null;
+  points_reward?: number;
+  points_earned?: number;
+  reward_points?: number;
+  earned_points?: number;
   is_gift_card_order?: boolean;
   giftcard_mode?: string | null;
 }
