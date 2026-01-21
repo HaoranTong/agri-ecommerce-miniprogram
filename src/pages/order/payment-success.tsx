@@ -27,27 +27,46 @@ const PaymentSuccess = () => {
   
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadOrder = async (showLoading = true) => {
+    if (!orderId) {
+      setLoading(false);
+      return;
+    }
+
+    if (showLoading) setLoading(true);
+    try {
+      const data = await orderService.getOrderDetail(orderId);
+      setOrder(data);
+    } catch (error) {
+      console.error('获取订单失败', error);
+      Taro.showToast({ title: '获取订单失败', icon: 'none' });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    const loadOrder = async () => {
-      if (!orderId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const data = await orderService.getOrderDetail(orderId);
-        setOrder(data);
-      } catch (error) {
-        console.error('获取订单失败', error);
-        Taro.showToast({ title: '获取订单失败', icon: 'none' });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadOrder();
   }, [orderId]);
+
+  const handleRefreshStatus = async () => {
+    setRefreshing(true);
+    console.log('[Refresh] 开始刷新订单状态');
+    try {
+      await loadOrder(false);
+      console.log('[Refresh] 刷新完成，订单状态:', order?.status);
+      Taro.showToast({ 
+        title: order?.status === 'processing' ? '订单状态已更新' : '支付确认中，请稍后再试', 
+        icon: 'none' 
+      });
+    } catch (error) {
+      console.error('[Refresh] 刷新失败:', error);
+      Taro.showToast({ title: '刷新失败', icon: 'none' });
+    }
+  };
 
   const handleContactService = () => {
     if (order?.customer_service_qr) {
@@ -76,15 +95,17 @@ const PaymentSuccess = () => {
     );
   }
 
-  const displayStatusText = order.status === 'pending'
-    ? '已支付'
-    : getStatusText(order.status);
+  // 根据实际订单状态显示，不要写死
+  const displayStatusText = getStatusText(order.status);
+  const isPaid = ['processing', 'completed'].includes(order.status);
 
   return (
     <View className='payment-success-page'>
-      {/* 成功提示 - 压缩为两行 */}
-      <View className='success-header'>
-        <Text className='success-title'>支付成功，等待发货</Text>
+      {/* 成功提示 */}
+      <View className={`success-header ${!isPaid ? 'warning' : ''}`}>
+        <Text className='success-title'>
+          {isPaid ? '支付成功，等待发货' : '支付确认中，请稍候'}
+        </Text>
       </View>
 
       {/* 订单信息卡片 */}
@@ -135,11 +156,23 @@ const PaymentSuccess = () => {
           <Text className='tips-item'>• 订单已支付成功，商家将尽快安排发货</Text>
           <Text className='tips-item'>• 可在&quot;订单&quot;页面查看物流信息</Text>
           <Text className='tips-item'>• 如需修改收货信息，请立即联系客服</Text>
+          {order.status === 'pending' && (
+            <Text className='tips-item warning'>⚠️ 支付确认中，如长时间未更新请点击下方刷新按钮</Text>
+          )}
         </View>
       </View>
 
       {/* 操作按钮 */}
       <View className='action-buttons'>
+        {order.status === 'pending' && (
+          <Button 
+            className='secondary-btn' 
+            onClick={handleRefreshStatus}
+            disabled={refreshing}
+          >
+            {refreshing ? '刷新中...' : '刷新订单状态'}
+          </Button>
+        )}
         <Button className='primary-btn' onClick={handleContactService}>
           联系客服
         </Button>

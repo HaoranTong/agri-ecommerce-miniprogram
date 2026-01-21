@@ -260,10 +260,17 @@ const OrderPayment = () => {
     }
 
     try {
+      console.log('[Payment] 准备创建支付，订单ID:', orderId);
       const response = await paymentService.create(orderId, 'wechat');
+      console.log('[Payment] 支付创建成功，返回订单ID:', response?.order_id || '未返回');
+      
       if (!response?.payment_payload) {
         throw new Error('微信支付参数缺失');
       }
+
+      // 使用后端返回的order_id（可能与传入的orderId不同）
+      const actualOrderId = response.order_id || orderId;
+      console.log('[Payment] 实际订单ID:', actualOrderId, '传入订单ID:', orderId);
 
       const payload = response.payment_payload;
       const paymentOption = {
@@ -280,10 +287,23 @@ const OrderPayment = () => {
         throw err;
       }
 
-      Taro.showToast({ title: '支付成功', icon: 'success' });
-      setTimeout(() => {
-        Taro.redirectTo({ url: `/pages/order/payment-success?orderId=${orderId}` });
-      }, 800);
+      // 支付成功后，主动查询支付状态（等待微信回调可能需要时间）
+      Taro.showToast({ title: '支付成功，确认中...', icon: 'loading', duration: 2000 });
+      
+      // 延迟2秒后主动查询支付状态
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      try {
+        const statusRes = await paymentService.getStatus(actualOrderId, 'wechat');
+        console.log('[Payment] 支付状态查询结果:', statusRes, '查询订单ID:', actualOrderId);
+        
+        // 使用实际的订单ID跳转
+        Taro.redirectTo({ url: `/pages/order/payment-success?orderId=${actualOrderId}` });
+      } catch (statusError) {
+        console.error('[Payment] 查询支付状态失败:', statusError);
+        // 查询失败也跳转，让用户手动刷新
+        Taro.redirectTo({ url: `/pages/order/payment-success?orderId=${actualOrderId}` });
+      }
     } catch (error: any) {
       const rawMessage =
         error?.errMsg || error?.message || (typeof error === 'string' ? error : '');

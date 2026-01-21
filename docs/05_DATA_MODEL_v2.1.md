@@ -4,9 +4,9 @@
 
 # 🗂️ 微信小程序 × WordPress 无头电商系统
 
-## **完整数据模型定义（V2.1 - 企业级基线标准）**
+## **完整数据模型定义（V2.1.1 - 2026-01-21 更新）**
 
-> **文档状态**：冻结基线（Baseline Frozen）
+> **文档状态**：冻结基线（Baseline Frozen）+ V2.1.1 增量更新
 > **适用阶段**：一期（MVP） + 二期（虚拟购物卡 / 积分 / 分销 / 代理商） + 三期（私域自动化）
 > **核心原则**：
 >
@@ -14,7 +14,12 @@
 > - ✅ 自定义表仅用于需高效查询、事务控制或多对多关系场景
 > - ✅ 字段命名全局唯一、不可变更、语义清晰
 > - ✅ 100% 兼容免费版 WordPress 6.x + WooCommerce 8.x
-- ✅ 支持未来扩展：多级分销、代理商体系、积分有效期、卡类型泛化
+> - ✅ 支持未来扩展：多级分销、代理商体系、积分有效期、卡类型泛化
+>
+> **V2.1.1 变更记录**（2026-01-21）：
+> 1. 新增 `_wechat_avatar`、`_wechat_gender` 用户元数据字段
+> 2. 新增 `_wechat_phone`、`billing_phone` 手机号字段
+> 3. 废弃 `wechat_nickname`，改用 `wp_users.display_name`
 
 ------
 
@@ -50,9 +55,12 @@
 | meta_key           | 数据类型    | 分期 | 必填 | 说明                                | 示例值                                                 |
 | ------------------ | ----------- | ---- | ---- | ----------------------------------- | ------------------------------------------------------ |
 | `phone`            | string      | 一期 | ✅    | 手机号（同时作为 `user_login`）     | `"13800138000"`                                        |
+| `_wechat_phone`    | string      | 一期 | ❌    | 微信绑定手机号（从getPhoneNumber获取） | `"13800138000"`                                     |
+| `billing_phone`    | string      | 一期 | ❌    | WooCommerce订单手机号（同步自_wechat_phone） | `"13800138000"`                         |
 | `wechat_openid`    | string      | 一期 | ✅    | 微信 openid（一对一绑定）           | `"oAbcDEF123..."`                                      |
-| `wechat_nickname`  | string      | 一期 | ❌    | 微信昵称                            | `"🌾五常米农"`                                          |
-| `wechat_avatar`    | string      | 一期 | ❌    | 头像 URL（绝对路径）                | `"https://shop.com/avatar.jpg"`                        |
+| `wechat_nickname`  | string      | 一期 | ❌    | 微信昵称（已废弃，见display_name）  | `"🌾五常米农"`                                          |
+| `_wechat_avatar`   | string      | 一期 | ❌    | 微信头像 URL（绝对路径）            | `"https://thirdwx.qlogo.cn/mmopen/vi_32/..."`          |
+| `_wechat_gender`   | integer     | 一期 | ❌    | 微信性别（0=未知/1=男/2=女）        | `1`                                                    |
 | `invite_code`      | string      | 二期 | ❌    | 6位大写字母/数字，全局唯一          | `"U42ABC"`                                             |
 | `referrer_id`      | integer     | 二期 | ❌    | 直接邀请人 user_id（一级分销）      | `42`                                                   |
 | `total_points`     | integer     | 二期 | ❌    | 积分余额（≥0）                      | `280`                                                  |
@@ -61,6 +69,12 @@
 | `is_agent`         | string      | 二期 | ❌    | 是否为代理商（`"1"` / `"0"`）       | `"1"`                                                  |
 | `agent_code`       | string      | 二期 | ❌    | 代理商编码（如 `"AGT001"`）         | `"AGT105"`                                             |
 | `agent_parent_id`  | integer     | 二期 | ❌    | 上级代理商 user_id                  | `201`                                                  |
+
+> **V2.1.1 更新说明**：
+> - `wechat_nickname` 已废弃，改为使用 `wp_users.display_name` 存储昵称
+> - 新增 `_wechat_avatar`、`_wechat_gender` 用于存储微信用户资料
+> - 新增 `_wechat_phone` 和 `billing_phone` 用于存储手机号（前者来自微信API，后者用于WooCommerce订单）
+> - 前端调用 `PUT /user/profile` 可更新 avatar、gender 和 display_name
 
 #### 📦 `cart_items` 结构规范（JSON）
 

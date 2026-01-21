@@ -3,6 +3,7 @@ import Taro from '@tarojs/taro';
 import { API_BASE, API_ENDPOINTS } from '../utils/constants';
 import {
   clearToken,
+  getStoredUserInfo,
   getToken,
   setStoredUserInfo,
   setToken,
@@ -201,10 +202,10 @@ const handleUnauthorized = () => {
     return;
   }
 
-  // 保存当前页面信息，登录后返回
+  // 保存当前页面信息，登录后返回（直接保存对象，不进行JSON.stringify）
   const redirectData = {
     path: currentPath,
-    params: JSON.stringify(currentPage?.options || {})
+    params: currentPage?.options || {}
   };
   console.log('[Auth] 保存返回路径:', redirectData);
 
@@ -478,7 +479,13 @@ export const userService = {
     });
     return response.data;
   },
-  updateProfile: async (data: { nickname?: string; first_name?: string; phone?: string }) => {
+  updateProfile: async (data: { 
+    nickname?: string; 
+    first_name?: string; 
+    phone?: string;
+    avatar?: string;
+    gender?: number;
+  }) => {
     const response = await request<{ success: boolean; data: UserProfile }>({
       url: '/user/profile',
       method: 'PUT',

@@ -19,6 +19,14 @@
     border-radius: 12px;
     margin-bottom: 12px;
     
+    &.warning {
+      background: linear-gradient(135deg, #fff9f0 0%, #ffe8cc 100%);
+      
+      .success-title {
+        color: #ff8c00;
+      }
+    }
+    
     .success-title {
       display: block;
       font-size: 28px;
@@ -117,6 +125,11 @@
     color: #666;
     line-height: 1.7;
     display: block;
+    
+    &.warning {
+      color: #ff9800;
+      font-weight: 500;
+    }
   }
 }
 

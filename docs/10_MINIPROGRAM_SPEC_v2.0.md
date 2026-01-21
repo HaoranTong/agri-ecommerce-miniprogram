@@ -4,11 +4,16 @@
 
 # 📱 微信小程序工程结构规范
 
-## `myshop-miniprogram` 工程（V2.0 - 基于 Taro 4 + React + API 契约 V2.3）
+## `myshop-miniprogram` 工程（V2.0.1 - 2026-01-21 更新）
 
 > **适用项目**：微信小程序 × WordPress 无头电商系统（一期 + 二期：购物卡 / 积分 / 分销 / 代理商）
 > **目标**：统一代码组织、提升可维护性、支持多人协作、便于后续迭代
-> **原则**：轻量、清晰、类型安全、与 API 契约 V2.3 严格对齐（含中国地址模型、商品 description、订单号、积分与购物卡字段等）
+> **原则**：轻量、清晰、类型安全、与 API 契约 V2.3.2 严格对齐（含中国地址模型、商品 description、订单号、积分与购物卡字段等）
+>
+> **V2.0.1 变更记录**（2026-01-21）：
+> 1. 登录流程优化为两步式UI（先登录获取profile，再显示手机号授权界面）
+> 2. 支持getUserProfile真实数据上传到后端（avatar、gender）
+> 3. 支付流程增强：create接口返回order_id，前端正确查询订单状态
 
 ------
 
@@ -355,38 +360,61 @@ export const request = async <T = any>(options: RequestOptions): Promise<T> => {
 
 ### 3. **认证流程（`src/pages/auth/login.tsx`）**
 
-- 登录按钮触发：先弹窗提示获取头像昵称（可跳过），再调用 `wx.login` 获取 `code`，提交 `/auth/login`。
-- 手机号获取按钮触发：使用 `open-type="getPhoneNumber"` 获取 `phone_code`（或 `encryptedData` + `iv`），调用 `/auth/phone` 绑定手机号。
-- 用户拒绝授权头像昵称/手机号时，自动降级为快捷登录流程，不影响继续使用。
+**V2.0.1 更新**：采用两步式授权流程，提升用户体验
+
+**步骤1：微信登录**
+- 用户点击"微信登录"按钮
+- 自动调用 `getUserProfile` 获取头像昵称（需用户授权）
+- 调用 `wx.login` 获取 `code`，提交 `/auth/login`
+- 如果获取到真实用户信息（非 `is_demote` 数据），自动调用 `/user/profile` 上传头像昵称
+- 登录成功后显示手机号授权界面
+
+**步骤2：手机号授权**
+- 显示两个按钮："授权手机号" 和 "暂不授权"
+- 点击"授权手机号"：使用 `open-type="getPhoneNumber"` 获取 `phone_code`，调用 `/auth/phone` 绑定
+- 点击"暂不授权"：跳过手机号绑定，直接进入小程序
 
 ```tsx
-const handleLogin = async () => {
-  const consent = await Taro.showModal({
-    title: '授权提示',
-    content: '同意后将获取您的头像和昵称，用于完善会员资料。您也可以跳过授权继续登录。',
-    confirmText: '同意授权',
-    cancelText: '跳过'
-  });
+const [showPhoneAuth, setShowPhoneAuth] = useState(false);
 
-  let wechatProfile;
-  if (consent.confirm) {
-    const profileRes = await Taro.getUserProfile({ desc: '用于完善会员资料' });
-    wechatProfile = {
-      nickname: profileRes.userInfo?.nickName,
-      avatar: profileRes.userInfo?.avatarUrl
-    };
+const handleWechatLogin = async () => {
+  let userProfile = null;
+  try {
+    const profileRes = await Taro.getUserProfile({ desc: '用于完善用户资料' });
+    userProfile = profileRes.userInfo;
+    Taro.setStorageSync('USER_PROFILE', userProfile);
+  } catch (error) {
+    console.log('用户取消授权或获取失败');
   }
 
   const { code } = await Taro.login();
-  await authService.login(code, wechatProfile);
+  await authService.login(code);
+
+  // 上传真实用户资料到后端
+  if (userProfile && !userProfile.is_demote) {
+    await authService.updateProfile({
+      nickname: userProfile.nickName,
+      avatar: userProfile.avatarUrl,
+      gender: userProfile.gender
+    });
+  }
+
+  setShowPhoneAuth(true); // 显示手机号授权界面
 };
 
-const handleGetPhoneNumber = async (e) => {
-  const { code: phoneCode, encryptedData, iv } = e.detail || {};
-  const { code } = await Taro.login();
-  await authService.bindPhone(code, phoneCode, encryptedData ? { encryptedData, iv } : undefined);
+const handlePhoneAuth = async (e) => {
+  const { code: phoneCode } = e.detail;
+  const loginRes = await Taro.login(); // 获取新的登录code
+  await authService.bindPhone(loginRes.code, phoneCode);
+  navigateToHome();
+};
+
+const handleSkipPhoneAuth = () => {
+  navigateToHome(); // 跳过手机号授权
 };
 ```
+
+> ⚠️ **注意**：开发者工具中 `getUserProfile` 返回的是降级数据（`is_demote: true`），真实数据只能在真机或体验版中获取。
 
 ------
 

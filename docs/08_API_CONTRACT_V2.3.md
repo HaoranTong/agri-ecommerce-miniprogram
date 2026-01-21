@@ -5,19 +5,25 @@
 - ✅ 预留三期关键扩展路径（不实现但占位）  
 - ✅ 所有接口路径、字段名、错误码 **永久冻结，不可变更**  
 - ✅ 补全此前遗漏：商品列表、付款截图上传、代理商全套接口
+- ✅ **V2.3.2更新**：优化登录流程，支持头像性别上传，支付接口返回order_id
 
 ------
 
 # 📡 微信小程序 × WordPress 无头电商系统
 
-## **完整 API 接口契约（V2.3 - 最终冻结基线标准）**
+## **完整 API 接口契约（V2.3.2 - 2026-01-21 更新）**
 
-> **文档状态**：✅ 冻结（Final Frozen Baseline）
+> **文档状态**：✅ 冻结（Final Frozen Baseline）+ V2.3.2 增量更新
 > **适用项目阶段**：一期（MVP） + 二期（虚拟购物卡 / 社交裂变 / 代理商）
 > **Base URL**：`https://yourdomain.com/wp-json/myshop/v1`
 > **认证方式**：Bearer JWT Token（通过 `Authorization: Bearer <token>` 传递）
 > **编码**：UTF-8
 > **时间格式**：ISO 8601（如 `"2025-11-18T21:30:00+08:00"`）
+>
+> **V2.3.2 变更记录**（2026-01-21）：
+> 1. `POST /auth/login` - 移除 wechat_nickname 和 wechat_avatar 参数
+> 2. `PUT /user/profile` - 新增 avatar 和 gender 参数支持
+> 3. `POST /payments/create` - 响应新增 order_id 字段
 > **冻结规则**：  
 >
 > - 所有 **URL 路径**、**请求/响应字段名**、**核心语义** 一经发布不得修改  
@@ -168,11 +174,11 @@
 
 ```json
 {
-  "code": "wx_login_code_from_miniprogram",
-  "wechat_nickname": "可选，微信昵称",
-  "wechat_avatar": "可选，微信头像 URL"
+  "code": "wx_login_code_from_miniprogram"
 }
 ```
+
+> ⚠️ **V2.3.2 更新**：登录接口不再接收 `wechat_nickname` 和 `wechat_avatar`。前端应在登录成功后，如果获取到真实用户信息（非降级数据），调用 `PUT /user/profile` 上传头像和昵称。
 
 **成功响应（200）**（`myshop-core/api/auth-controller.php` 当前实现）：
 
@@ -302,7 +308,7 @@
 
 ### PUT `/user/profile`
 
-**用途**：修改昵称 / 真实姓名 / 手机号
+**用途**：修改昵称 / 真实姓名 / 手机号 / 微信头像 / 性别
 
 **请求体**：
 
@@ -310,11 +316,15 @@
 {
   "nickname": "测试用户001",
   "first_name": "张三",
-  "phone": "13800138001"
+  "phone": "13800138001",
+  "avatar": "https://thirdwx.qlogo.cn/mmopen/vi_32/...",
+  "gender": 1
 }
 ```
 
-> 目前仅允许修改 `nickname`、`first_name`、`phone`，手机号按中国大陆 11 位规则校验。
+> **V2.3.2 更新**：新增 `avatar`（微信头像URL）和 `gender`（0=未知/1=男/2=女）字段。前端在调用 `getUserProfile` 获取到真实用户信息后（非 `is_demote` 数据），应调用此接口上传到后端。
+> 
+> 所有字段均为可选，手机号按中国大陆 11 位规则校验。
 
 **成功响应（200）**：
 
@@ -903,6 +913,7 @@
 {
   "success": true,
   "provider": "wechat",
+  "order_id": 1001,
   "payment_payload": {
     "appId": "wx1234567890",
     "timeStamp": "1700000000",
@@ -914,6 +925,8 @@
 }
 ```
 
+> **V2.3.2 更新**：新增 `order_id` 字段，返回订单ID便于前端后续查询支付状态。
+> 
 > `payment_payload` 直接透传给 `wx.requestPayment`，字段名与微信支付小程序规范一致。
 
 **失败示例（400）**：

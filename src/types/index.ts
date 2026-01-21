@@ -172,6 +172,7 @@ export type PaymentProvider = 'wechat' | 'offline';
 export interface PaymentCreateResponse {
   success: boolean;
   provider: PaymentProvider;
+  order_id: number; // 订单ID，用于查询支付状态
   payment_intent_id?: string;
   payment_payload?: {
     appId?: string;
