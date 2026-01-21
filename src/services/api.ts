@@ -334,8 +334,8 @@ export const authService = {
       method: 'POST',
       data: {
         code,
-        ...(wechatProfile?.nickname ? { wechat_nickname: wechatProfile.nickname } : {}),
-        ...(wechatProfile?.avatar ? { wechat_avatar: wechatProfile.avatar } : {})
+        ...(wechatProfile?.nickname ? { nickname: wechatProfile.nickname } : {}),
+        ...(wechatProfile?.avatar ? { avatar: wechatProfile.avatar } : {})
       }
     });
 
