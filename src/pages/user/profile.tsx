@@ -11,6 +11,7 @@ const UserProfile = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [giftCardCount, setGiftCardCount] = useState<number | null>(null);
+  const [avatarError, setAvatarError] = useState(false);
 
   const loadProfile = async () => {
     try {
@@ -81,8 +82,13 @@ const UserProfile = () => {
       {/* 用户基础信息卡片 */}
       <View className='user-card'>
         <View className='user-avatar'>
-          {profile.avatar ? (
-            <Image className='avatar-img' src={profile.avatar} mode='aspectFill' />
+          {profile.avatar && !avatarError ? (
+            <Image
+              className='avatar-img'
+              src={profile.avatar}
+              mode='aspectFill'
+              onError={() => setAvatarError(true)}
+            />
           ) : (
             <View className='avatar-placeholder'>👤</View>
           )}

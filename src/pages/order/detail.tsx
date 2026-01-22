@@ -154,6 +154,12 @@ const OrderDetail = () => {
               <Text className='label'>运单号码</Text>
               <Text className='value tracking'>{order.tracking_number}</Text>
             </View>
+            {order.shipped_at && (
+              <View className='info-row'>
+                <Text className='label'>发货时间</Text>
+                <Text className='value'>{order.shipped_at}</Text>
+              </View>
+            )}
           </View>
         </View>
       )}

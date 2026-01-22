@@ -697,6 +697,11 @@
 ]
 ```
 
+> 物流字段来源：
+> - 优先读取 `_myshop_tracking_number` / `_myshop_tracking_company` / `_myshop_shipped_at`
+> - 兼容 WooCommerce 运单插件（如 `_wc_shipment_tracking_items`、`_tracking_number`、`_tracking_provider`）
+> - 若后台未录入运单号，则物流字段为空，前端不展示。
+
 > ✅ **后端已更新（V2.3.1）**：列表接口不再返回支付相关字段（扫码支付已移除）。
 
 ------
@@ -726,6 +731,7 @@
   "created_at": "2025-11-20 12:30:00",
   "tracking_number": null,
   "tracking_company": null,
+  "shipped_at": null,
   "items": [
     {
       "product_id": 101,
@@ -750,6 +756,13 @@
   "is_gift_card_order": false
 }
 ```
+
+> 物流字段来源同上（支持 WooCommerce 运单插件）。当后台在订单详情中录入快递公司与单号后，小程序订单详情页会自动展示物流信息。
+
+> 微信订单发货管理同步（自动）：
+> - 系统会把运单号与快递公司同步到微信「订单管理」后台。
+> - 已内置常见快递公司映射：顺丰(SF)、申通(STO)、圆通(YTO)、中通(ZTO)、韵达(YUNDA)、京东(JD)、邮政/EMS(EMS)。
+> - 可通过 `myshop_wechat_express_map` 自定义映射（key 为公司关键字，value 为微信快递编码）。
 
 > ✅ **后端已更新（V2.3.1）**：
 > - 已移除：`payment_qr_url`, `customer_service_qr`, `has_payment_proof`, `payment_proof_url`, `payment_proof_submitted_at`

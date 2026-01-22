@@ -1,6 +1,6 @@
 import { Image, Swiper, SwiperItem, Text, View } from '@tarojs/components';
 import Taro, { useDidShow } from '@tarojs/taro';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { configService, productService } from '../../services/api';
 import type { Product, PublicConfig } from '../../types';
@@ -14,6 +14,7 @@ const Index = () => {
 
   const loadData = async () => {
     try {
+      setLoading(true);
       const [productList, config] = await Promise.all([
         productService.getProducts(),
         configService.getPublicConfig()
@@ -34,11 +35,8 @@ const Index = () => {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   useDidShow(() => {
+    loadData();
     const guide = Taro.getStorageSync('GIFT_CARD_FLOW_HINT');
     if (guide?.message) {
       Taro.showModal({
