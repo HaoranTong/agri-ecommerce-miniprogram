@@ -1,4 +1,4 @@
-import { View, Button, Text } from '@tarojs/components';
+import { View, Button, Text, Checkbox, CheckboxGroup } from '@tarojs/components';
 import { useState } from 'react';
 import Taro from '@tarojs/taro';
 
@@ -9,6 +9,7 @@ import './login.scss';
 const Login = () => {
   const [loading, setLoading] = useState(false);
   const [phoneLoading, setPhoneLoading] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   // Step 1: 微信登录 - 获取 code 并登录
   const handleWechatLogin = async () => {
@@ -153,6 +154,27 @@ const Login = () => {
 
   const [showPhoneAuth, setShowPhoneAuth] = useState(false);
 
+  const handleAgreeChange = (e: any) => {
+    const values: string[] = e?.detail?.value || [];
+    setAgreed(values.includes('agree'));
+  };
+
+  const handleOpenTerms = () => {
+    Taro.navigateTo({ url: '/pages/legal/terms' });
+  };
+
+  const handleOpenPrivacy = () => {
+    if (typeof Taro.openPrivacyContract === 'function') {
+      Taro.openPrivacyContract({
+        fail: () => {
+          Taro.navigateTo({ url: '/pages/legal/privacy' });
+        }
+      });
+    } else {
+      Taro.navigateTo({ url: '/pages/legal/privacy' });
+    }
+  };
+
   return (
     <View className='login-container'>
       <View className='logo'>
@@ -165,6 +187,7 @@ const Login = () => {
         <Button
           className='btn-login'
           loading={loading}
+          disabled={!agreed}
           onClick={handleWechatLogin}
           type='primary'
         >
@@ -197,10 +220,15 @@ const Login = () => {
       )}
 
       <View className='footer'>
-        <Text className='text'>登录即表示同意</Text>
-        <Text className='link'>《用户协议》</Text>
-        <Text className='text'>和</Text>
-        <Text className='link'>《隐私政策》</Text>
+        <CheckboxGroup onChange={handleAgreeChange}>
+          <View className='agreement'>
+            <Checkbox className='agreement-checkbox' value='agree' checked={agreed} />
+            <Text className='text'>我已阅读并同意</Text>
+            <Text className='link' onClick={handleOpenTerms}>《用户协议》</Text>
+            <Text className='text'>和</Text>
+            <Text className='link' onClick={handleOpenPrivacy}>《隐私政策》</Text>
+          </View>
+        </CheckboxGroup>
       </View>
     </View>
   );

@@ -39,7 +39,9 @@ export default defineAppConfig({
     'pages/points/missions',
     'pages/points/redeem',
     'pages/points/rules',
-    'pages/cart/index'
+    'pages/cart/index',
+    'pages/legal/terms',
+    'pages/legal/privacy'
   ],
   window: {
     navigationBarBackgroundColor: '#ffffff',
