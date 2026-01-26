@@ -10,9 +10,23 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [phoneLoading, setPhoneLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [showPrivacyAuth, setShowPrivacyAuth] = useState(false);
 
   // Step 1: 微信登录 - 获取 code 并登录
-  const handleWechatLogin = async () => {
+  const checkPrivacyAuthorization = async () => {
+    if (typeof Taro.getPrivacySetting !== 'function') {
+      return false;
+    }
+
+    try {
+      const res = await Taro.getPrivacySetting();
+      return Boolean(res?.needAuthorization);
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const doWechatLogin = async () => {
     if (loading) return;
 
     try {
@@ -40,10 +54,8 @@ const Login = () => {
         return;
       }
 
-      const isDemote = Boolean((userProfile as any)?.is_demote);
-
       // 调用后端登录接口（携带昵称/头像，作为兜底保存）
-      const wechatProfile = userProfile && !isDemote
+      const wechatProfile = userProfile
         ? {
             nickname: userProfile.nickName,
             avatar: userProfile.avatarUrl
@@ -58,7 +70,7 @@ const Login = () => {
       }
 
       // 如果获取到用户信息，上传到后端保存
-      if (userProfile && !isDemote) {
+      if (userProfile) {
         try {
           await userService.updateProfile({
             nickname: userProfile.nickName,
@@ -80,6 +92,23 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleWechatLogin = async () => {
+    if (loading) return;
+
+    const needAuth = await checkPrivacyAuthorization();
+    if (needAuth) {
+      setShowPrivacyAuth(true);
+      return;
+    }
+
+    await doWechatLogin();
+  };
+
+  const handleAgreePrivacyAuthorization = async () => {
+    setShowPrivacyAuth(false);
+    await doWechatLogin();
   };
 
   // Step 2: 手机号授权（可选）
@@ -216,6 +245,27 @@ const Login = () => {
           >
             <Text className='btn-text'>暂不授权</Text>
           </Button>
+        </View>
+      )}
+
+      {showPrivacyAuth && (
+        <View className='privacy-modal'>
+          <View className='privacy-card'>
+            <Text className='privacy-title'>隐私授权提示</Text>
+            <Text className='privacy-desc'>需要您同意《用户隐私保护指引》后，才能获取头像昵称等信息。</Text>
+            <View className='privacy-actions'>
+              <Button className='privacy-link' onClick={handleOpenPrivacy}>
+                查看隐私指引
+              </Button>
+              <Button
+                className='privacy-agree'
+                openType='agreePrivacyAuthorization'
+                onAgreePrivacyAuthorization={handleAgreePrivacyAuthorization}
+              >
+                同意并继续
+              </Button>
+            </View>
+          </View>
         </View>
       )}
 

@@ -93,6 +93,30 @@ const OrderDetail = () => {
     Taro.switchTab({ url: '/pages/index/index' });
   };
 
+  const handleRequestReturn = () => {
+    if (!order) return;
+
+    Taro.showModal({
+      title: '申请退货',
+      content: '确认要申请退货/售后吗？客服会尽快与您联系。',
+      success: async (res) => {
+        if (res.confirm) {
+          try {
+            const result = await orderService.requestReturn(order.order_id, '用户申请退货');
+            setOrder({
+              ...order,
+              return_status: result.return_status,
+              return_requested_at: result.return_requested_at
+            });
+            Taro.showToast({ title: '已提交退货申请', icon: 'success' });
+          } catch (error) {
+            Taro.showToast({ title: '提交失败，请稍后重试', icon: 'none' });
+          }
+        }
+      }
+    });
+  };
+
   if (loading) {
     return (
       <View className='order-detail-page'>
@@ -164,6 +188,22 @@ const OrderDetail = () => {
         </View>
       )}
 
+      {order.return_status === 'requested' && (
+        <View className='card'>
+          <Text className='card-title'>📌 退货申请</Text>
+          <View className='info-row'>
+            <Text className='label'>状态</Text>
+            <Text className='value'>已提交</Text>
+          </View>
+          {order.return_requested_at && (
+            <View className='info-row'>
+              <Text className='label'>提交时间</Text>
+              <Text className='value'>{order.return_requested_at}</Text>
+            </View>
+          )}
+        </View>
+      )}
+
       {/* 商品信息 */}
       <View className='card'>
         <Text className='card-title'>📦 商品信息</Text>
@@ -228,6 +268,11 @@ const OrderDetail = () => {
         <Button className='contact-btn' onClick={handleContactService}>
           联系客服
         </Button>
+        {(order.status === 'processing' || order.status === 'completed') && order.return_status !== 'requested' && (
+          <Button className='contact-btn' onClick={handleRequestReturn}>
+            申请退货
+          </Button>
+        )}
         {order.status === 'pending' && (
           <Button className='pay-btn' onClick={handleGoPayment}>
             {order.has_payment_proof ? '查看付款详情' : '去支付'}

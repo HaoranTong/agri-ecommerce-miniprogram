@@ -665,6 +665,18 @@ export const orderService = {
       showLoading: true
     });
     return response.data;
+  },
+  requestReturn: async (orderId: number | string, reason?: string) => {
+    const response = await request<{
+      success: boolean;
+      data: { return_status: string; return_requested_at: string };
+    }>({
+      url: `/orders/${orderId}/return-request`,
+      method: 'POST',
+      data: reason ? { reason } : {},
+      showLoading: true
+    });
+    return response.data;
   }
 };
 
