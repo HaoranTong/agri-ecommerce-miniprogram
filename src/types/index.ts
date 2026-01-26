@@ -144,6 +144,7 @@ export interface OrderDetail extends OrderCreated {
   has_payment_proof?: boolean;
   tracking_number?: string;
   tracking_company?: string;
+  shipped_at?: string;
   return_status?: 'none' | 'requested' | string;
   return_requested_at?: string | null;
   message?: string;

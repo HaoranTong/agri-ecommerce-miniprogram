@@ -19,8 +19,13 @@ const Login = () => {
     }
 
     try {
-      const res = await Taro.getPrivacySetting();
-      return Boolean(res?.needAuthorization);
+      const needAuth = await new Promise<boolean>((resolve) => {
+        Taro.getPrivacySetting({
+          success: (res: any) => resolve(Boolean(res?.needAuthorization)),
+          fail: () => resolve(false)
+        });
+      });
+      return needAuth;
     } catch (error) {
       return false;
     }
