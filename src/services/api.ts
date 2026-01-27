@@ -666,14 +666,23 @@ export const orderService = {
     });
     return response.data;
   },
-  requestReturn: async (orderId: number | string, reason?: string) => {
+  requestReturn: async (
+    orderId: number | string,
+    payload?: {
+      reason?: string;
+      contact?: string;
+    }
+  ) => {
     const response = await request<{
       success: boolean;
       data: { return_status: string; return_requested_at: string };
     }>({
       url: `/orders/${orderId}/return-request`,
       method: 'POST',
-      data: reason ? { reason } : {},
+      data: {
+        ...(payload?.reason ? { reason: payload.reason } : {}),
+        ...(payload?.contact ? { contact: payload.contact } : {})
+      },
       showLoading: true
     });
     return response.data;

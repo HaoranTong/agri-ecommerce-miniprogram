@@ -2,7 +2,7 @@ import { Button, Text, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { orderService } from '../../services/api';
+import { configService, orderService } from '../../services/api';
 import type { OrderDetail } from '../../types';
 import './payment-success.scss';
 
@@ -28,6 +28,7 @@ const PaymentSuccess = () => {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [customerServiceQr, setCustomerServiceQr] = useState('');
 
   const loadOrder = useCallback(async (showLoading = true) => {
     if (!orderId) {
@@ -52,6 +53,19 @@ const PaymentSuccess = () => {
     loadOrder();
   }, [loadOrder]);
 
+  const loadPublicConfig = useCallback(async () => {
+    try {
+      const config = await configService.getPublicConfig();
+      setCustomerServiceQr(config?.customer_service_qr || '');
+    } catch (error) {
+      // 忽略配置失败
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPublicConfig();
+  }, [loadPublicConfig]);
+
   const handleRefreshStatus = async () => {
     setRefreshing(true);
     console.log('[Refresh] 开始刷新订单状态');
@@ -69,10 +83,11 @@ const PaymentSuccess = () => {
   };
 
   const handleContactService = () => {
-    if (order?.customer_service_qr) {
+    const qrUrl = order?.customer_service_qr || customerServiceQr;
+    if (qrUrl) {
       Taro.previewImage({
-        urls: [order.customer_service_qr],
-        current: order.customer_service_qr
+        urls: [qrUrl],
+        current: qrUrl
       });
     } else {
       Taro.showToast({ title: '客服二维码未配置', icon: 'none' });

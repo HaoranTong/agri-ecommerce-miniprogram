@@ -1,14 +1,19 @@
-import { Button, Text, View } from '@tarojs/components';
+import { Button, Input, Text, Textarea, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { orderService } from '../../services/api';
+import { configService, orderService } from '../../services/api';
 import type { OrderDetail as OrderDetailType } from '../../types';
 import './detail.scss';
 
 const OrderDetail = () => {
   const [order, setOrder] = useState<OrderDetailType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [customerServiceQr, setCustomerServiceQr] = useState('');
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnReason, setReturnReason] = useState('');
+  const [returnContact, setReturnContact] = useState('');
+  const [returnSubmitting, setReturnSubmitting] = useState(false);
 
   const orderId = useMemo(() => {
     const params = Taro.getCurrentInstance().router?.params ?? {};
@@ -57,6 +62,19 @@ const OrderDetail = () => {
     loadOrderDetail();
   }, [loadOrderDetail]);
 
+  const loadPublicConfig = useCallback(async () => {
+    try {
+      const config = await configService.getPublicConfig();
+      setCustomerServiceQr(config?.customer_service_qr || '');
+    } catch (error) {
+      // 忽略配置失败，避免阻塞主流程
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPublicConfig();
+  }, [loadPublicConfig]);
+
   const handleGoPayment = () => {
     if (order?.has_payment_proof) {
       Taro.showModal({
@@ -70,10 +88,11 @@ const OrderDetail = () => {
   };
 
   const handleContactService = () => {
-    if (order?.customer_service_qr) {
+    const qrUrl = order?.customer_service_qr || customerServiceQr;
+    if (qrUrl) {
       Taro.previewImage({
-        urls: [order.customer_service_qr],
-        current: order.customer_service_qr
+        urls: [qrUrl],
+        current: qrUrl
       });
     } else {
       Taro.showToast({ title: '客服二维码未配置', icon: 'none' });
@@ -95,26 +114,42 @@ const OrderDetail = () => {
 
   const handleRequestReturn = () => {
     if (!order) return;
+    setReturnReason('');
+    setReturnContact('');
+    setShowReturnModal(true);
+  };
 
-    Taro.showModal({
-      title: '申请退货',
-      content: '确认要申请退货/售后吗？客服会尽快与您联系。',
-      success: async (res) => {
-        if (res.confirm) {
-          try {
-            const result = await orderService.requestReturn(order.order_id, '用户申请退货');
-            setOrder({
-              ...order,
-              return_status: result.return_status,
-              return_requested_at: result.return_requested_at
-            });
-            Taro.showToast({ title: '已提交退货申请', icon: 'success' });
-          } catch (error) {
-            Taro.showToast({ title: '提交失败，请稍后重试', icon: 'none' });
-          }
-        }
-      }
-    });
+  const handleSubmitReturn = async () => {
+    if (!order || returnSubmitting) return;
+
+    if (!returnReason.trim()) {
+      Taro.showToast({ title: '请填写退货原因', icon: 'none' });
+      return;
+    }
+
+    if (!returnContact.trim()) {
+      Taro.showToast({ title: '请填写联系方式（微信/手机号）', icon: 'none' });
+      return;
+    }
+
+    try {
+      setReturnSubmitting(true);
+      const result = await orderService.requestReturn(order.order_id, {
+        reason: returnReason.trim(),
+        contact: returnContact.trim()
+      });
+      setOrder({
+        ...order,
+        return_status: result.return_status,
+        return_requested_at: result.return_requested_at
+      });
+      setShowReturnModal(false);
+      Taro.showToast({ title: '已提交退货申请', icon: 'success' });
+    } catch (error) {
+      Taro.showToast({ title: '提交失败，请稍后重试', icon: 'none' });
+    } finally {
+      setReturnSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -279,6 +314,46 @@ const OrderDetail = () => {
           </Button>
         )}
       </View>
+
+      {showReturnModal && (
+        <View className='return-modal-mask' onClick={() => setShowReturnModal(false)}>
+          <View className='return-modal' onClick={(event) => event.stopPropagation()}>
+            <Text className='return-title'>申请退货/售后</Text>
+            <Text className='return-tip'>请填写退货原因与联系方式，客服将尽快与您联系。</Text>
+            <View className='return-field'>
+              <Text className='return-label'>退货原因</Text>
+              <Textarea
+                className='return-textarea'
+                placeholder='例如：商品破损/错发/不满意等'
+                value={returnReason}
+                maxlength={200}
+                onInput={(e) => setReturnReason(e.detail.value)}
+              />
+            </View>
+            <View className='return-field'>
+              <Text className='return-label'>联系方式（微信/手机号）</Text>
+              <Input
+                className='return-input'
+                placeholder='请输入您的微信号或手机号'
+                value={returnContact}
+                onInput={(e) => setReturnContact(e.detail.value)}
+              />
+            </View>
+            <View className='return-actions'>
+              <Button className='return-cancel' onClick={() => setShowReturnModal(false)}>
+                取消
+              </Button>
+              <Button
+                className='return-submit'
+                loading={returnSubmitting}
+                onClick={handleSubmitReturn}
+              >
+                提交申请
+              </Button>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 };

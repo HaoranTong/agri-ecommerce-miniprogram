@@ -86,6 +86,40 @@ const EditProfile = () => {
     }
   };
 
+  const handleFetchWechatProfile = async () => {
+    if (loading) return;
+
+    try {
+      const profileRes = await Taro.getUserProfile({
+        desc: '用于完善用户资料'
+      });
+
+      const userInfo = profileRes.userInfo;
+      if (!userInfo) {
+        Taro.showToast({ title: '未获取到微信信息', icon: 'none' });
+        return;
+      }
+
+      setLoading(true);
+      const result = await userService.updateProfile({
+        nickname: userInfo.nickName,
+        avatar: userInfo.avatarUrl,
+        gender: userInfo.gender
+      });
+
+      setProfile(result);
+      setFormData((prev) => ({
+        ...prev,
+        nickname: result.nickname || userInfo.nickName || prev.nickname
+      }));
+      Taro.showToast({ title: '微信信息已更新', icon: 'success' });
+    } catch (error) {
+      Taro.showToast({ title: '获取失败，请重试', icon: 'none' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View className='edit-profile-page'>
       <View className='form-section'>
@@ -125,6 +159,14 @@ const EditProfile = () => {
             onInput={(e) => handleInput('phone', e.detail.value)}
             maxlength={11}
           />
+        </View>
+
+        <View className='form-item wechat-auth'>
+          <Text className='form-label'>微信头像昵称</Text>
+          <Button className='wechat-btn' onClick={handleFetchWechatProfile} loading={loading}>
+            获取微信头像昵称
+          </Button>
+          <Text className='form-tip'>如未获取到昵称/头像，可点击此按钮重新授权</Text>
         </View>
 
       </View>

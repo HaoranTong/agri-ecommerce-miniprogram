@@ -53,6 +53,30 @@
     &.readonly {
       background: #f8f8f8;
     }
+
+    &.wechat-auth {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16rpx;
+
+      .form-label {
+        width: auto;
+      }
+
+      .wechat-btn {
+        width: 100%;
+        height: 80rpx;
+        border-radius: 40rpx;
+        background: #2bbe4f;
+        color: #fff;
+        font-size: 30rpx;
+        font-weight: 600;
+      }
+
+      .form-tip {
+        margin-left: 0;
+      }
+    }
   }
 
   .button-group {
