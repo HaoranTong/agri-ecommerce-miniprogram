@@ -1,6 +1,6 @@
 import { Button, Text, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { orderService } from '../../services/api';
 import type { OrderDetail } from '../../types';
@@ -29,7 +29,7 @@ const PaymentSuccess = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadOrder = async (showLoading = true) => {
+  const loadOrder = useCallback(async (showLoading = true) => {
     if (!orderId) {
       setLoading(false);
       return;
@@ -46,11 +46,11 @@ const PaymentSuccess = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [orderId]);
 
   useEffect(() => {
     loadOrder();
-  }, [orderId]);
+  }, [loadOrder]);
 
   const handleRefreshStatus = async () => {
     setRefreshing(true);
