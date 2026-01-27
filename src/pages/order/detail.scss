@@ -310,6 +310,45 @@
   }
 }
 
+.return-qr {
+  margin-bottom: 20px;
+
+  .return-label {
+    display: block;
+    font-size: 26px;
+    color: #333;
+    margin-bottom: 12px;
+  }
+
+  .return-qr-img {
+    width: 280px;
+    border-radius: 16px;
+    border: 1px solid #eee;
+    background: #fff;
+  }
+
+  .return-qr-placeholder {
+    font-size: 24px;
+    color: #999;
+  }
+}
+
+.return-confirm {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+
+  .return-checkbox {
+    transform: scale(0.9);
+  }
+
+  .return-confirm-text {
+    font-size: 26px;
+    color: #333;
+  }
+}
+
 .return-textarea,
 .return-input {
   width: 100%;

@@ -11,6 +11,7 @@ const Login = () => {
   const [phoneLoading, setPhoneLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [showPrivacyAuth, setShowPrivacyAuth] = useState(false);
+  const [pendingProfile, setPendingProfile] = useState<Taro.UserInfo | null>(null);
 
   // Step 1: 微信登录 - 获取 code 并登录
   const checkPrivacyAuthorization = async () => {
@@ -31,23 +32,15 @@ const Login = () => {
     }
   };
 
-  const doWechatLogin = async () => {
+  const doWechatLogin = async (profile?: Taro.UserInfo | null) => {
     if (loading) return;
 
     try {
       setLoading(true);
-
-      // 获取用户信息（头像、昵称）
-      let userProfile: Taro.UserInfo | null = null;
-      try {
-        const profileRes = await Taro.getUserProfile({
-          desc: '用于完善用户资料'
-        });
-        userProfile = profileRes.userInfo;
+      const userProfile = profile || null;
+      if (userProfile) {
         // 保存到本地storage
         Taro.setStorageSync('USER_PROFILE', userProfile);
-      } catch (error) {
-        // 用户拒绝授权时，继续登录流程，不阻塞
       }
 
       // 获取登录凭证
@@ -99,21 +92,37 @@ const Login = () => {
     }
   };
 
+  const requestWechatProfile = async () => {
+    try {
+      const profileRes = await Taro.getUserProfile({
+        desc: '用于完善用户资料'
+      });
+      return profileRes.userInfo || null;
+    } catch (error) {
+      Taro.showToast({ title: '已拒绝授权，昵称头像将不显示', icon: 'none' });
+      return null;
+    }
+  };
+
   const handleWechatLogin = async () => {
     if (loading) return;
 
+    const profile = await requestWechatProfile();
+
     const needAuth = await checkPrivacyAuthorization();
     if (needAuth) {
+      setPendingProfile(profile);
       setShowPrivacyAuth(true);
       return;
     }
 
-    await doWechatLogin();
+    await doWechatLogin(profile);
   };
 
   const handleAgreePrivacyAuthorization = async () => {
     setShowPrivacyAuth(false);
-    await doWechatLogin();
+    await doWechatLogin(pendingProfile);
+    setPendingProfile(null);
   };
 
   // Step 2: 手机号授权（可选）

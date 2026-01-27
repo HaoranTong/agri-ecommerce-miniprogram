@@ -1,4 +1,4 @@
-import { Button, Input, Text, Textarea, View } from '@tarojs/components';
+import { Button, Checkbox, CheckboxGroup, Image, Input, Text, Textarea, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -14,6 +14,7 @@ const OrderDetail = () => {
   const [returnReason, setReturnReason] = useState('');
   const [returnContact, setReturnContact] = useState('');
   const [returnSubmitting, setReturnSubmitting] = useState(false);
+  const [returnConfirmed, setReturnConfirmed] = useState(false);
 
   const orderId = useMemo(() => {
     const params = Taro.getCurrentInstance().router?.params ?? {};
@@ -116,11 +117,22 @@ const OrderDetail = () => {
     if (!order) return;
     setReturnReason('');
     setReturnContact('');
+    setReturnConfirmed(false);
     setShowReturnModal(true);
   };
 
   const handleSubmitReturn = async () => {
     if (!order || returnSubmitting) return;
+
+    if (!customerServiceQr) {
+      Taro.showToast({ title: '请先添加客服微信', icon: 'none' });
+      return;
+    }
+
+    if (!returnConfirmed) {
+      Taro.showToast({ title: '请确认已添加客服微信', icon: 'none' });
+      return;
+    }
 
     if (!returnReason.trim()) {
       Taro.showToast({ title: '请填写退货原因', icon: 'none' });
@@ -319,7 +331,36 @@ const OrderDetail = () => {
         <View className='return-modal-mask' onClick={() => setShowReturnModal(false)}>
           <View className='return-modal' onClick={(event) => event.stopPropagation()}>
             <Text className='return-title'>申请退货/售后</Text>
-            <Text className='return-tip'>请填写退货原因与联系方式，客服将尽快与您联系。</Text>
+            <Text className='return-tip'>请先添加客服微信，再填写退货原因与联系方式，客服将尽快与您联系。</Text>
+            <View className='return-qr'>
+              <Text className='return-label'>客服微信二维码</Text>
+              {customerServiceQr ? (
+                <Image
+                  className='return-qr-img'
+                  src={customerServiceQr}
+                  mode='widthFix'
+                  onClick={() =>
+                    Taro.previewImage({
+                      urls: [customerServiceQr],
+                      current: customerServiceQr
+                    })
+                  }
+                />
+              ) : (
+                <Text className='return-qr-placeholder'>客服二维码未配置，请联系管理员</Text>
+              )}
+            </View>
+            <CheckboxGroup
+              onChange={(e) => {
+                const values: string[] = e?.detail?.value || [];
+                setReturnConfirmed(values.includes('confirmed'));
+              }}
+            >
+              <View className='return-confirm'>
+                <Checkbox className='return-checkbox' value='confirmed' checked={returnConfirmed} />
+                <Text className='return-confirm-text'>我已添加客服微信，将在微信中沟通</Text>
+              </View>
+            </CheckboxGroup>
             <View className='return-field'>
               <Text className='return-label'>退货原因</Text>
               <Textarea
