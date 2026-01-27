@@ -148,35 +148,176 @@ const OrderCreate = () => {
     max_discount_percent: number;
     min_order_amount_to_use: number;
   } | null>(null);
-  const [pointsToUse, setPointsToUse] = useState<number>(0);
+  const [pointsToUse, setPointsToUse] = useState<number>(0); // 当前使用的积分
   const [pointsInput, setPointsInput] = useState<string>('');
-  
-  const giftcardPayload = useMemo<GiftCardOrderPayload | undefined>(() => {
-    if (!isGiftCardOrder) {
-      return undefined;
-    }
-    const payload: GiftCardOrderPayload = {
-      source: pendingGiftcardPref ? 'template' : 'manual',
-      snapshot_version: '2025-11-29'
-    };
-    if (pendingGiftcardPref?.templateName) {
-      payload.template_name = pendingGiftcardPref.templateName;
-    }
-    if (pendingGiftcardPref?.flow) {
-      payload.flow = pendingGiftcardPref.flow;
-    }
-    if (giftcardNotice) {
-      payload.notice = giftcardNotice;
-    }
-    return payload;
-  }, [isGiftCardOrder, pendingGiftcardPref, giftcardNotice]);
 
-  useEffect(() => {
-    if (pendingGiftcardPref) {
-      Taro.removeStorageSync('PENDING_GIFTCARD_ORDER');
-      Taro.showToast({ title: '已切换到购物卡模式', icon: 'success' });
+  // 计算订单总金额（数值）
+  const orderTotal = useMemo(() => {
+    if (fromCart) {
+      return checkoutItems.reduce((sum, item) => sum + parseFloat(item.price) * item.quantity, 0);
     }
-  }, [pendingGiftcardPref]);
+    // 从商品详情购买，使用传递的价格参数
+    return variationPrice > 0 ? variationPrice * quantity : 0;
+  }, [fromCart, checkoutItems, variationPrice, quantity]);
+
+  const giftcardPayload = useMemo<GiftCardOrderPayload | undefined>(() => {
+    if (!isGiftCardOrder) return undefined;
+
+    const selectedItems = fromCart
+      ? checkoutItems.map((item) => ({
+          variation_id: item.variation_id,
+          quantity: item.quantity
+        }))
+      : variationId
+        ? [{ variation_id: variationId, quantity }]
+        : [];
+
+    return {
+      selected_items: selectedItems.length ? selectedItems : undefined,
+      remark: giftcardNotice?.trim() || undefined,
+      total_amount_hint: orderTotal
+    };
+  }, [isGiftCardOrder, fromCart, checkoutItems, variationId, quantity, giftcardNotice, orderTotal]);
+  
+  const maxPointsToUse = useMemo(() => {
+    if (!pointsSettings || !pointsBalance || !pointsSettings.enable_points_discount) {
+      return 0;
+    }
+    
+    const availablePoints = Number(pointsBalance.available || 0);
+    const minPointsToUse = Number(pointsSettings.min_points_to_use || 0);
+    const redeemRate = Number(pointsSettings.redeem_rate || 1);
+    const rawMaxDiscountPercent = Number(pointsSettings.max_discount_percent || 0);
+    const maxDiscountPercent = rawMaxDiscountPercent <= 1 ? 100 : rawMaxDiscountPercent;
+    
+    if (availablePoints < minPointsToUse) {
+      return 0;
+    }
+    
+    if (orderTotal < pointsSettings.min_order_amount_to_use) {
+      return 0;
+    }
+    
+    // 计算最大可抵扣金额
+    const maxDiscountAmount = orderTotal * (maxDiscountPercent / 100);
+    
+    // 根据抵扣金额计算需要的积分
+    const maxPointsByOrder = Math.floor(maxDiscountAmount * redeemRate);
+    
+    // 取用户可用积分和订单允许的最大积分的最小值
+    return Math.min(availablePoints, maxPointsByOrder);
+  }, [pointsSettings, pointsBalance, orderTotal]);
+  
+  // 计算积分抵扣金额
+  const pointsDiscountAmount = useMemo(() => {
+    if (!pointsSettings || pointsToUse <= 0) {
+      return 0;
+    }
+    return pointsToUse / pointsSettings.redeem_rate;
+  }, [pointsSettings, pointsToUse]);
+  
+  // 计算最终应付金额
+  const finalTotal = useMemo(() => {
+    return Math.max(0, orderTotal - pointsDiscountAmount);
+  }, [orderTotal, pointsDiscountAmount]);
+  
+  // 自动填入最大可用积分（仅在首次加载时自动填入一次）
+  const pointsInitializedRef = useRef(false);
+  
+  useEffect(() => {
+    // 只在首次计算出maxPointsToUse且还没有初始化时，自动填入最大可用积分
+    if (!pointsInitializedRef.current && maxPointsToUse > 0) {
+      setPointsToUse(maxPointsToUse);
+      setPointsInput(String(maxPointsToUse));
+      pointsInitializedRef.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maxPointsToUse]);
+  
+  // 处理积分输入变化（允许用户自由输入和删除）
+  const handlePointsInputChange = (value: string) => {
+    // 标记已经手动修改，防止自动填入逻辑覆盖
+    pointsInitializedRef.current = true;
+    
+    // 直接更新输入框的值
+    setPointsInput(value);
+    
+    // 如果输入为空，设置为0
+    if (!value || value.trim() === '') {
+      setPointsToUse(0);
+      return;
+    }
+    
+    // 解析输入值
+    const numValue = parseInt(value, 10);
+    
+    // 如果解析失败或小于0，设置为0但允许继续输入
+    if (Number.isNaN(numValue) || numValue < 0) {
+      setPointsToUse(0);
+      return;
+    }
+    
+    // 更新积分使用量（允许任何数字，不在此处限制）
+    setPointsToUse(numValue);
+  };
+  
+  // 处理输入框失去焦点时的验证和调整（不允许超过最大使用限制）
+  const handlePointsInputBlur = () => {
+    const currentValue = pointsInput.trim();
+    
+    // 如果输入为空，设置为0
+    if (!currentValue) {
+      setPointsToUse(0);
+      setPointsInput('');
+      return;
+    }
+    
+    const numValue = parseInt(currentValue, 10);
+    
+    // 如果解析失败，重置为最大可用积分或0
+    if (Number.isNaN(numValue) || numValue < 0) {
+      if (maxPointsToUse > 0) {
+        setPointsToUse(maxPointsToUse);
+        setPointsInput(String(maxPointsToUse));
+      } else {
+        setPointsToUse(0);
+        setPointsInput('');
+      }
+      return;
+    }
+    
+    if (!pointsBalance || !pointsSettings || maxPointsToUse <= 0) {
+      return;
+    }
+    
+    const availablePoints = pointsBalance.available || 0;
+    let finalPoints = numValue;
+    
+    // 不允许超过最大可用积分
+    if (finalPoints > maxPointsToUse) {
+      finalPoints = maxPointsToUse;
+    }
+    
+    // 不允许超过可用积分余额
+    if (finalPoints > availablePoints) {
+      finalPoints = Math.min(availablePoints, maxPointsToUse);
+    }
+    
+    // 如果被调整了，更新输入框和提示
+    if (finalPoints !== numValue) {
+      setPointsToUse(finalPoints);
+      setPointsInput(String(finalPoints));
+      Taro.showToast({ 
+        title: `已自动调整为最多可用积分${finalPoints}`, 
+        icon: 'none',
+        duration: 2000
+      });
+    } else {
+      // 正常情况，更新积分使用量
+      setPointsToUse(finalPoints);
+    }
+  };
+ 
 
   useEffect(() => {
     if (isGiftCardOrder && !giftcardMode) {
@@ -467,156 +608,6 @@ const OrderCreate = () => {
       setSubmitting(false);
     }
   };
-
-  // 计算订单总金额（数值）
-  const orderTotal = useMemo(() => {
-    if (fromCart) {
-      return checkoutItems.reduce((sum, item) => sum + parseFloat(item.price) * item.quantity, 0);
-    }
-    // 从商品详情购买，使用传递的价格参数
-    return variationPrice > 0 ? variationPrice * quantity : 0;
-  }, [fromCart, checkoutItems, variationPrice, quantity]);
-  
-  // 计算最大可用积分
-  const maxPointsToUse = useMemo(() => {
-    if (!pointsSettings || !pointsBalance || !pointsSettings.enable_points_discount) {
-      return 0;
-    }
-    
-    const availablePoints = Number(pointsBalance.available || 0);
-    const minPointsToUse = Number(pointsSettings.min_points_to_use || 0);
-    const redeemRate = Number(pointsSettings.redeem_rate || 1);
-    const rawMaxDiscountPercent = Number(pointsSettings.max_discount_percent || 0);
-    const maxDiscountPercent = rawMaxDiscountPercent <= 1 ? 100 : rawMaxDiscountPercent;
-
-    if (availablePoints < minPointsToUse) {
-      return 0;
-    }
-    
-    if (orderTotal < pointsSettings.min_order_amount_to_use) {
-      return 0;
-    }
-    
-    // 计算最大可抵扣金额
-    const maxDiscountAmount = orderTotal * (maxDiscountPercent / 100);
-    
-    // 根据抵扣金额计算需要的积分
-    const maxPointsByOrder = Math.floor(maxDiscountAmount * redeemRate);
-    
-    // 取用户可用积分和订单允许的最大积分的最小值
-    return Math.min(availablePoints, maxPointsByOrder);
-  }, [pointsSettings, pointsBalance, orderTotal]);
-  
-  // 计算积分抵扣金额
-  const pointsDiscountAmount = useMemo(() => {
-    if (!pointsSettings || pointsToUse <= 0) {
-      return 0;
-    }
-    return pointsToUse / pointsSettings.redeem_rate;
-  }, [pointsSettings, pointsToUse]);
-  
-  // 计算最终应付金额
-  const finalTotal = useMemo(() => {
-    return Math.max(0, orderTotal - pointsDiscountAmount);
-  }, [orderTotal, pointsDiscountAmount]);
-  
-  // 自动填入最大可用积分（仅在首次加载时自动填入一次）
-  const pointsInitializedRef = useRef(false);
-  
-  useEffect(() => {
-    // 只在首次计算出maxPointsToUse且还没有初始化时，自动填入最大可用积分
-    if (!pointsInitializedRef.current && maxPointsToUse > 0) {
-      setPointsToUse(maxPointsToUse);
-      setPointsInput(String(maxPointsToUse));
-      pointsInitializedRef.current = true;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [maxPointsToUse]);
-  
-  // 处理积分输入变化（允许用户自由输入和删除）
-  const handlePointsInputChange = (value: string) => {
-    // 标记已经手动修改，防止自动填入逻辑覆盖
-    pointsInitializedRef.current = true;
-    
-    // 直接更新输入框的值
-    setPointsInput(value);
-    
-    // 如果输入为空，设置为0
-    if (!value || value.trim() === '') {
-      setPointsToUse(0);
-      return;
-    }
-    
-    // 解析输入值
-    const numValue = parseInt(value, 10);
-    
-    // 如果解析失败或小于0，设置为0但允许继续输入
-    if (Number.isNaN(numValue) || numValue < 0) {
-      setPointsToUse(0);
-      return;
-    }
-    
-    // 更新积分使用量（允许任何数字，不在此处限制）
-    setPointsToUse(numValue);
-  };
-  
-  // 处理输入框失去焦点时的验证和调整（不允许超过最大使用限制）
-  const handlePointsInputBlur = () => {
-    const currentValue = pointsInput.trim();
-    
-    // 如果输入为空，设置为0
-    if (!currentValue) {
-      setPointsToUse(0);
-      setPointsInput('');
-      return;
-    }
-    
-    const numValue = parseInt(currentValue, 10);
-    
-    // 如果解析失败，重置为最大可用积分或0
-    if (Number.isNaN(numValue) || numValue < 0) {
-      if (maxPointsToUse > 0) {
-        setPointsToUse(maxPointsToUse);
-        setPointsInput(String(maxPointsToUse));
-      } else {
-        setPointsToUse(0);
-        setPointsInput('');
-      }
-      return;
-    }
-    
-    if (!pointsBalance || !pointsSettings || maxPointsToUse <= 0) {
-      return;
-    }
-    
-    const availablePoints = pointsBalance.available || 0;
-    let finalPoints = numValue;
-    
-    // 不允许超过最大可用积分
-    if (finalPoints > maxPointsToUse) {
-      finalPoints = maxPointsToUse;
-    }
-    
-    // 不允许超过可用积分余额
-    if (finalPoints > availablePoints) {
-      finalPoints = Math.min(availablePoints, maxPointsToUse);
-    }
-    
-    // 如果被调整了，更新输入框和提示
-    if (finalPoints !== numValue) {
-      setPointsToUse(finalPoints);
-      setPointsInput(String(finalPoints));
-      Taro.showToast({ 
-        title: `已自动调整为最多可用积分${finalPoints}`, 
-        icon: 'none',
-        duration: 2000
-      });
-    } else {
-      // 正常情况，更新积分使用量
-      setPointsToUse(finalPoints);
-    }
-  };
-  
 
   return (
     <View className='order-detail-page'>

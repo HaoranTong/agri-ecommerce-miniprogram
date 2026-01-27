@@ -129,10 +129,9 @@ const Login = () => {
 
   // Step 2: 手机号授权（可选）
   const handlePhoneAuth = async (e: any) => {
-    const { code: phoneCode, errMsg } = e.detail;
+    const { code: phoneCode } = e.detail;
 
     if (!phoneCode) {
-      console.log('用户拒绝授权手机号', errMsg);
       // 用户拒绝，跳过手机号绑定
       handleSkipPhoneAuth();
       return;
@@ -140,19 +139,19 @@ const Login = () => {
 
     try {
       setPhoneLoading(true);
-      
+
       // 获取新的登录凭证用于验证身份
       const loginRes = await Taro.login();
       const loginCode = loginRes.code;
-      
+
       if (!loginCode) {
         throw new Error('获取登录凭证失败');
       }
-      
+
       // 调用后端接口：传递登录code + 手机号授权码
       await authService.bindPhone(loginCode, phoneCode);
       Taro.showToast({ title: '手机号绑定成功', icon: 'success' });
-      
+
       // 绑定成功后跳转
       setTimeout(() => {
         navigateAfterLogin();
@@ -232,7 +231,7 @@ const Login = () => {
         <Button
           className='btn-login'
           loading={loading}
-          disabled={!agreed}
+          disabled={loading}
           onClick={handleWechatLogin}
           type='primary'
         >
