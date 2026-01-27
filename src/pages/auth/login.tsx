@@ -11,7 +11,6 @@ const Login = () => {
   const [phoneLoading, setPhoneLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [showPrivacyAuth, setShowPrivacyAuth] = useState(false);
-  const [pendingProfile, setPendingProfile] = useState<Taro.UserInfo | null>(null);
 
   // Step 1: 微信登录 - 获取 code 并登录
   const checkPrivacyAuthorization = async () => {
@@ -107,22 +106,25 @@ const Login = () => {
   const handleWechatLogin = async () => {
     if (loading) return;
 
-    const profile = await requestWechatProfile();
-
+    if (!agreed) {
+      Taro.showToast({ title: '请先勾选我已阅读并同意', icon: 'none' });
+      return;
+    }
     const needAuth = await checkPrivacyAuthorization();
     if (needAuth) {
-      setPendingProfile(profile);
       setShowPrivacyAuth(true);
       return;
     }
+
+    const profile = await requestWechatProfile();
 
     await doWechatLogin(profile);
   };
 
   const handleAgreePrivacyAuthorization = async () => {
     setShowPrivacyAuth(false);
-    await doWechatLogin(pendingProfile);
-    setPendingProfile(null);
+    const profile = await requestWechatProfile();
+    await doWechatLogin(profile);
   };
 
   // Step 2: 手机号授权（可选）

@@ -483,8 +483,13 @@ const OrderCreate = () => {
       return 0;
     }
     
-    const availablePoints = pointsBalance.available || 0;
-    if (availablePoints < pointsSettings.min_points_to_use) {
+    const availablePoints = Number(pointsBalance.available || 0);
+    const minPointsToUse = Number(pointsSettings.min_points_to_use || 0);
+    const redeemRate = Number(pointsSettings.redeem_rate || 1);
+    const rawMaxDiscountPercent = Number(pointsSettings.max_discount_percent || 0);
+    const maxDiscountPercent = rawMaxDiscountPercent <= 1 ? 100 : rawMaxDiscountPercent;
+
+    if (availablePoints < minPointsToUse) {
       return 0;
     }
     
@@ -493,10 +498,10 @@ const OrderCreate = () => {
     }
     
     // 计算最大可抵扣金额
-    const maxDiscountAmount = orderTotal * (pointsSettings.max_discount_percent / 100);
+    const maxDiscountAmount = orderTotal * (maxDiscountPercent / 100);
     
     // 根据抵扣金额计算需要的积分
-    const maxPointsByOrder = Math.floor(maxDiscountAmount * pointsSettings.redeem_rate);
+    const maxPointsByOrder = Math.floor(maxDiscountAmount * redeemRate);
     
     // 取用户可用积分和订单允许的最大积分的最小值
     return Math.min(availablePoints, maxPointsByOrder);
