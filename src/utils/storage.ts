@@ -9,7 +9,6 @@ const ADDRESS_KEY = 'MYSHOP_ADDRESSES';
 export const getToken = (): string | null => {
   try {
     const token = Taro.getStorageSync<string>(TOKEN_KEY);
-    console.log('[Storage] getToken:', token ? `${token.substring(0, 20)}...` : 'null');
     return token || null;
   } catch (error) {
     console.error('[Storage] 获取 token 失败', error);
@@ -19,15 +18,10 @@ export const getToken = (): string | null => {
 
 export const setToken = (token: string) => {
   try {
-    console.log('[Storage] setToken 开始:', token.substring(0, 20) + '...');
     Taro.setStorageSync(TOKEN_KEY, token);
     
     // 立即验证写入
     const saved = Taro.getStorageSync<string>(TOKEN_KEY);
-    console.log('[Storage] setToken 验证:', {
-      success: saved === token,
-      savedPrefix: saved ? saved.substring(0, 20) + '...' : 'null'
-    });
     
     if (saved !== token) {
       throw new Error('Token 写入验证失败');
@@ -40,7 +34,6 @@ export const setToken = (token: string) => {
 
 export const clearToken = () => {
   try {
-    console.log('[Storage] clearToken');
     Taro.removeStorageSync(TOKEN_KEY);
   } catch (error) {
     console.error('[Storage] 清除 token 失败', error);
