@@ -212,7 +212,7 @@ const Login = () => {
   return (
     <View className='login-container'>
       <View className='logo'>
-        <Text className='title'>常香米坊</Text>
+        <Text className='title'>安家大米</Text>
         <Text className='subtitle'>精选五常好米，直供到家</Text>
       </View>
 

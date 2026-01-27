@@ -108,7 +108,7 @@ export default defineAppConfig({
   window: {
     navigationBarBackgroundColor: '#ffffff',
     navigationBarTextStyle: 'black',
-    navigationBarTitleText: '常香米坊',
+    navigationBarTitleText: '安家大米',
     backgroundColor: '#f8f8f8',
     backgroundTextStyle: 'light',
     enablePullDownRefresh: true

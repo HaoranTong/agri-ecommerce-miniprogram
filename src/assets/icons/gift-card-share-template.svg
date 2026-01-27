@@ -11,7 +11,7 @@
   </defs>
   <rect width="640" height="360" rx="28" fill="url(#bg)" />
   <rect x="36" y="36" width="568" height="288" rx="24" fill="#FFFFFF" opacity="0.9" />
-  <text x="60" y="96" font-family="'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="28" fill="#065F46" font-weight="600">常香米坊礼品卡</text>
+  <text x="60" y="96" font-family="'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="28" fill="#065F46" font-weight="600">安家大米礼品卡</text>
   <text x="60" y="140" font-family="'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="16" fill="#047857">扫描二维码·填写收货信息·坐等收礼</text>
   <rect x="60" y="170" width="180" height="100" rx="16" fill="#ECFDF5" stroke="#34D399" stroke-width="2" />
   <text x="75" y="210" font-family="'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="14" fill="#10B981">礼品卡编号</text>
