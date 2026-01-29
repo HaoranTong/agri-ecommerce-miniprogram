@@ -97,9 +97,9 @@ const OrderList = () => {
     
     const statusMap: Record<string, string> = {
       'pending': '待支付',
-      'processing': '处理中',
+      'processing': '待发货',
       'on-hold': '待确认',
-      'completed': '已完成',
+      'completed': '已签收',
       'cancelled': '已取消',
       'refunded': '已退款',
       'failed': '支付失败'

@@ -34,7 +34,7 @@ const OrderDetail = () => {
       return { text: '待发货', color: '#2196f3', icon: '📦', tip: '商家正在准备商品' };
     }
     if (status === 'completed') {
-      return { text: '已完成', color: '#4caf50', icon: '✅', tip: '感谢您的购买' };
+      return { text: '已签收', color: '#4caf50', icon: '✅', tip: '订单已完成' };
     }
     if (status === 'cancelled') {
       return { text: '已取消', color: '#9e9e9e', icon: '❌', tip: '订单已取消' };

@@ -1,4 +1,4 @@
-import { Input, Button, View, Text } from '@tarojs/components';
+import { Input, Button, View, Text, Image } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useState, useEffect } from 'react';
 import { userService } from '../../services/api';
@@ -13,6 +13,34 @@ const EditProfile = () => {
     first_name: '',
     phone: ''
   });
+
+  const canChooseAvatar = typeof Taro.canIUse === 'function'
+    ? Taro.canIUse('button.open-type.chooseAvatar')
+    : false;
+
+  const logUserProfile = (stage: string, payload?: any) => {
+    try {
+      console.info(`[EditProfile][getUserProfile] ${stage}`, payload || '');
+    } catch (error) {
+      // ignore
+    }
+  };
+
+  const notifyUserProfileFail = async (error: any) => {
+    const errMsg = String(error?.errMsg || '');
+    logUserProfile('fail', { errMsg, error });
+
+    if (/deny|拒绝|authorize|auth/i.test(errMsg)) {
+      await Taro.showModal({
+        title: '无法获取昵称/头像',
+        content: '微信侧未授权或已拒绝。请到微信「设置 > 隐私 > 授权管理」中找到本小程序重新授权后再试。',
+        showCancel: false
+      });
+      return;
+    }
+
+    Taro.showToast({ title: '获取微信信息失败', icon: 'none' });
+  };
 
   useEffect(() => {
     loadProfile();
@@ -89,13 +117,20 @@ const EditProfile = () => {
   const handleFetchWechatProfile = async () => {
     if (loading) return;
 
-    try {
-      const profileRes = await Taro.getUserProfile({
-        desc: '用于完善用户资料'
-      });
+    if (!canChooseAvatar && typeof Taro.getUserProfile !== 'function') {
+      logUserProfile('not_supported');
+      Taro.showToast({ title: '当前环境不支持获取微信信息', icon: 'none' });
+      return;
+    }
 
-      const userInfo = profileRes.userInfo;
-      if (!userInfo) {
+    try {
+      logUserProfile('request');
+      const res = await Taro.getUserProfile({
+        desc: '用于同步个人中心展示'
+      });
+      logUserProfile('success', res);
+      const userInfo = res?.userInfo || null;
+      if (!userInfo?.nickName && !userInfo?.avatarUrl) {
         Taro.showToast({ title: '未获取到微信信息', icon: 'none' });
         return;
       }
@@ -114,7 +149,25 @@ const EditProfile = () => {
       }));
       Taro.showToast({ title: '微信信息已更新', icon: 'success' });
     } catch (error) {
-      Taro.showToast({ title: '获取失败，请重试', icon: 'none' });
+      await notifyUserProfileFail(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChooseAvatar = async (e: any) => {
+    if (loading) return;
+    const url = e?.detail?.avatarUrl || '';
+    if (!url) return;
+
+    try {
+      setLoading(true);
+      const result = await userService.uploadAvatar(url);
+
+      setProfile(result);
+      Taro.showToast({ title: '头像已更新', icon: 'success' });
+    } catch (error) {
+      Taro.showToast({ title: '头像更新失败', icon: 'none' });
     } finally {
       setLoading(false);
     }
@@ -163,9 +216,24 @@ const EditProfile = () => {
 
         <View className='form-item wechat-auth'>
           <Text className='form-label'>微信头像昵称</Text>
-          <Button className='wechat-btn' onClick={handleFetchWechatProfile} loading={loading}>
-            获取微信头像昵称
-          </Button>
+            <View className='wechat-actions'>
+              <View className='wechat-avatar'>
+                <Image
+                  className='wechat-avatar-img'
+                  src={profile?.avatar || 'https://mmbiz.qpic.cn/mmbiz_png/Okj5cBvW2mV6aG9rZ0m1t3KzR5B9dJtv6LzVVqQwXn8mVib1mlwC2R2R2GQn9s7A0XfKq9c8nqQKJqX9uGxS6jQ/0?wx_fmt=png'}
+                  mode='aspectFill'
+                />
+                {canChooseAvatar ? (
+                  <Button className='wechat-btn' openType='chooseAvatar' onChooseAvatar={handleChooseAvatar} loading={loading}>
+                    更换头像
+                  </Button>
+                ) : (
+                  <Button className='wechat-btn' onClick={handleFetchWechatProfile} loading={loading}>
+                    获取头像
+                  </Button>
+                )}
+              </View>
+            </View>
           <Text className='form-tip'>如未获取到昵称/头像，可点击此按钮重新授权</Text>
         </View>
 

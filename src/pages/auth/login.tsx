@@ -1,4 +1,4 @@
-import { View, Button, Text, Checkbox, CheckboxGroup } from '@tarojs/components';
+import { View, Button, Text, Checkbox, CheckboxGroup, Input, Image } from '@tarojs/components';
 import { useState } from 'react';
 import Taro from '@tarojs/taro';
 
@@ -11,8 +11,41 @@ const Login = () => {
   const [phoneLoading, setPhoneLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [showPrivacyAuth, setShowPrivacyAuth] = useState(false);
+  const [showProfileConsent, setShowProfileConsent] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [nickName, setNickName] = useState('');
 
-  // Step 1: 微信登录 - 获取 code 并登录
+  const canChooseAvatar = typeof Taro.canIUse === 'function'
+    ? Taro.canIUse('button.open-type.chooseAvatar')
+    : false;
+
+  const isRemoteUrl = (url?: string) => !!url && /^https?:\/\//i.test(url);
+
+  const logUserProfile = (stage: string, payload?: any) => {
+    try {
+      console.info(`[Login][getUserProfile] ${stage}`, payload || '');
+    } catch (error) {
+      // ignore
+    }
+  };
+
+  const notifyUserProfileFail = async (error: any) => {
+    const errMsg = String(error?.errMsg || '');
+    logUserProfile('fail', { errMsg, error });
+
+    if (/deny|拒绝|authorize|auth/i.test(errMsg)) {
+      await Taro.showModal({
+        title: '无法获取昵称/头像',
+        content: '微信侧未授权或已拒绝。请到微信「设置 > 隐私 > 授权管理」中找到本小程序重新授权后再试。若后台未申报头像昵称场景也会失败。',
+        showCancel: false
+      });
+      return;
+    }
+
+    Taro.showToast({ title: '获取微信信息失败', icon: 'none' });
+  };
+
+  // Step 1: 微信登录 - 仅依赖 code 完成登录，用户头像昵称是可选项
   const checkPrivacyAuthorization = async () => {
     if (typeof Taro.getPrivacySetting !== 'function') {
       return false;
@@ -25,18 +58,22 @@ const Login = () => {
           fail: () => resolve(false)
         });
       });
+      console.info('[Login][privacy] needAuthorization:', needAuth);
       return needAuth;
     } catch (error) {
       return false;
     }
   };
 
+  // 仅以 code 登录，profile 只作为可选补充信息，不应阻塞登录
   const doWechatLogin = async (profile?: Taro.UserInfo | null) => {
     if (loading) return;
 
     try {
       setLoading(true);
       const userProfile = profile || null;
+      const avatarCandidate = userProfile?.avatarUrl || '';
+      const hasRemoteAvatar = isRemoteUrl(avatarCandidate);
       if (userProfile) {
         // 保存到本地storage
         Taro.setStorageSync('USER_PROFILE', userProfile);
@@ -55,7 +92,7 @@ const Login = () => {
       const wechatProfile = userProfile
         ? {
             nickname: userProfile.nickName,
-            avatar: userProfile.avatarUrl
+            ...(hasRemoteAvatar ? { avatar: userProfile.avatarUrl } : {})
           }
         : undefined;
 
@@ -69,11 +106,25 @@ const Login = () => {
       // 如果获取到用户信息，上传到后端保存
       if (userProfile) {
         try {
-          await userService.updateProfile({
+          const updatePayload: { nickname?: string; avatar?: string; gender?: number } = {
             nickname: userProfile.nickName,
-            avatar: userProfile.avatarUrl,
             gender: userProfile.gender
-          });
+          };
+          if (hasRemoteAvatar) {
+            updatePayload.avatar = userProfile.avatarUrl;
+          }
+          await userService.updateProfile(updatePayload);
+        } catch (error) {
+          // 不阻塞流程
+        }
+      }
+
+      if (userProfile && avatarCandidate && !hasRemoteAvatar) {
+        try {
+          const updated = await userService.uploadAvatar(avatarCandidate);
+          if (updated?.avatar) {
+            setAvatarUrl(updated.avatar);
+          }
         } catch (error) {
           // 不阻塞流程
         }
@@ -91,18 +142,6 @@ const Login = () => {
     }
   };
 
-  const requestWechatProfile = async () => {
-    try {
-      const profileRes = await Taro.getUserProfile({
-        desc: '用于完善用户资料'
-      });
-      return profileRes.userInfo || null;
-    } catch (error) {
-      Taro.showToast({ title: '已拒绝授权，昵称头像将不显示', icon: 'none' });
-      return null;
-    }
-  };
-
   const handleWechatLogin = async () => {
     if (loading) return;
 
@@ -110,20 +149,84 @@ const Login = () => {
       Taro.showToast({ title: '请先勾选我已阅读并同意', icon: 'none' });
       return;
     }
+
     const needAuth = await checkPrivacyAuthorization();
     if (needAuth) {
       setShowPrivacyAuth(true);
       return;
     }
 
-    const profile = await requestWechatProfile();
-
-    await doWechatLogin(profile);
+    // 点击“微信登录”后弹出头像昵称授权确认，不同意也要继续登录
+    setShowProfileConsent(true);
   };
 
-  const handleAgreePrivacyAuthorization = async () => {
+  const handleAgreePrivacyAuthorization = () => {
     setShowPrivacyAuth(false);
-    const profile = await requestWechatProfile();
+    setShowProfileConsent(true);
+  };
+
+  const handleDeclinePrivacyAuthorization = async () => {
+    setShowPrivacyAuth(false);
+    await doWechatLogin(null);
+  };
+
+  // getUserProfile 必须由用户点击触发（Tap 事件），不能在异步链路中调用
+  const handleGetUserProfile = async () => {
+    if (loading) return;
+    setShowProfileConsent(false);
+
+    if (typeof Taro.getUserProfile !== 'function') {
+      logUserProfile('not_supported');
+      await doWechatLogin(null);
+      return;
+    }
+
+    try {
+      logUserProfile('request');
+      const res = await Taro.getUserProfile({
+        desc: '用于同步个人中心展示'
+      });
+      logUserProfile('success', res);
+      const userInfo = res?.userInfo || null;
+      if (!userInfo?.nickName && !userInfo?.avatarUrl) {
+        console.warn('[Login] 未获取到微信昵称/头像，继续登录');
+        await doWechatLogin(null);
+        return;
+      }
+      await doWechatLogin(userInfo);
+    } catch (error) {
+      await notifyUserProfileFail(error);
+      await doWechatLogin(null);
+    }
+  };
+
+  const handleChooseAvatar = (e: any) => {
+    const url = e?.detail?.avatarUrl || '';
+    if (!url) return;
+    setAvatarUrl(url);
+  };
+
+  const handleConfirmProfile = async () => {
+    setShowProfileConsent(false);
+
+    if (!canChooseAvatar) {
+      await handleGetUserProfile();
+      return;
+    }
+
+    const trimmedName = nickName.trim();
+    const hasProfile = Boolean(avatarUrl || trimmedName);
+    if (!hasProfile) {
+      await doWechatLogin(null);
+      return;
+    }
+
+    const profile = {
+      nickName: trimmedName,
+      avatarUrl: avatarUrl,
+      gender: 0
+    } as Taro.UserInfo;
+
     await doWechatLogin(profile);
   };
 
@@ -278,6 +381,64 @@ const Login = () => {
                 onAgreePrivacyAuthorization={handleAgreePrivacyAuthorization}
               >
                 同意并继续
+              </Button>
+              <Button
+                className='privacy-decline'
+                onClick={handleDeclinePrivacyAuthorization}
+              >
+                不同意，继续登录
+              </Button>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {showProfileConsent && (
+        <View className='privacy-modal'>
+          <View className='privacy-card'>
+            <Text className='privacy-title'>用户信息确认</Text>
+            <Text className='privacy-desc'>这是应用内的确认页。头像需通过微信官方“选择头像”获取，昵称请手动填写（可选）。</Text>
+            {canChooseAvatar ? (
+              <View className='profile-form'>
+                <View className='avatar-row'>
+                  <Image
+                    className='avatar-preview'
+                    src={avatarUrl || 'https://mmbiz.qpic.cn/mmbiz_png/Okj5cBvW2mV6aG9rZ0m1t3KzR5B9dJtv6LzVVqQwXn8mVib1mlwC2R2R2GQn9s7A0XfKq9c8nqQKJqX9uGxS6jQ/0?wx_fmt=png'}
+                    mode='aspectFill'
+                  />
+                  <Button
+                    className='avatar-btn'
+                    openType='chooseAvatar'
+                    onChooseAvatar={handleChooseAvatar}
+                  >
+                    选择头像
+                  </Button>
+                </View>
+                <Input
+                  className='nickname-input'
+                  value={nickName}
+                  placeholder='请输入昵称（可选）'
+                  onInput={(e) => setNickName(e.detail.value)}
+                />
+              </View>
+            ) : (
+              <Text className='privacy-desc'>当前基础库不支持头像选择，将尝试旧授权方式。</Text>
+            )}
+            <View className='privacy-actions'>
+              <Button
+                className='privacy-agree'
+                onClick={handleConfirmProfile}
+              >
+                确认并登录
+              </Button>
+              <Button
+                className='privacy-decline'
+                onClick={() => {
+                  setShowProfileConsent(false);
+                  doWechatLogin(null);
+                }}
+              >
+                跳过头像昵称，直接登录
               </Button>
             </View>
           </View>

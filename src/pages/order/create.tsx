@@ -203,7 +203,12 @@ const OrderCreate = () => {
     
     // 根据抵扣金额计算需要的积分
     const maxPointsByOrder = Math.floor(maxDiscountAmount * redeemRate);
-    
+
+    // 若订单允许的最大积分小于最低使用门槛，则本单不可用积分
+    if (maxPointsByOrder < minPointsToUse) {
+      return 0;
+    }
+
     // 取用户可用积分和订单允许的最大积分的最小值
     return Math.min(availablePoints, maxPointsByOrder);
   }, [pointsSettings, pointsBalance, orderTotal]);
@@ -287,12 +292,28 @@ const OrderCreate = () => {
     }
     
     if (!pointsBalance || !pointsSettings || maxPointsToUse <= 0) {
+      if (numValue > 0) {
+        setPointsToUse(0);
+        setPointsInput('');
+        Taro.showToast({
+          title: pointsSettings?.min_points_to_use
+            ? `最少需要使用${pointsSettings.min_points_to_use}积分`
+            : '当前订单不可使用积分',
+          icon: 'none',
+          duration: 2000
+        });
+      }
       return;
     }
     
     const availablePoints = pointsBalance.available || 0;
     let finalPoints = numValue;
     
+    // 不允许低于最低使用积分
+    if (finalPoints < pointsSettings.min_points_to_use) {
+      finalPoints = 0;
+    }
+
     // 不允许超过最大可用积分
     if (finalPoints > maxPointsToUse) {
       finalPoints = maxPointsToUse;
@@ -304,6 +325,17 @@ const OrderCreate = () => {
     }
     
     // 如果被调整了，更新输入框和提示
+    if (finalPoints === 0 && numValue > 0) {
+      setPointsToUse(0);
+      setPointsInput('');
+      Taro.showToast({
+        title: `最少需要使用${pointsSettings.min_points_to_use}积分`,
+        icon: 'none',
+        duration: 2000
+      });
+      return;
+    }
+
     if (finalPoints !== numValue) {
       setPointsToUse(finalPoints);
       setPointsInput(String(finalPoints));

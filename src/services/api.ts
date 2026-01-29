@@ -479,6 +479,31 @@ export const userService = {
     });
     return response.data;
   },
+  uploadAvatar: async (filePath: string) => {
+    const token = getToken();
+    const uploadRes = await Taro.uploadFile({
+      url: resolveUrl(API_ENDPOINTS.uploadUserAvatar),
+      filePath,
+      name: 'avatar',
+      header: token ? { Authorization: `Bearer ${token}` } : {},
+      timeout: 60000
+    });
+
+    let data: any = {};
+    try {
+      data = uploadRes.data ? JSON.parse(uploadRes.data) : {};
+    } catch (error) {
+      console.warn('解析头像上传响应失败', error);
+    }
+
+    if (uploadRes.statusCode >= 400 || data?.error_code) {
+      const message = data?.message || '头像上传失败';
+      Taro.showToast({ title: message, icon: 'none' });
+      throw new Error(message);
+    }
+
+    return data?.data ?? data;
+  },
   updateProfile: async (data: { 
     nickname?: string; 
     first_name?: string; 

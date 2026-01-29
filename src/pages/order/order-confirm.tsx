@@ -10,8 +10,8 @@ import './order-confirm.scss';
 const getStatusText = (status: string): string => {
   const statusMap: Record<string, string> = {
     'pending': '待支付',
-    'processing': '处理中',
-    'completed': '已完成',
+    'processing': '待发货',
+    'completed': '已签收',
     'cancelled': '已取消',
     'refunded': '已退款',
     'failed': '失败'

@@ -21,6 +21,7 @@ export const API_ENDPOINTS = {
   userAddresses: '/user/addresses',
   cart: '/cart',
   cartItem: (variationId: number | string) => `/cart/${variationId}`,
+  uploadUserAvatar: '/user/avatar',
   orders: '/orders',
   uploadPaymentProof: (orderId: number | string) => `/orders/${orderId}/upload-payment-proof`,
   applyCouponToOrder: (orderId: number | string) => `/orders/${orderId}/apply-coupon`,

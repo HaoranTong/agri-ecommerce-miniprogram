@@ -63,8 +63,25 @@
         width: auto;
       }
 
-      .wechat-btn {
+      .wechat-actions {
         width: 100%;
+      }
+
+      .wechat-avatar {
+        display: flex;
+        align-items: center;
+        gap: 16rpx;
+      }
+
+      .wechat-avatar-img {
+        width: 96rpx;
+        height: 96rpx;
+        border-radius: 48rpx;
+        background: #f2f3f5;
+      }
+
+      .wechat-btn {
+        flex: 1;
         height: 80rpx;
         border-radius: 40rpx;
         background: #2bbe4f;
