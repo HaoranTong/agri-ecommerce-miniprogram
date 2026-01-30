@@ -4,7 +4,7 @@
 - ✅ 覆盖一期（MVP）、二期（购物卡 + 分销 + 代理商）全部功能  
 - ✅ 预留三期关键扩展路径（不实现但占位）  
 - ✅ 所有接口路径、字段名、错误码 **永久冻结，不可变更**  
-- ✅ 补全此前遗漏：商品列表、付款截图上传、代理商全套接口
+- ✅ 补全此前遗漏：商品列表、退货申请/图片上传、代理商全套接口
 - ✅ **V2.3.2更新**：优化登录流程，支持头像性别上传，支付接口返回order_id
 
 ------
@@ -84,6 +84,8 @@
   "last_updated_at": "2025-11-20T10:00:00+08:00"
 }
 ```
+
+> 注：`payment_qr_url` 与 `customer_service_qr` 为历史保留字段（线下扫码支付已停用），小程序端不再使用，可留空。
 
 ------
 
@@ -657,10 +659,7 @@
       "quantity": 2,
       "price": "58.00"
     }
-  ],
-  "payment_qr_url": "https://yourdomain.com/uploads/pay-qr.jpg",
-  "customer_service_qr": "https://yourdomain.com/uploads/cs-qr.jpg",
-  "message": "请扫码向客服付款，并添加企业微信发送付款截图，我们将尽快为您发货。"
+  ]
 }
 ```
 
@@ -670,7 +669,7 @@
 
 ### GET `/orders`
 
-**用途**：获取当前用户订单列表（含付款凭证状态、审核备注）
+**用途**：获取当前用户订单列表（含退货状态）
 **成功响应（200）**：
 
 ```json
@@ -692,7 +691,9 @@
     ],
     "tracking_number": "",
     "tracking_company": "",
-    "shipped_at": ""
+    "shipped_at": "",
+    "return_status": "none",
+    "return_requested_at": null
   }
 ]
 ```
@@ -732,6 +733,9 @@
   "tracking_number": null,
   "tracking_company": null,
   "shipped_at": null,
+  "return_status": "none",
+  "return_requested_at": null,
+  "return_images": [],
   "items": [
     {
       "product_id": 101,
@@ -751,6 +755,9 @@
     "detail_address": "稻花香农场1号",
     "postcode": "150200"
   },
+  "return_status": "none",
+  "return_requested_at": null,
+  "return_images": [],
   "coupon_info": null,
   "gift_card_info": null,
   "is_gift_card_order": false
@@ -769,6 +776,58 @@
 > - 新增积分奖励字段（多种命名兼容）：`points_reward`, `points_earned`, `reward_points`, `earned_points`
 > - `points_reward` 为本次订单预计可获得积分（仅在 pending/on-hold 状态时计算），前端支付页用于提示「本次购买可得积分」。
 > - 积分按 1:1 计算（实际应付金额取整）。
+
+------
+
+### POST `/orders/{order_id}/return-request`
+
+**用途**：用户申请退货/售后，支持原因、联系方式与图片列表
+
+**请求体**：
+
+```json
+{
+  "reason": "包装破损",
+  "contact": "微信号/手机号",
+  "images": [
+    "https://yourdomain.com/wp-content/uploads/return-requests/2025/01/xx1.jpg",
+    "https://yourdomain.com/wp-content/uploads/return-requests/2025/01/xx2.jpg"
+  ]
+}
+```
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "return_status": "requested",
+    "return_requested_at": "2025-11-20 12:30:00"
+  }
+}
+```
+
+> 仅允许 `processing` / `completed` 状态申请退货；提交成功后订单状态会变为 `return-requested`。
+
+------
+
+### POST `/orders/{order_id}/return-request/upload`
+
+**用途**：上传退货图片（multipart/form-data）
+
+**请求体**：`image` 文件字段（JPG/PNG，≤ 5MB）
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "url": "https://yourdomain.com/wp-content/uploads/return-requests/2025/01/xx1.jpg"
+  }
+}
+```
 
 ------
 

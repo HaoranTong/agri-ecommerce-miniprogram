@@ -4,6 +4,8 @@
 
 轮播图数据存储在 WordPress 数据库的 `wp_options` 表中，选项名称为 `myshop_public_config`。
 
+> 注：`payment_qr_url` / `customer_service_qr` 为历史保留字段（线下扫码支付已停用），可留空。
+
 ---
 
 ## 🛠️ **方法 1：通过 WP-CLI 命令管理（推荐）**

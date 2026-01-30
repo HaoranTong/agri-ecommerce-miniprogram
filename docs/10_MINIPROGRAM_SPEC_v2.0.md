@@ -98,7 +98,7 @@ myshop-miniprogram/
 │   │   ├── order/            # 订单流程
 │   │   │   ├── create.tsx    # 下单页（需选择地址）
 │   │   │   ├── order-confirm.tsx  # 订单确认
-│   │   │   ├── payment.tsx   # 支付与凭证上传
+│   │   │   ├── payment.tsx   # 支付页
 │   │   │   ├── payment-success.tsx # 支付成功
 │   │   │   ├── list.tsx      # 订单列表
 │   │   │   └── detail.tsx    # 订单详情
@@ -452,7 +452,7 @@ const OrderCreate = () => {
       return;
     }
 
-    const res = await request<{ order_id: number; payment_qr_url: string }>({
+    const res = await request<{ order_id: number }>({
       url: '/orders',
       method: 'POST',
       data: {
@@ -495,6 +495,15 @@ export default OrderCreate;
 - 支付页仅保留 **微信支付**；不再展示扫码/线下支付与凭证上传入口。
 - 支持优惠券与购物卡抵扣，最终应付金额基于订单金额实时计算。
 - 若订单详情返回 `points_reward`，支付页提示「本次购买可得积分：X」。
+
+------
+
+### 3. **退货申请（`src/pages/order/detail.tsx`）**
+
+- 当订单状态为 `processing` / `completed` 且 `return_status=none` 时显示“申请退货”按钮。
+- 图片先调用 `POST /orders/{order_id}/return-request/upload` 上传，返回 URL 列表。
+- 提交时调用 `POST /orders/{order_id}/return-request`，携带 `reason`、`contact` 与 `images`。
+- 已提交后展示 `return_status`（`requested/approved/rejected/refunded`），并隐藏重复提交入口。
 
 ------
 

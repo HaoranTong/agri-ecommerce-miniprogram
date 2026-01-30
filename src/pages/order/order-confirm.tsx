@@ -11,6 +11,7 @@ const getStatusText = (status: string): string => {
   const statusMap: Record<string, string> = {
     'pending': '待支付',
     'processing': '待发货',
+    'on-hold': '已发货',
     'completed': '已签收',
     'cancelled': '已取消',
     'refunded': '已退款',

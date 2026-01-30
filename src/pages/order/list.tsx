@@ -84,7 +84,20 @@ const OrderList = () => {
   }
 
   const getStatusText = (order: OrderDetail) => {
-    const { status, has_payment_proof } = order;
+    const { status, has_payment_proof, return_status } = order;
+
+    if (return_status === 'requested') {
+      return '申请退货';
+    }
+    if (return_status === 'approved') {
+      return '退货已同意';
+    }
+    if (return_status === 'rejected') {
+      return '退货已拒绝';
+    }
+    if (return_status === 'refunded') {
+      return '已退款';
+    }
     
     // 如果已上传支付凭证，显示特殊状态
     if (status === 'pending' && has_payment_proof) {
@@ -97,8 +110,8 @@ const OrderList = () => {
     
     const statusMap: Record<string, string> = {
       'pending': '待支付',
-      'processing': '待发货',
-      'on-hold': '待确认',
+      'processing': '支付成功/待发货',
+      'on-hold': '已发货',
       'completed': '已签收',
       'cancelled': '已取消',
       'refunded': '已退款',
@@ -108,7 +121,20 @@ const OrderList = () => {
   };
 
   const getStatusColor = (order: OrderDetail) => {
-    const { status, has_payment_proof } = order;
+    const { status, has_payment_proof, return_status } = order;
+
+    if (return_status === 'requested') {
+      return '#ff5722';
+    }
+    if (return_status === 'approved') {
+      return '#ff9800';
+    }
+    if (return_status === 'rejected') {
+      return '#9e9e9e';
+    }
+    if (return_status === 'refunded') {
+      return '#4caf50';
+    }
     
     // 如果已上传支付凭证，使用蓝色表示审核中
     if ((status === 'pending' || status === 'processing') && has_payment_proof) {
@@ -118,7 +144,7 @@ const OrderList = () => {
     const colorMap: Record<string, string> = {
       'pending': '#ff9800',
       'processing': '#2196f3',
-      'on-hold': '#ff9800',
+      'on-hold': '#4caf50',
       'completed': '#4caf50',
       'cancelled': '#9e9e9e',
       'refunded': '#f44336',

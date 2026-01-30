@@ -58,8 +58,10 @@
 | `phone`             | varchar      | `13800138000`                 | 手机号，同时作为登录名（必填）                               | ✅            |
 | `wechat_openid`     | varchar      | `oAbcDefGhIjKlMn...`          | 小程序 openid（敏感，服务端存储）                            | ❌            |
 | `wechat_unionid`    | varchar      | `uXYZ123...`                  | unionid（如开放平台应用打通）                                | ❌            |
-| `wechat_nickname`   | varchar      | `🌾五常米农`                   | 微信昵称                                                      | ✅            |
-| `wechat_avatar`     | varchar      | `https://.../avatar.jpg`      | 头像 URL                                                     | ✅            |
+| `_wechat_phone`     | varchar      | `13800138000`                 | 微信绑定手机号（getPhoneNumber）                              | ✅            |
+| `billing_phone`     | varchar      | `13800138000`                 | WooCommerce 订单手机号（同步自微信手机号）                    | ✅            |
+| `_wechat_avatar`    | varchar      | `https://.../avatar.jpg`      | 微信头像 URL                                                  | ✅            |
+| `_wechat_gender`    | tinyint      | `0/1/2`                       | 微信性别（0=未知/1=男/2=女）                                  | ✅            |
 | `invite_code`       | char(6)      | `U42ABC`                      | 用户专属邀请码（大写字母+数字）                              | ✅            |
 | `referrer_id`       | bigint       | `105`                         | 直接邀请人 user_id（首次登录时写入）                          | ✅            |
 | `total_points`      | int          | `280`                         | 当前可用积分余额                                             | ✅            |
@@ -79,24 +81,28 @@
 
 | 状态                  | 说明                                       |
 | --------------------- | ------------------------------------------ |
-| `wc-pending`          | 待付款 / 待确认                            |
-| `wc-processing`       | （可选）处理中                             |
-| `wc-completed`        | 已完成（人工审核通过）                     |
+| `wc-pending`          | 待支付                                     |
+| `wc-processing`       | 支付成功/待发货                            |
+| `wc-on-hold`          | 已发货/运输中                              |
+| `wc-completed`        | 已签收                                     |
+| `wc-return-requested` | 申请退货                                   |
+| `wc-refunded`         | 已退款                                     |
 | `wc-cancelled`        | 已取消                                     |
-| `pending_confirmation`| 自定义状态：待凭证审核（上传付款截图后）   |
 
 ### 2. 自定义订单 Meta（`wp_postmeta`）
 
 | meta_key                     | 类型     | 示例值                                                  | 说明                                                         |
 | ---------------------------- | -------- | ------------------------------------------------------- | ------------------------------------------------------------ |
-| `_payment_proof_url`         | varchar  | `https://.../order_1001-proof.jpg`                      | 最近一次上传的付款截图 URL                                   |
-| `_payment_proof_status`      | varchar  | `submitted`                                             | 凭证状态：`missing/submitted/approved/rejected`              |
-| `_payment_proof_remark`      | text     | `客服已收到截图，排队审核`                              | 客服审核备注（最新一条）                                     |
-| `_manual_payment_qr`         | varchar  | `https://.../pay-qr.jpg`                                | 收款码 URL（冗余在订单层，便于导出）                         |
 | `_buyer_variation_id`        | bigint   | `205`                                                   | 下单选择的 SKU 变体 ID                                       |
 | `_points_reservation_id`     | varchar  | `PTS-20251122-1006`                                     | 积分预占流水号（对应 `wp_myshop_point_ledger.reservation_id`）|
 | `_commission_processed`      | tinyint  | `0` / `1`                                               | 佣金是否已生成                                               |
 | `_gift_card_generated`       | tinyint  | `0` / `1`                                               | 是否已生成虚拟购物卡                                         |
+| `_myshop_return_requested_at`| datetime | `2025-11-20 12:30:00`                                   | 退货申请时间                                                 |
+| `_myshop_return_status`      | varchar  | `requested/approved/rejected/refunded`                 | 退货处理状态                                                 |
+| `_myshop_return_reason`      | text     | `包装破损`                                              | 退货原因                                                     |
+| `_myshop_return_contact`     | varchar  | `微信号/手机号`                                         | 联系方式                                                     |
+| `_myshop_return_images`      | longtext | `[...]`                                                 | 退货图片 URL 列表（JSON）                                    |
+| `_myshop_return_prev_status` | varchar  | `processing`                                            | 退货前订单状态                                               |
 
 > ✅ 所有订单创建、更新操作通过 WooCommerce API/Hook 完成，禁止直接 SQL 操作。
 

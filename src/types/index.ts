@@ -147,6 +147,7 @@ export interface OrderDetail extends OrderCreated {
   shipped_at?: string;
   return_status?: 'none' | 'requested' | string;
   return_requested_at?: string | null;
+  return_images?: string[];
   message?: string;
   coupon_info?: {
     code: string;

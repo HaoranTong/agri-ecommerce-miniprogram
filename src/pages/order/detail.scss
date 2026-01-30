@@ -115,6 +115,7 @@
 
 .logistics-card {
   margin: 0 32px 24px;
+  text-align: center;
 
   .logistics-content {
     display: flex;
@@ -312,6 +313,7 @@
 
 .return-qr {
   margin-bottom: 20px;
+  text-align: center;
 
   .return-label {
     display: block;
@@ -325,12 +327,21 @@
     border-radius: 16px;
     border: 1px solid #eee;
     background: #fff;
+    display: inline-block;
   }
 
   .return-qr-placeholder {
     font-size: 24px;
     color: #999;
   }
+}
+
+.return-qr-hint {
+  font-size: 26px;
+  color: #ff5722;
+  text-align: center;
+  margin-bottom: 18px;
+  font-weight: 600;
 }
 
 .return-confirm {
@@ -361,7 +372,18 @@
 }
 
 .return-textarea {
-  min-height: 140px;
+  min-height: 96px;
+}
+
+.return-contact-btn {
+  width: 100%;
+  height: 86px;
+  border-radius: 16px;
+  border: 1px dashed #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 26px;
+  font-weight: 600;
 }
 
 .return-actions {
@@ -386,5 +408,53 @@
   .return-submit {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: #fff;
+  }
+}
+
+.return-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  .return-image-item {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #eee;
+    background: #f8f8f8;
+  }
+
+  .return-image {
+    width: 100%;
+    height: 100%;
+  }
+
+  .return-image-remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+    text-align: center;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-size: 22px;
+  }
+
+  .return-image-add {
+    width: 140px;
+    height: 140px;
+    border-radius: 12px;
+    border: 1px dashed #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-size: 24px;
+    background: #f8fafc;
   }
 }

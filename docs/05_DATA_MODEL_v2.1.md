@@ -112,11 +112,15 @@
 ### 2. 订单（Order）
 
 - **存储表**：`wp_posts`（`post_type = 'shop_order'`） + `wp_postmeta`
-- **自定义状态**：
-  - `pending_confirmation`：用户上传付款截图，待人工审核（一期）
+- **订单状态说明**：
+  - `pending`：待支付
+  - `processing`：支付成功/待发货
+  - `on-hold`：已发货/运输中
+  - `completed`：已签收
+  - `return-requested`：申请退货
+  - `refunded`：已退款
 - **支付方式**：
-  - `manual`：人工收款（一期）
-  - `wechatpay`：微信支付（三期）
+  - `wechatpay`：微信支付（默认）
 
 > 📌 地址、电话、邮箱等复用 WooCommerce 原生字段（如 `billing_phone`），**不新建字段**
 
@@ -407,8 +411,8 @@ CREATE TABLE wp_myshop_agent_audit_logs (
 
 | option_name                  | 分期 | 说明               | 示例值                              |
 | ---------------------------- | ---- | ------------------ | ----------------------------------- |
-| `myshop_payment_qr_url`      | 一期 | 收款码图片URL      | `"https://shop.com/uploads/qr.jpg"` |
-| `myshop_customer_service_qr` | 一期 | 客服微信二维码     | `"https://shop.com/uploads/cs.jpg"` |
+| `myshop_payment_qr_url`      | 一期 | 收款码图片URL（保留字段，线下扫码支付已停用） | `"https://shop.com/uploads/qr.jpg"` |
+| `myshop_customer_service_qr` | 一期 | 客服微信二维码（保留字段，线下扫码支付已停用） | `"https://shop.com/uploads/cs.jpg"` |
 | `myshop_home_slider`         | 二期 | 首页轮播图（JSON） | `[{"img":"url","link":"..."}]`      |
 
 ------
