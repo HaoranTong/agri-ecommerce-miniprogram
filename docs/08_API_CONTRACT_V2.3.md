@@ -1272,17 +1272,35 @@
   "data": {
     "available": 260,
     "pending": 20,
-    "frozen": 0,
-    "expiring_soon": 40,
-    "expiring_date": "2025-12-31",
-    "recent_earnings": 60,
     "total_earned": 560,
     "total_spent": 300
   }
 }
 ```
 
-> `frozen` 表示订单待确认的已预占积分；`expiring_soon` / `expiring_date` 用于展示即将过期提醒，均从 `myshop_points_ledger` 聚合。`recent_earnings` 表示近 30 天累计获得积分，可用于仪表盘动态提示。
+> `pending` 表示待确认积分（预留字段）。
+
+------
+
+### GET `/points/summary`
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "available": 260,
+    "pending": 20,
+    "total_earned": 560,
+    "total_spent": 300,
+    "expiring_soon": 40,
+    "expiring_window_days": 30
+  }
+}
+```
+
+> `expiring_soon` 按 30 天窗口统计即将过期积分。
 
 ------
 
@@ -1291,9 +1309,7 @@
 **查询参数**：
 
 - `page` / `per_page`
-- `type`: `earn | spend | expire | refund`
-- `status`: `pending | confirmed`
-- `from` / `to`: `YYYY-MM-DD`（可选，按 `created_at` 过滤）
+- `status`: `pending | confirmed | released`
 
 **成功响应（200）**：
 
@@ -1389,7 +1405,7 @@
 }
 ```
 
-> 旧文档中的 `/points/redeem`（reserve/confirm/release）尚未落地实现。
+> `/points/redeem` 已实现为“兑换项兑换”接口（扣减积分并返回奖励信息）。
 
 ------
 
@@ -1418,12 +1434,14 @@
 
 | 模块 | 描述 | 关键接口 |
 | --- | --- | --- |
-| 汇总看板 | 展示可用/冻结/待入账/即将过期积分，以及最近获得积分 | `GET /points/balance` |
-| 积分流水 | 分页筛选积分增减记录，支持类型/日期过滤 | `GET /points/ledger` |
+| 汇总看板 | 展示可用/待确认/即将过期积分 | `GET /points/summary` |
+| 积分余额 | 展示可用/待确认/累计获得/累计消耗 | `GET /points/balance` |
+| 积分流水 | 分页筛选积分增减记录 | `GET /points/ledger` |
 | 获取规则 | 固定规则（下单返积分、邀请奖励、每日签到等） | `GET /points/rules` |
 | 任务中心 | 运营投放的限时任务（完善资料、首次下单等），完成后可领取一次性积分 | `GET /points/missions`、`POST /points/missions/{mission_id}/claim` |
 | 积分兑换 | 使用积分兑换优惠券或礼品卡，或折抵订单金额 | `GET /points/redeem/options`、`POST /points/redeem`、`POST /orders (points_to_use)` |
-| 到期提醒 | 查询 30 天内过期积分，用于 UI 和消息推送 | `GET /points/balance`（`expiring_soon` 字段） |
+| 每日签到 | 每日领取一次积分 | `POST /points/signin` |
+| 到期提醒 | 查询 30 天内过期积分，用于 UI 和消息推送 | `GET /points/summary`（`expiring_soon` 字段） |
 
 #### GET `/points/rules`
 
@@ -1451,7 +1469,7 @@
 }
 ```
 
-> 规则内容来自 `myshop_points_rules` 或配置文件，便于非技术同学维护。
+> 规则内容来自 `myshop_points_settings`（后台积分设置）。
 
 #### GET `/points/missions`
 
@@ -1521,10 +1539,10 @@
     },
     {
       "option_id": "giftcard_50",
-      "type": "gift_card",
+      "type": "gift",
       "title": "50 元礼品卡",
       "cost_points": 500,
-      "status": "coming_soon"
+      "status": "disabled"
     }
   ]
 }
@@ -1556,16 +1574,33 @@
 
 > 若库存不足或积分不足，分别返回 `option_out_of_stock` / `insufficient_points`。
 
+#### POST `/points/signin`
+
+**用途**：每日签到领取积分（每日仅一次）。
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "awarded_points": 10,
+    "new_balance": 150,
+    "signed_in_at": "2026-01-30 09:10:00"
+  }
+}
+```
+
 #### 与下单抵扣的结合
 
 - `POST /orders` 支持 `points_to_use` 字段，**积分在订单创建时立即扣除**（不再预占），扣除记录状态为 `confirmed`，确保积分余额准确。若订单取消则通过退款机制退还积分。
-- `myshop_points_ledger` 中 `reservation_id` 可追踪每次下单抵扣记录，便于在流水详情中跳转到订单页面。
+- `myshop_points_ledger` 中 `reference_order_id` 用于追踪订单抵扣流水，便于在流水详情中跳转到订单页面。
 - 前端在订单确认页展示「可用积分/本单最多可抵扣」提示，调用 `GET /points/balance` 获取 `available` 值并计算最大抵扣额度。
 
 #### 积分中心前端信息架构（Taro 小程序）
 
-- `/pages/points/summary`: 展示可用积分、即将过期、任务入口、兑换入口、规则说明。
-- `/pages/points/ledger`: 支持筛选 `type/status/date`，并提供跳转到相关订单或任务详情。
+- `/pages/points/summary`: 展示可用积分、即将过期、任务入口、兑换入口、规则说明，并支持签到入口。
+- `/pages/points/ledger`: 分页展示积分流水。
 - `/pages/points/missions`: 列出任务并在满足条件后调用 `claim`。
 - `/pages/points/redeem`: 展示兑换选项、库存、所需积分，调用 `/points/redeem` 完成兑换。
 - `/pages/points/rules`: 静态或动态文案，调用 `GET /points/rules`。
@@ -1932,9 +1967,7 @@
 | `share_token_active`   | 409       | "当前赠礼链接仍在有效期内"     | 生成分享包时重复创建     |
 | `share_token_invalid`  | 410       | "分享链接已失效，请联系购卡人重新生成" | 受赠人使用过期/失效链接 |
 | `invalid_verification_code` | 400  | "验证码错误或已失效"          | 二次验证验证码错误       |
-| `points_not_enough`    | 409       | "可用积分不足"                 | 预占/抵扣积分超出可用额度 |
-| `points_action_invalid`| 400       | "积分操作类型不支持"          | `action` 非 reserve/confirm/release |
-| `points_reservation_not_found` | 404 | "未找到积分预占记录"        | confirm/release 时预占不存在 |
+| `points_not_enough`    | 409       | "可用积分不足"                 | 抵扣/兑换积分超出可用额度 |
 | `poster_not_found`     | 404       | "未找到可用的海报模板"       | `template_code` 无效或已下线 |
 | `order_not_found`      | 404       | "订单不存在"                   | 订单ID无效               |
 | `not_authorized_agent` | 403       | "您不是代理商，无权访问此接口" | 非代理商调用 `/agents/*` |

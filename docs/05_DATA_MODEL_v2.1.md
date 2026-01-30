@@ -264,7 +264,7 @@ CREATE TABLE wp_myshop_point_ledger (
   delta INT NOT NULL COMMENT '积分增减，负数为抵扣',
   balance_after INT NOT NULL COMMENT '变化后的可用积分',
   reference_order_id BIGINT UNSIGNED NULL COMMENT '关联订单ID（如有）',
-  reservation_id VARCHAR(64) NULL COMMENT '预占标识，用于 reserve/confirm 流程',
+  reservation_id VARCHAR(64) NULL COMMENT '业务标识（任务/兑换/活动等）',
   status ENUM('pending','confirmed','released') NOT NULL DEFAULT 'confirmed',
   channel VARCHAR(32) NOT NULL DEFAULT 'order',
   operator_id BIGINT UNSIGNED NULL COMMENT '人工操作时记录后台操作人',
@@ -279,7 +279,51 @@ CREATE TABLE wp_myshop_point_ledger (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
-> ✅ `status=pending` 用于订单预占积分，支付成功后更新为 `confirmed`，超时释放改为 `released`。
+> ✅ `status=pending` 保留用于延迟入账场景（如任务审核），当前主要使用 `confirmed`。
+
+### 表 2：积分任务配置（Option）
+
+```json
+option_name: "myshop_points_missions"
+value: [
+  {
+    "mission_id": "mission_xxx",
+    "title": "每日签到",
+    "description": "每日签到送积分",
+    "reward_points": 10,
+    "status": "available",
+    "progress": 0,
+    "goal": 1,
+    "expires_at": "2026-12-31 23:59:59",
+    "sort": 0
+  }
+]
+```
+
+### 表 3：积分兑换项配置（Option）
+
+```json
+option_name: "myshop_points_redeem_options"
+value: [
+  {
+    "option_id": "option_xxx",
+    "type": "coupon",
+    "title": "10元优惠券",
+    "cost_points": 100,
+    "stock": 100,
+    "status": "active",
+    "coupon_code": "COUPON-10",
+    "description": "满100可用"
+  }
+]
+```
+
+### 表 4：用户积分相关元数据（User Meta）
+
+| meta_key | 说明 |
+| --- | --- |
+| `_myshop_last_signin_date` | 最近一次签到日期（YYYY-MM-DD） |
+| `_myshop_points_missions_claimed` | 任务领取记录（JSON） |
 
 ------
 

@@ -24,7 +24,7 @@
 | `wp_myshop_gift_cards`             | 自定义表         | 虚拟购物卡实例（储值卡 / 商品兑换卡）                         |
 | `wp_myshop_gift_card_redemptions`  | 自定义表         | 购物卡核销 / 兑换流水                                         |
 | `wp_myshop_gift_card_share_logs`   | 自定义表         | 购物卡分享包 / 打印包生成审计                                |
-| `wp_myshop_point_ledger`           | 自定义表         | 积分流水与预占                                               |
+| `wp_myshop_point_ledger`           | 自定义表         | 积分流水                                                     |
 | `wp_myshop_referrals`              | 自定义表         | 消费者邀请关系树（支持二级裂变）                             |
 | `wp_myshop_commissions`            | 自定义表         | 分销/代理佣金流水                                            |
 | `wp_myshop_commission_policies`    | 自定义表         | 佣金策略配置（分级比例 / 生效区间）                           |
@@ -94,7 +94,8 @@
 | meta_key                     | 类型     | 示例值                                                  | 说明                                                         |
 | ---------------------------- | -------- | ------------------------------------------------------- | ------------------------------------------------------------ |
 | `_buyer_variation_id`        | bigint   | `205`                                                   | 下单选择的 SKU 变体 ID                                       |
-| `_points_reservation_id`     | varchar  | `PTS-20251122-1006`                                     | 积分预占流水号（对应 `wp_myshop_point_ledger.reservation_id`）|
+| `_points_used`               | int      | `100`                                                   | 订单使用的积分数量                                           |
+| `_points_discount_amount`    | decimal  | `2.00`                                                  | 积分抵扣金额                                                 |
 | `_commission_processed`      | tinyint  | `0` / `1`                                               | 佣金是否已生成                                               |
 | `_gift_card_generated`       | tinyint  | `0` / `1`                                               | 是否已生成虚拟购物卡                                         |
 | `_myshop_return_requested_at`| datetime | `2025-11-20 12:30:00`                                   | 退货申请时间                                                 |
@@ -211,9 +212,9 @@
 | `delta`             | int                 | NO     | 积分增减（负数表示扣减）                                     |
 | `balance_after`     | int                 | NO     | 变更后积分余额                                               |
 | `reference_order_id`| bigint unsigned     | YES    | 关联订单 ID                                                   |
-| `reservation_id`    | varchar(64)         | YES    | 预占流水号（`reserve` 流程）                                  |
+| `reservation_id`    | varchar(64)         | YES    | 业务标识（任务/兑换/活动等）                                  |
 | `status`            | enum                | NO     | `pending` / `confirmed` / `released`                         |
-| `channel`           | varchar(32)         | NO     | `order` / `backend` / `campaign` 等                           |
+| `channel`           | varchar(32)         | NO     | `order_complete` / `order_discount` / `order_refund` / `daily_signin` / `mission_reward` / `redeem` / `points_expire` 等 |
 | `operator_id`       | bigint unsigned     | YES    | 后台操作人                                                   |
 | `expire_at`         | datetime            | YES    | 积分到期时间（earn 类型）                                    |
 | `created_at` / `updated_at` | datetime   | NO     | 创建/更新时间                                                 |
@@ -332,8 +333,8 @@
 
 | API 路径                | 字段                     | 计算逻辑 / 来源                                               |
 | ----------------------- | ------------------------ | ------------------------------------------------------------- |
-| `GET /points/summary`   | `expiring_soon.points`   | 最近 30 天内 `type='earn'` 且 `expire_at` 介于今日~+30 天的积分和 |
-| `GET /points/summary`   | `recent_earnings`        | 取 `wp_myshop_point_ledger` 中 `type='earn'` 最新 5 条记录     |
+| `GET /points/summary`   | `expiring_soon`          | 最近 30 天内 `expire_at` 介于今日~+30 天的积分和                |
+| `GET /points/summary`   | `expiring_window_days`   | 固定为 30（用于前端文案说明）                                  |
 | `GET /cart`             | `gift_card_credits`      | 若请求携带卡号抵扣，则查询可用购物卡并生成行级抵扣明细         |
 | `GET /agents/me`        | `team_sales_amount`      | 基于数据仓库/缓存视图聚合，建议每日离线更新                   |
 | `GET /analytics/channel`| `gmv`                    | 运营看板聚合结果，建议使用报表库或物化视图                    |
@@ -346,7 +347,7 @@
 
 1. **敏感字段脱敏**：`wechat_openid`、`wechat_unionid`、`share_token`、`pin_code_hash`；日志禁止明文输出 PIN。  
 2. **字段不可逆删除**：所有 meta_key、自定义表字段遵循“只增不删”，废弃字段通过状态位或文档标记 `deprecated`。  
-3. **积分预占幂等**：`reservation_id` 唯一；`POST /points/redeem` 的 `reserve/confirm/release` 必须校验状态避免重复扣减。  
+3. **积分过期任务**：每日定时任务扫描 `expire_at < now` 的积分并写入 `type='expire'` 记录。  
 4. **购物卡核销事务**：储值抵扣需与订单扣减在同一事务内提交；失败时回滚 `balance` 与核销流水。  
 5. **代理操作留痕**：后台所有代理操作写入 `wp_myshop_agent_audit_logs`，配合操作人、IP 排查风险。  
 6. **分享链接有效期**：`share_token_expires_at` 过期自动失效；重新生成需关闭旧链接，防止被盗用。

@@ -563,10 +563,11 @@ const handleConfirm = async () => {
 
 ### 6. **积分中心（`src/pages/points/summary.tsx` & `ledger.tsx`）**
 
-- `summary.tsx` 初次进入需并发请求 `pointsService.getBalance()` 与 `pointsService.getSettings()`。
+- `summary.tsx` 初次进入需并发请求 `pointsService.getSummary()`、`pointsService.getBalance()` 与 `pointsService.getSettings()`。
 - `ledger.tsx` 使用 `pointsService.getLedger({ page, per_page })` 实现分页加载。
 - 积分兑换流程：先拉取 `pointsService.getRedeemOptions()`，确认后调用 `pointsService.redeem(optionId)` 并刷新余额。
 - 任务中心：`pointsService.getMissions()` + `pointsService.claimMission(missionId)`。
+- 每日签到：`pointsService.signin()`（每日仅一次）。
 
 ```ts
 // src/pages/points/ledger.tsx
