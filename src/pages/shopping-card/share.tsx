@@ -3,7 +3,7 @@ import Taro, { useRouter } from '@tarojs/taro';
 import QRCode from 'qrcode-generator';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { giftCardService } from '../../services/api';
+import { giftCardService, userService } from '../../services/api';
 import type { GiftCard, GiftCardDeliveryMode, GiftCardShareResult, GiftCardShareStyle } from '../../types';
 import './share.scss';
 
@@ -79,6 +79,35 @@ const GiftCardShare = () => {
   const [loading, setLoading] = useState(true);
   const [stylesLoading, setStylesLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  const ensureShareEligibility = useCallback(async () => {
+    try {
+      const profile = await userService.getProfile();
+      const hasRealname = Boolean(profile.first_name && profile.first_name.trim());
+      const hasPhone = Boolean(profile.phone && profile.phone.trim());
+
+      if (hasRealname && hasPhone) {
+        return true;
+      }
+
+      const res = await Taro.showModal({
+        title: '请完善实名信息',
+        content: '生成分享二维码前需完善真实姓名和手机号。',
+        confirmText: '去完善',
+        cancelText: '稍后'
+      });
+
+      if (res.confirm) {
+        Taro.navigateTo({ url: '/pages/user/edit-profile' });
+      }
+
+      return false;
+    } catch (error) {
+      console.error('校验实名信息失败', error);
+      Taro.showToast({ title: '无法校验实名信息', icon: 'none' });
+      return false;
+    }
+  }, []);
   const presetCardFromRoute = (router?.params?.card as string) || '';
 
   const getAvailableModes = (card?: GiftCard): GiftCardDeliveryMode[] => {
@@ -246,6 +275,9 @@ const GiftCardShare = () => {
       Taro.showToast({ title: '请选择分享模板', icon: 'none' });
       return;
     }
+
+    const eligible = await ensureShareEligibility();
+    if (!eligible) return;
 
     setSubmitting(true);
     try {

@@ -5,25 +5,29 @@
 - ✅ 预留三期关键扩展路径（不实现但占位）  
 - ✅ 所有接口路径、字段名、错误码 **永久冻结，不可变更**  
 - ✅ 补全此前遗漏：商品列表、退货申请/图片上传、代理商全套接口
-- ✅ **V2.3.2更新**：优化登录流程，支持头像性别上传，支付接口返回order_id
+- ✅ **V2.3.3更新**：登录返回新用户/资料完整度标记，分享前要求实名信息完善
 
 ------
 
 # 📡 微信小程序 × WordPress 无头电商系统
 
-## **完整 API 接口契约（V2.3.2 - 2026-01-21 更新）**
+## **完整 API 接口契约（V2.3.3 - 2026-01-30 更新）**
 
-> **文档状态**：✅ 冻结（Final Frozen Baseline）+ V2.3.2 增量更新
+> **文档状态**：✅ 冻结（Final Frozen Baseline）+ V2.3.3 增量更新
 > **适用项目阶段**：一期（MVP） + 二期（虚拟购物卡 / 社交裂变 / 代理商）
 > **Base URL**：`https://yourdomain.com/wp-json/myshop/v1`
 > **认证方式**：Bearer JWT Token（通过 `Authorization: Bearer <token>` 传递）
 > **编码**：UTF-8
 > **时间格式**：ISO 8601（如 `"2025-11-18T21:30:00+08:00"`）
 >
+> **V2.3.3 变更记录**（2026-01-30）：
+> 1. `POST /auth/login` - 返回 `is_new_user/has_profile/has_realname/has_phone` 标记
+> 2. `POST /auth/login` - 支持可选 `nickname`/`avatar` 兜底保存
+> 3. `POST /gift-cards/share` - 分享前需校验实名信息
+>
 > **V2.3.2 变更记录**（2026-01-21）：
-> 1. `POST /auth/login` - 移除 wechat_nickname 和 wechat_avatar 参数
-> 2. `PUT /user/profile` - 新增 avatar 和 gender 参数支持
-> 3. `POST /payments/create` - 响应新增 order_id 字段
+> 1. `PUT /user/profile` - 新增 avatar 和 gender 参数支持
+> 2. `POST /payments/create` - 响应新增 order_id 字段
 > **冻结规则**：  
 >
 > - 所有 **URL 路径**、**请求/响应字段名**、**核心语义** 一经发布不得修改  
@@ -176,11 +180,13 @@
 
 ```json
 {
-  "code": "wx_login_code_from_miniprogram"
+  "code": "wx_login_code_from_miniprogram",
+  "nickname": "可选",
+  "avatar": "可选"
 }
 ```
 
-> ⚠️ **V2.3.2 更新**：登录接口不再接收 `wechat_nickname` 和 `wechat_avatar`。前端应在登录成功后，如果获取到真实用户信息（非降级数据），调用 `PUT /user/profile` 上传头像和昵称。
+> ✅ **更新说明**：登录接口支持可选 `nickname`/`avatar` 字段（用于首次登录兜底保存）。如需完整/真实用户信息，仍建议登录后调用 `PUT /user/profile` 上传头像和昵称。
 
 **成功响应（200）**（`myshop-core/api/auth-controller.php` 当前实现）：
 
@@ -191,6 +197,10 @@
     "user_id": 42,
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxxx",
     "openid": "oMockUser1234567890ab",
+    "is_new_user": true,
+    "has_profile": false,
+    "has_realname": false,
+    "has_phone": false,
     "wechat_nickname": "可选",
     "wechat_avatar": "可选",
     "phone": "可选"
@@ -198,7 +208,7 @@
 }
 ```
 
-> ⚠️ 若后端未存储微信资料，则 `wechat_nickname` / `wechat_avatar` / `phone` 可为空或不返回。
+> ⚠️ 若后端未存储微信资料，则 `wechat_nickname` / `wechat_avatar` / `phone` 可为空或不返回。`has_profile/has_realname/has_phone` 用于前端判断是否需要再次弹窗或引导完善资料。
 
 ------
 
@@ -299,7 +309,10 @@
     "agent_code": "AGT-0088",
     "has_cart": true,
     "wechat_nickname": "wx-nick",
-    "wechat_avatar": "https://wx.qq.com/avatar.png"
+    "wechat_avatar": "https://wx.qq.com/avatar.png",
+    "has_profile": true,
+    "has_realname": true,
+    "has_phone": true
   }
 }
 ```
@@ -1105,6 +1118,8 @@
 ### POST `/gift-cards/share`
 
 **用途**：购卡人生成赠礼 token（链接/二维码需由前端或后台模版渲染）
+
+> ⚠️ 前端需在调用此接口前校验用户已完善真实姓名与手机号；未完善时应引导至资料完善页。
 
 **请求体**：
 

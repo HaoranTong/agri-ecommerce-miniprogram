@@ -4,6 +4,7 @@ import Taro from '@tarojs/taro';
 
 import { authService, userService } from '../../services/api';
 import { getToken } from '../../utils/storage';
+import type { LoginResponse } from '../../types';
 import './login.scss';
 
 const Login = () => {
@@ -14,6 +15,7 @@ const Login = () => {
   const [showProfileConsent, setShowProfileConsent] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState('');
   const [nickName, setNickName] = useState('');
+  const [loginResult, setLoginResult] = useState<LoginResponse | null>(null);
 
   const canChooseAvatar = typeof Taro.canIUse === 'function'
     ? Taro.canIUse('button.open-type.chooseAvatar')
@@ -65,19 +67,21 @@ const Login = () => {
     }
   };
 
+  const proceedAfterLogin = (result: LoginResponse) => {
+    const hasPhone = Boolean(result.has_phone);
+    if (hasPhone) {
+      navigateAfterLogin();
+      return;
+    }
+    setShowPhoneAuth(true);
+  };
+
   // 仅以 code 登录，profile 只作为可选补充信息，不应阻塞登录
-  const doWechatLogin = async (profile?: Taro.UserInfo | null) => {
+  const doWechatLogin = async () => {
     if (loading) return;
 
     try {
       setLoading(true);
-      const userProfile = profile || null;
-      const avatarCandidate = userProfile?.avatarUrl || '';
-      const hasRemoteAvatar = isRemoteUrl(avatarCandidate);
-      if (userProfile) {
-        // 保存到本地storage
-        Taro.setStorageSync('USER_PROFILE', userProfile);
-      }
 
       // 获取登录凭证
       const loginRes = await Taro.login();
@@ -88,52 +92,27 @@ const Login = () => {
         return;
       }
 
-      // 调用后端登录接口（携带昵称/头像，作为兜底保存）
-      const wechatProfile = userProfile
-        ? {
-            nickname: userProfile.nickName,
-            ...(hasRemoteAvatar ? { avatar: userProfile.avatarUrl } : {})
-          }
-        : undefined;
-
-      await authService.login(code, wechatProfile);
+      const result = await authService.login(code);
       const savedToken = getToken();
       if (!savedToken) {
         Taro.showToast({ title: '登录失败，请重试', icon: 'none' });
         return;
       }
-
-      // 如果获取到用户信息，上传到后端保存
-      if (userProfile) {
-        try {
-          const updatePayload: { nickname?: string; avatar?: string; gender?: number } = {
-            nickname: userProfile.nickName,
-            gender: userProfile.gender
-          };
-          if (hasRemoteAvatar) {
-            updatePayload.avatar = userProfile.avatarUrl;
-          }
-          await userService.updateProfile(updatePayload);
-        } catch (error) {
-          // 不阻塞流程
-        }
-      }
-
-      if (userProfile && avatarCandidate && !hasRemoteAvatar) {
-        try {
-          const updated = await userService.uploadAvatar(avatarCandidate);
-          if (updated?.avatar) {
-            setAvatarUrl(updated.avatar);
-          }
-        } catch (error) {
-          // 不阻塞流程
-        }
-      }
-
+      setLoginResult(result);
       Taro.showToast({ title: '登录成功', icon: 'success' });
 
-      // 显示手机号授权提示
-      setShowPhoneAuth(true);
+      const isNewUser = Boolean(result.is_new_user ?? result.is_new);
+      if (isNewUser) {
+        const needAuth = await checkPrivacyAuthorization();
+        if (needAuth) {
+          setShowPrivacyAuth(true);
+          return;
+        }
+        setShowProfileConsent(true);
+        return;
+      }
+
+      proceedAfterLogin(result);
     } catch (error) {
       console.error('登录失败', error);
       Taro.showToast({ title: '登录失败，请重试', icon: 'none' });
@@ -150,14 +129,7 @@ const Login = () => {
       return;
     }
 
-    const needAuth = await checkPrivacyAuthorization();
-    if (needAuth) {
-      setShowPrivacyAuth(true);
-      return;
-    }
-
-    // 点击“微信登录”后弹出头像昵称授权确认，不同意也要继续登录
-    setShowProfileConsent(true);
+    await doWechatLogin();
   };
 
   const handleAgreePrivacyAuthorization = () => {
@@ -167,7 +139,9 @@ const Login = () => {
 
   const handleDeclinePrivacyAuthorization = async () => {
     setShowPrivacyAuth(false);
-    await doWechatLogin(null);
+    if (loginResult) {
+      proceedAfterLogin(loginResult);
+    }
   };
 
   // getUserProfile 必须由用户点击触发（Tap 事件），不能在异步链路中调用
@@ -177,7 +151,9 @@ const Login = () => {
 
     if (typeof Taro.getUserProfile !== 'function') {
       logUserProfile('not_supported');
-      await doWechatLogin(null);
+      if (loginResult) {
+        proceedAfterLogin(loginResult);
+      }
       return;
     }
 
@@ -190,13 +166,43 @@ const Login = () => {
       const userInfo = res?.userInfo || null;
       if (!userInfo?.nickName && !userInfo?.avatarUrl) {
         console.warn('[Login] 未获取到微信昵称/头像，继续登录');
-        await doWechatLogin(null);
+        if (loginResult) {
+          proceedAfterLogin(loginResult);
+        }
         return;
       }
-      await doWechatLogin(userInfo);
+      try {
+        const updatePayload: { nickname?: string; avatar?: string; gender?: number } = {
+          nickname: userInfo.nickName,
+          gender: userInfo.gender
+        };
+        if (isRemoteUrl(userInfo.avatarUrl)) {
+          updatePayload.avatar = userInfo.avatarUrl;
+        }
+        await userService.updateProfile(updatePayload);
+      } catch (error) {
+        // 不阻塞流程
+      }
+
+      if (userInfo.avatarUrl && !isRemoteUrl(userInfo.avatarUrl)) {
+        try {
+          const updated = await userService.uploadAvatar(userInfo.avatarUrl);
+          if (updated?.avatar) {
+            setAvatarUrl(updated.avatar);
+          }
+        } catch (error) {
+          // 不阻塞流程
+        }
+      }
+
+      if (loginResult) {
+        proceedAfterLogin(loginResult);
+      }
     } catch (error) {
       await notifyUserProfileFail(error);
-      await doWechatLogin(null);
+      if (loginResult) {
+        proceedAfterLogin(loginResult);
+      }
     }
   };
 
@@ -217,17 +223,31 @@ const Login = () => {
     const trimmedName = nickName.trim();
     const hasProfile = Boolean(avatarUrl || trimmedName);
     if (!hasProfile) {
-      await doWechatLogin(null);
+      if (loginResult) {
+        proceedAfterLogin(loginResult);
+      }
       return;
     }
 
-    const profile = {
-      nickName: trimmedName,
-      avatarUrl: avatarUrl,
-      gender: 0
-    } as Taro.UserInfo;
+    try {
+      const updatePayload: { nickname?: string; avatar?: string } = {
+        nickname: trimmedName
+      };
+      if (avatarUrl && isRemoteUrl(avatarUrl)) {
+        updatePayload.avatar = avatarUrl;
+      }
+      await userService.updateProfile(updatePayload);
 
-    await doWechatLogin(profile);
+      if (avatarUrl && !isRemoteUrl(avatarUrl)) {
+        await userService.uploadAvatar(avatarUrl);
+      }
+    } catch (error) {
+      // 不阻塞流程
+    }
+
+    if (loginResult) {
+      proceedAfterLogin(loginResult);
+    }
   };
 
   // Step 2: 手机号授权（可选）
@@ -435,7 +455,7 @@ const Login = () => {
                 className='privacy-decline'
                 onClick={() => {
                   setShowProfileConsent(false);
-                  doWechatLogin(null);
+                  doWechatLogin();
                 }}
               >
                 跳过头像昵称，直接登录

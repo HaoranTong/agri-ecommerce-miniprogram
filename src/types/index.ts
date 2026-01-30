@@ -32,7 +32,11 @@ export interface Product {
 export interface LoginResponse {
   token: string;
   user_id: number;
-  is_new: boolean;
+  is_new?: boolean;
+  is_new_user?: boolean;
+  has_profile?: boolean;
+  has_phone?: boolean;
+  has_realname?: boolean;
   phone?: string;
   wechat_nickname?: string;
   wechat_avatar?: string;
@@ -57,6 +61,9 @@ export interface UserProfile {
   wechat_nickname?: string;
   wechat_avatar?: string;
   invite_code?: string;
+  has_profile?: boolean;
+  has_phone?: boolean;
+  has_realname?: boolean;
   referrer_id?: number | null;
   total_points?: number;
   membership_level?: string;
