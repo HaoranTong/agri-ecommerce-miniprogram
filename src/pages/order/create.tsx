@@ -212,6 +212,35 @@ const OrderCreate = () => {
     // 取用户可用积分和订单允许的最大积分的最小值
     return Math.min(availablePoints, maxPointsByOrder);
   }, [pointsSettings, pointsBalance, orderTotal]);
+
+  const pointsDisabledReason = useMemo(() => {
+    if (!pointsSettings || !pointsBalance || !pointsSettings.enable_points_discount) {
+      return '';
+    }
+
+    const availablePoints = Number(pointsBalance.available || 0);
+    const minPointsToUse = Number(pointsSettings.min_points_to_use || 0);
+    const redeemRate = Number(pointsSettings.redeem_rate || 1);
+    const rawMaxDiscountPercent = Number(pointsSettings.max_discount_percent || 0);
+    const maxDiscountPercent = rawMaxDiscountPercent <= 1 ? 100 : rawMaxDiscountPercent;
+
+    if (availablePoints < minPointsToUse) {
+      return `积分不足，最低需要使用${minPointsToUse}积分`;
+    }
+
+    if (orderTotal < pointsSettings.min_order_amount_to_use) {
+      return `订单金额需满¥${pointsSettings.min_order_amount_to_use}才能使用积分`;
+    }
+
+    const maxDiscountAmount = orderTotal * (maxDiscountPercent / 100);
+    const maxPointsByOrder = Math.floor(maxDiscountAmount * redeemRate);
+
+    if (maxPointsByOrder < minPointsToUse) {
+      return `当前订单最多可用${maxPointsByOrder}积分，低于最低使用门槛${minPointsToUse}积分`;
+    }
+
+    return '';
+  }, [pointsSettings, pointsBalance, orderTotal]);
   
   // 计算积分抵扣金额
   const pointsDiscountAmount = useMemo(() => {
@@ -296,9 +325,7 @@ const OrderCreate = () => {
         setPointsToUse(0);
         setPointsInput('');
         Taro.showToast({
-          title: pointsSettings?.min_points_to_use
-            ? `最少需要使用${pointsSettings.min_points_to_use}积分`
-            : '当前订单不可使用积分',
+          title: pointsDisabledReason || '当前订单不可使用积分',
           icon: 'none',
           duration: 2000
         });
@@ -797,11 +824,7 @@ const OrderCreate = () => {
             </>
           ) : (
             <View className='points-tip'>
-              {pointsBalance.available < pointsSettings.min_points_to_use 
-                ? `积分不足，最低需要使用${pointsSettings.min_points_to_use}积分`
-                : orderTotal < pointsSettings.min_order_amount_to_use
-                ? `订单金额需满¥${pointsSettings.min_order_amount_to_use}才能使用积分`
-                : '当前订单不满足积分抵扣条件'}
+              {pointsDisabledReason || '当前订单不满足积分抵扣条件'}
             </View>
           )}
         </View>
