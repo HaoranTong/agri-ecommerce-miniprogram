@@ -16,11 +16,15 @@ const PointsSummary = () => {
       if (showSkeleton) {
         setLoading(true);
       }
-      const [balanceData, rulesData] = await Promise.all([
+      const [balanceData, summaryData, rulesData] = await Promise.all([
         pointsService.getBalance(),
+        pointsService.getSummary(),
         pointsService.getRules().catch(() => [])
       ]);
-      setBalance(balanceData);
+      setBalance({
+        ...balanceData,
+        ...summaryData
+      });
       setRules((rulesData || []).slice(0, 3));
     } catch (error) {
       console.error('获取积分数据失败', error);

@@ -26,7 +26,7 @@ const OrderDetail = () => {
   }, []);
 
   const getStatusInfo = (currentOrder: OrderDetailType) => {
-    const { status, has_payment_proof, return_status } = currentOrder;
+    const { status, return_status } = currentOrder;
 
     if (return_status === 'requested') {
       return { text: '申请退货', color: '#ff5722', icon: '🔄', tip: '已提交退货申请，等待客服处理' };
@@ -41,11 +41,8 @@ const OrderDetail = () => {
       return { text: '已退款', color: '#4caf50', icon: '✅', tip: '退款已完成' };
     }
     
-    if (status === 'pending' && !has_payment_proof) {
+    if (status === 'pending') {
       return { text: '待支付', color: '#ff9800', icon: '⏱️', tip: '请尽快完成支付' };
-    }
-    if (status === 'pending' && has_payment_proof) {
-      return { text: '凭证审核中', color: '#2196f3', icon: '🔍', tip: '已收到您的付款凭证，请勿重复支付' };
     }
     if (status === 'processing') {
       return { text: '支付成功/待发货', color: '#2196f3', icon: '📦', tip: '商家正在准备商品' };
@@ -97,14 +94,6 @@ const OrderDetail = () => {
   }, [loadPublicConfig]);
 
   const handleGoPayment = () => {
-    if (order?.has_payment_proof) {
-      Taro.showModal({
-        title: '提示',
-        content: '您已上传过付款凭证，请勿重复支付。如有疑问请联系客服。',
-        showCancel: false
-      });
-      return;
-    }
     Taro.navigateTo({ url: `/pages/order/payment?orderId=${order?.order_id}` });
   };
 
@@ -270,15 +259,6 @@ const OrderDetail = () => {
             <Text className='status-tip'>{statusInfo.tip}</Text>
           </View>
         </View>
-        {order.has_payment_proof && (
-          <View className='proof-notice'>
-            <Text className='proof-icon'>✓</Text>
-            <Text className='proof-text'>已提交付款凭证</Text>
-            <Text className='proof-time'>
-              {order.payment_proof_submitted_at}
-            </Text>
-          </View>
-        )}
       </View>
 
       {/* 物流信息 */}
@@ -326,7 +306,7 @@ const OrderDetail = () => {
         {order.items?.map((item, index) => (
           <View key={index} className='product-item'>
             <View className='product-info'>
-              <Text className='product-name'>{item.product_name}</Text>
+              <Text className='product-name'>{item.product_name || item.name}</Text>
               {item.variation_name && (
                 <Text className='product-spec'>{item.variation_name}</Text>
               )}
@@ -389,7 +369,7 @@ const OrderDetail = () => {
         </Button>
         {order.status === 'pending' && (
           <Button className='pay-btn' onClick={handleGoPayment}>
-            {order.has_payment_proof ? '查看付款详情' : '去支付'}
+            去支付
           </Button>
         )}
       </View>

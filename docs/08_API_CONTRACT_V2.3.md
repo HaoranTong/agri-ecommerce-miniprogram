@@ -1319,12 +1319,35 @@
 
 ------
 
+### GET `/points/settings`
+
+**用途**：获取积分抵扣相关配置（用于下单页计算可抵扣金额）
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "enable_points_discount": true,
+    "redeem_rate": 100,
+    "min_points_to_use": 100,
+    "max_discount_percent": 50,
+    "min_order_amount_to_use": 0
+  }
+}
+```
+
+------
+
 ### GET `/points/ledger`
 
 **查询参数**：
 
 - `page` / `per_page`
 - `status`: `pending | confirmed | released`
+- `type`: `earn | spend | adjust | expire`
+- `from` / `to`：时间区间（ISO 8601 或 `YYYY-MM-DD HH:mm:ss`）
 
 **成功响应（200）**：
 
@@ -1421,27 +1444,6 @@
 ```
 
 > `/points/redeem` 已实现为“兑换项兑换”接口（扣减积分并返回奖励信息）。
-
-------
-
-### GET `/points/settings`
-
-**用途**：获取积分抵扣相关配置（用于下单页计算抵扣规则）
-
-**成功响应（200）**：
-
-```json
-{
-  "success": true,
-  "data": {
-    "enable_points_discount": true,
-    "redeem_rate": 100,
-    "min_points_to_use": 100,
-    "max_discount_percent": 50,
-    "min_order_amount_to_use": 0
-  }
-}
-```
 
 ------
 

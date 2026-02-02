@@ -155,8 +155,8 @@ const BundleDetail = () => {
 
       <View className='tips-card'>
         <Text className='tips-title'>赠送说明</Text>
-        <Text className='tips-text'>下单后需完成支付或上传凭证，审核通过后系统会自动生成礼品卡。</Text>
-        <Text className='tips-text'>礼品卡将沉淀在“我的礼品卡”，可随时查看卡号、PIN 并分享给好友。</Text>
+        <Text className='tips-text'>下单并完成微信支付后系统会自动生成购物卡。</Text>
+        <Text className='tips-text'>购物卡将沉淀在“我的购物卡”，可随时查看并分享给好友。</Text>
       </View>
 
       <Button className='checkout-btn' onClick={handleCheckout}>

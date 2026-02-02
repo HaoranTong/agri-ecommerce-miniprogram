@@ -134,6 +134,7 @@ export interface OrderCreated {
 export interface OrderItemSummary {
   product_id: number;
   variation_id: number;
+  name?: string | null;
   product_name: string;
   variation_name: string;
   price: string;
@@ -146,9 +147,6 @@ export interface OrderDetail extends OrderCreated {
   original_total?: string;
   discount_total?: string;
   shipping_address?: ShippingAddress;
-  payment_proof_url?: string;
-  payment_proof_submitted_at?: string;
-  has_payment_proof?: boolean;
   tracking_number?: string;
   tracking_company?: string;
   shipped_at?: string;
@@ -437,7 +435,7 @@ export interface PointsBalance {
 
 export interface PointsLedgerItem {
   id: number;
-  type: 'earn' | 'spend' | 'expire' | 'refund';
+  type: 'earn' | 'spend' | 'expire' | 'adjust';
   delta: number;
   balance_after: number;
   status: 'pending' | 'confirmed' | string;

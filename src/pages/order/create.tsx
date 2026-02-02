@@ -179,20 +179,34 @@ const OrderCreate = () => {
     };
   }, [isGiftCardOrder, fromCart, checkoutItems, variationId, quantity, giftcardNotice, orderTotal]);
   
+  const effectiveMinPointsToUse = useMemo(() => {
+    if (!pointsSettings) {
+      return 0;
+    }
+
+    const minPointsToUse = Number(pointsSettings.min_points_to_use || 0);
+    const redeemRate = Number(pointsSettings.redeem_rate || 1);
+    const rawMaxDiscountPercent = Number(pointsSettings.max_discount_percent || 0);
+    const maxDiscountPercent = rawMaxDiscountPercent <= 1 ? 100 : rawMaxDiscountPercent;
+    const maxDiscountAmount = orderTotal * (maxDiscountPercent / 100);
+    const maxPointsByOrder = Math.floor(maxDiscountAmount * redeemRate);
+
+    if (maxPointsByOrder > 0 && maxPointsByOrder < minPointsToUse) {
+      return maxPointsByOrder;
+    }
+
+    return minPointsToUse;
+  }, [pointsSettings, orderTotal]);
+
   const maxPointsToUse = useMemo(() => {
     if (!pointsSettings || !pointsBalance || !pointsSettings.enable_points_discount) {
       return 0;
     }
     
     const availablePoints = Number(pointsBalance.available || 0);
-    const minPointsToUse = Number(pointsSettings.min_points_to_use || 0);
     const redeemRate = Number(pointsSettings.redeem_rate || 1);
     const rawMaxDiscountPercent = Number(pointsSettings.max_discount_percent || 0);
     const maxDiscountPercent = rawMaxDiscountPercent <= 1 ? 100 : rawMaxDiscountPercent;
-    
-    if (availablePoints < minPointsToUse) {
-      return 0;
-    }
     
     if (orderTotal < pointsSettings.min_order_amount_to_use) {
       return 0;
@@ -204,14 +218,17 @@ const OrderCreate = () => {
     // 根据抵扣金额计算需要的积分
     const maxPointsByOrder = Math.floor(maxDiscountAmount * redeemRate);
 
-    // 若订单允许的最大积分小于最低使用门槛，则本单不可用积分
-    if (maxPointsByOrder < minPointsToUse) {
+    if (maxPointsByOrder <= 0) {
+      return 0;
+    }
+
+    if (availablePoints < effectiveMinPointsToUse) {
       return 0;
     }
 
     // 取用户可用积分和订单允许的最大积分的最小值
     return Math.min(availablePoints, maxPointsByOrder);
-  }, [pointsSettings, pointsBalance, orderTotal]);
+  }, [pointsSettings, pointsBalance, orderTotal, effectiveMinPointsToUse]);
 
   const pointsDisabledReason = useMemo(() => {
     if (!pointsSettings || !pointsBalance || !pointsSettings.enable_points_discount) {
@@ -219,14 +236,9 @@ const OrderCreate = () => {
     }
 
     const availablePoints = Number(pointsBalance.available || 0);
-    const minPointsToUse = Number(pointsSettings.min_points_to_use || 0);
     const redeemRate = Number(pointsSettings.redeem_rate || 1);
     const rawMaxDiscountPercent = Number(pointsSettings.max_discount_percent || 0);
     const maxDiscountPercent = rawMaxDiscountPercent <= 1 ? 100 : rawMaxDiscountPercent;
-
-    if (availablePoints < minPointsToUse) {
-      return `积分不足，最低需要使用${minPointsToUse}积分`;
-    }
 
     if (orderTotal < pointsSettings.min_order_amount_to_use) {
       return `订单金额需满¥${pointsSettings.min_order_amount_to_use}才能使用积分`;
@@ -235,12 +247,16 @@ const OrderCreate = () => {
     const maxDiscountAmount = orderTotal * (maxDiscountPercent / 100);
     const maxPointsByOrder = Math.floor(maxDiscountAmount * redeemRate);
 
-    if (maxPointsByOrder < minPointsToUse) {
-      return `当前订单最多可用${maxPointsByOrder}积分，低于最低使用门槛${minPointsToUse}积分`;
+    if (maxPointsByOrder <= 0) {
+      return '当前订单不可使用积分';
+    }
+
+    if (availablePoints < effectiveMinPointsToUse) {
+      return `积分不足，最低需要使用${effectiveMinPointsToUse}积分`;
     }
 
     return '';
-  }, [pointsSettings, pointsBalance, orderTotal]);
+  }, [pointsSettings, pointsBalance, orderTotal, effectiveMinPointsToUse]);
   
   // 计算积分抵扣金额
   const pointsDiscountAmount = useMemo(() => {
@@ -337,7 +353,7 @@ const OrderCreate = () => {
     let finalPoints = numValue;
     
     // 不允许低于最低使用积分
-    if (finalPoints < pointsSettings.min_points_to_use) {
+    if (finalPoints < effectiveMinPointsToUse) {
       finalPoints = 0;
     }
 
@@ -356,7 +372,7 @@ const OrderCreate = () => {
       setPointsToUse(0);
       setPointsInput('');
       Taro.showToast({
-        title: `最少需要使用${pointsSettings.min_points_to_use}积分`,
+        title: `最少需要使用${effectiveMinPointsToUse}积分`,
         icon: 'none',
         duration: 2000
       });
@@ -818,8 +834,8 @@ const OrderCreate = () => {
                 <Text className='points-tip-text'>最多可使用 {maxPointsToUse} 积分（可修改）</Text>
               </View>
               
-              {pointsBalance.available < pointsSettings.min_points_to_use && (
-                <Text className='points-tip'>当前积分低于最低使用要求（{pointsSettings.min_points_to_use}积分）</Text>
+              {effectiveMinPointsToUse > 0 && pointsBalance.available < effectiveMinPointsToUse && (
+                <Text className='points-tip'>当前积分低于最低使用要求（{effectiveMinPointsToUse}积分）</Text>
               )}
             </>
           ) : (

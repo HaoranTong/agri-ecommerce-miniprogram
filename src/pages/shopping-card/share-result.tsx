@@ -4,6 +4,7 @@ import QRCode from 'qrcode-generator';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { giftCardService, userService } from '../../services/api';
+import { getStoredUserInfo } from '../../utils/storage';
 import type { GiftCardShareResult } from '../../types';
 import './share-result.scss';
 
@@ -42,7 +43,18 @@ const GiftCardShareResult = () => {
 
   const ensureShareEligibility = useCallback(async () => {
     try {
-      const profile = await userService.getProfile();
+      const cached = getStoredUserInfo();
+      const cachedHasRealname = Boolean(cached?.has_realname);
+      const cachedHasPhone = Boolean(cached?.has_phone || cached?.phone);
+      if (cachedHasRealname && cachedHasPhone) {
+        return true;
+      }
+
+      const profile = await userService.getProfile({
+        showLoading: false,
+        timeout: 8000,
+        suppressErrorToast: true
+      });
       const hasRealname = Boolean(profile.first_name && profile.first_name.trim());
       const hasPhone = Boolean(profile.phone && profile.phone.trim());
 
@@ -64,9 +76,15 @@ const GiftCardShareResult = () => {
       }
 
       return false;
-    } catch (error) {
+    } catch (error: any) {
       console.error('校验实名信息失败', error);
-      Taro.showToast({ title: '无法校验实名信息', icon: 'none' });
+      const cached = getStoredUserInfo();
+      const cachedHasRealname = Boolean(cached?.has_realname);
+      const cachedHasPhone = Boolean(cached?.has_phone || cached?.phone);
+      if (cachedHasRealname && cachedHasPhone) {
+        return true;
+      }
+      Taro.showToast({ title: '网络超时，无法校验实名信息', icon: 'none' });
       return false;
     }
   }, []);

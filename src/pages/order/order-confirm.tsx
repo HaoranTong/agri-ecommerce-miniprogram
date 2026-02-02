@@ -153,6 +153,18 @@ const OrderConfirm = () => {
     });
   };
 
+  const handleGoBack = () => {
+    Taro.navigateBack({ delta: 1 })
+      .catch(() => {
+        Taro.switchTab({ url: '/pages/cart/index' });
+      });
+  };
+
+  const handleGoPayment = () => {
+    if (!order?.order_id) return;
+    Taro.navigateTo({ url: `/pages/order/payment?orderId=${order.order_id}` });
+  };
+
   if (loading) {
     return <View className='loading'>加载中...</View>;
   }
@@ -263,15 +275,12 @@ const OrderConfirm = () => {
 
       {/* 操作按钮 */}
       {isGiftCardOrder ? (
-        <View className='action-buttons triple'>
-          <Button className='nav-btn' onClick={() => Taro.switchTab({ url: '/pages/index/index' })}>
-            首页
+        <View className='action-buttons'>
+          <Button className='modify-btn' onClick={handleGoBack}>
+            返回
           </Button>
-          <Button className='nav-btn' onClick={() => Taro.navigateTo({ url: '/pages/shopping-card/mine' })}>
-            购物卡
-          </Button>
-          <Button className='nav-btn' onClick={() => Taro.switchTab({ url: '/pages/user/profile' })}>
-            我的
+          <Button className='pay-btn' onClick={handleGoPayment}>
+            确认付款
           </Button>
         </View>
       ) : (
@@ -282,10 +291,7 @@ const OrderConfirm = () => {
           <Button className='modify-btn' onClick={handleSelectAddress}>
             修改收货地址
           </Button>
-          <Button
-            className='pay-btn'
-            onClick={() => Taro.navigateTo({ url: `/pages/order/payment?orderId=${order.order_id}` })}
-          >
+          <Button className='pay-btn' onClick={handleGoPayment}>
             去支付
           </Button>
         </View>

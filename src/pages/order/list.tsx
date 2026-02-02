@@ -84,7 +84,7 @@ const OrderList = () => {
   }
 
   const getStatusText = (order: OrderDetail) => {
-    const { status, has_payment_proof, return_status } = order;
+    const { status, return_status } = order;
 
     if (return_status === 'requested') {
       return '申请退货';
@@ -97,15 +97,6 @@ const OrderList = () => {
     }
     if (return_status === 'refunded') {
       return '已退款';
-    }
-    
-    // 如果已上传支付凭证，显示特殊状态
-    if (status === 'pending' && has_payment_proof) {
-      return '审核中';
-    }
-    
-    if (status === 'processing' && has_payment_proof) {
-      return '待发货';
     }
     
     const statusMap: Record<string, string> = {
@@ -121,7 +112,7 @@ const OrderList = () => {
   };
 
   const getStatusColor = (order: OrderDetail) => {
-    const { status, has_payment_proof, return_status } = order;
+    const { status, return_status } = order;
 
     if (return_status === 'requested') {
       return '#ff5722';
@@ -134,11 +125,6 @@ const OrderList = () => {
     }
     if (return_status === 'refunded') {
       return '#4caf50';
-    }
-    
-    // 如果已上传支付凭证，使用蓝色表示审核中
-    if ((status === 'pending' || status === 'processing') && has_payment_proof) {
-      return '#2196f3';
     }
     
     const colorMap: Record<string, string> = {
@@ -169,9 +155,6 @@ const OrderList = () => {
             </View>
             <View className='order-status' style={{ color: getStatusColor(order) }}>
               {getStatusText(order)}
-              {order.has_payment_proof && (
-                <Text className='proof-badge'> ✓</Text>
-              )}
             </View>
           </View>
           {order.is_gift_card_order && (
@@ -185,7 +168,7 @@ const OrderList = () => {
             {order.items && order.items.slice(0, 3).map((item, index) => (
               <View className='order-item' key={index}>
                 <View className='item-info'>
-                  <Text className='item-name'>{item.product_name}</Text>
+                  <Text className='item-name'>{item.name || item.product_name}</Text>
                   {item.variation_name && (
                     <Text className='item-spec'>{item.variation_name}</Text>
                   )}

@@ -40,11 +40,13 @@ import type {
   PromoPoster,
   PublicConfig,
   ReferralDownline,
+  ShippingAddress,
   UserProfile
 } from '../types';
 
 interface PointsService {
   getBalance: () => Promise<PointsBalance>;
+  getSummary: () => Promise<PointsBalance>;
   getLedger: (
     params?: {
       page?: number;
@@ -83,6 +85,7 @@ interface RequestOptions {
   showLoading?: boolean;
   suppressErrorToast?: boolean;
   suppressLog?: boolean;
+  timeout?: number;
 }
 
 
@@ -184,6 +187,7 @@ const resolveUrl = (endpoint: string) => {
 
 let isRedirecting = false; // 防止重复跳转
 let loadingCount = 0;
+const REQUEST_TIMEOUT = 15000;
 
 const handleUnauthorized = () => {
   if (isRedirecting) return; // 如果正在跳转，直接返回
@@ -238,6 +242,46 @@ const handleUnauthorized = () => {
   }, 100);
 };
 
+const PUBLIC_ENDPOINTS = new Set<string>([
+  API_ENDPOINTS.publicConfig,
+  API_ENDPOINTS.products,
+  API_ENDPOINTS.productsRedeem,
+  API_ENDPOINTS.login,
+  API_ENDPOINTS.shareStyles,
+  '/gift-cards/templates'
+]);
+
+const normalizeEndpointPath = (endpoint: string) => {
+  if (!endpoint) return '';
+  const trimmed = endpoint.split('?')[0];
+
+  if (trimmed.startsWith('http')) {
+    try {
+      const parsed = new URL(trimmed);
+      return parsed.pathname || '';
+    } catch (error) {
+      return '';
+    }
+  }
+
+  return trimmed;
+};
+
+const isPublicEndpoint = (endpoint: string) => {
+  const rawPath = normalizeEndpointPath(endpoint);
+  if (!rawPath) return false;
+
+  const path = rawPath.startsWith('/wp-json/')
+    ? rawPath.replace(/^\/wp-json\/myshop\/v1/, '')
+    : rawPath;
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+
+  if (PUBLIC_ENDPOINTS.has(normalized)) return true;
+  if (/^\/gift-cards\/templates\/.+/.test(normalized)) return true;
+  if (/^\/gift-cards\/share\/[^/]+$/.test(normalized)) return true;
+  return false;
+};
+
 export const request = async <T = any>({
   url,
   method = 'GET',
@@ -245,7 +289,8 @@ export const request = async <T = any>({
   header,
   showLoading = false,
   suppressErrorToast = false,
-  suppressLog = false
+  suppressLog = false,
+  timeout
 }: RequestOptions): Promise<T> => {
   const token = getToken();
   const headers: Record<string, string> = {
@@ -257,7 +302,13 @@ export const request = async <T = any>({
     headers.Authorization = `Bearer ${token}`;
   }
 
+  if (!token && !isPublicEndpoint(url)) {
+    handleUnauthorized();
+    throw new Error('unauthorized');
+  }
+
   const finalUrl = resolveUrl(url);
+  const startedAt = Date.now();
 
   // 无论生产/开发，第一次初始化时打印一次环境信息（方便你现场判断是否走对站点）
   // 注意：这里只做轻量输出，不影响性能
@@ -281,8 +332,18 @@ export const request = async <T = any>({
       url: finalUrl,
       method,
       data,
-      header: headers
+      header: headers,
+      timeout: typeof timeout === 'number' && timeout > 0 ? timeout : REQUEST_TIMEOUT
     });
+
+    const duration = Date.now() - startedAt;
+    if (!suppressLog && duration >= 3000) {
+      console.warn('[API Slow]', {
+        method,
+        url: finalUrl,
+        duration
+      });
+    }
 
     const { statusCode, data: payload } = response as Taro.request.SuccessCallbackResult<any>;
 
@@ -306,7 +367,14 @@ export const request = async <T = any>({
     }
 
     return payload as T;
-  } catch (error) {
+  } catch (error: any) {
+    const errMsg = String(error?.errMsg || error?.message || '');
+    const isTimeout = /timeout/i.test(errMsg) || /request:fail/i.test(errMsg) || error?.errno === 5;
+
+    if (isTimeout && !suppressErrorToast) {
+      Taro.showToast({ title: '网络超时，请检查网络或切换稳定环境', icon: 'none' });
+    }
+
     if (!(error instanceof Error && error.message === 'unauthorized') && !suppressLog) {
       console.error('API 请求失败', error);
     }
@@ -355,7 +423,9 @@ export const authService = {
       phone: result.phone,
       wechat_nickname: result.wechat_nickname,
       wechat_avatar: result.wechat_avatar,
-      invite_code: result.invite_code
+      invite_code: result.invite_code,
+      has_phone: result.has_phone,
+      has_realname: result.has_realname
     };
     setStoredUserInfo(storedUser);
 
@@ -383,7 +453,8 @@ export const authService = {
       const current = getStoredUserInfo() || ({} as StoredUserInfo);
       setStoredUserInfo({
         ...current,
-        phone
+        phone,
+        has_phone: true
       });
     }
 
@@ -471,13 +542,35 @@ export const cartService = {
 };
 
 export const userService = {
-  getProfile: async () => {
+  getProfile: async (options?: {
+    showLoading?: boolean;
+    timeout?: number;
+    suppressErrorToast?: boolean;
+    suppressLog?: boolean;
+  }) => {
     const response = await request<{ success: boolean; data: UserProfile }>({
       url: API_ENDPOINTS.me,
       method: 'GET',
-      showLoading: true
+      showLoading: options?.showLoading ?? true,
+      timeout: options?.timeout,
+      suppressErrorToast: options?.suppressErrorToast,
+      suppressLog: options?.suppressLog
     });
-    return response.data;
+    const profile = response.data;
+    const current = getStoredUserInfo() || ({} as StoredUserInfo);
+    setStoredUserInfo({
+      ...current,
+      user_id: profile.user_id || current.user_id,
+      phone: profile.phone || current.phone,
+      wechat_nickname: profile.wechat_nickname || current.wechat_nickname,
+      wechat_avatar: profile.wechat_avatar || current.wechat_avatar,
+      invite_code: profile.invite_code || current.invite_code,
+      has_phone: typeof profile.has_phone === 'boolean' ? profile.has_phone : Boolean(profile.phone || current.phone),
+      has_realname: typeof profile.has_realname === 'boolean'
+        ? profile.has_realname
+        : Boolean(profile.first_name && profile.first_name.trim())
+    });
+    return profile;
   },
   uploadAvatar: async (filePath: string) => {
     const token = getToken();
@@ -516,6 +609,20 @@ export const userService = {
       method: 'PUT',
       data,
       showLoading: true
+    });
+    const profile = response.data;
+    const current = getStoredUserInfo() || ({} as StoredUserInfo);
+    setStoredUserInfo({
+      ...current,
+      user_id: profile.user_id || current.user_id,
+      phone: profile.phone || current.phone,
+      wechat_nickname: profile.wechat_nickname || current.wechat_nickname,
+      wechat_avatar: profile.wechat_avatar || current.wechat_avatar,
+      invite_code: profile.invite_code || current.invite_code,
+      has_phone: typeof profile.has_phone === 'boolean' ? profile.has_phone : Boolean(profile.phone || current.phone),
+      has_realname: typeof profile.has_realname === 'boolean'
+        ? profile.has_realname
+        : Boolean(profile.first_name && profile.first_name.trim())
     });
     return response.data;
   },
@@ -604,6 +711,7 @@ export const agentApplicationService = {
         order_id: orderId,
         provider
       },
+      timeout: 30000, // Increase timeout to 30 seconds
       showLoading: true
     });
     return response;
@@ -630,29 +738,6 @@ export const orderService = {
       method: 'GET',
       showLoading: true
     }),
-  uploadPaymentProof: async (orderId: number | string, filePath: string) => {
-    const token = getToken();
-    const uploadRes = await Taro.uploadFile({
-      url: resolveUrl(API_ENDPOINTS.uploadPaymentProof(orderId)),
-      filePath,
-      name: 'proof_image',
-      header: token ? { Authorization: `Bearer ${token}` } : {},
-      timeout: 60000 // 设置60秒超时
-    });
-
-    let data: any = {};
-    try {
-      data = uploadRes.data ? JSON.parse(uploadRes.data) : {};
-    } catch (error) {
-      console.warn('解析上传响应失败', error);
-    }
-
-    if (uploadRes.statusCode >= 400 || data?.error_code) {
-      const message = data?.message || '上传失败';
-      Taro.showToast({ title: message, icon: 'none' });
-      throw new Error(message);
-    }
-  },
   applyCoupon: async (orderId: number | string, couponCode: string) => {
     const response = await request<{
       success: boolean;
@@ -810,11 +895,14 @@ export const giftCardService = {
     });
     return response.data;
   },
-  redeem: async (card_number: string) => {
+  redeem: async (card_number: string, options?: { shipping_address?: ShippingAddress }) => {
     const response = await request<{ success: boolean; data?: GiftCardRedeemResult; message?: string }>({
       url: API_ENDPOINTS.redeemGiftCard,
       method: 'POST',
-      data: { card_number },
+      data: {
+        card_number,
+        ...(options?.shipping_address ? { shipping_address: options.shipping_address } : {})
+      },
       showLoading: true
     });
     return response.data;
@@ -947,6 +1035,13 @@ export const pointsService: PointsService = {
   getBalance: async () => {
     const response = await request<{ success: boolean; data: PointsBalance }>({
       url: API_ENDPOINTS.pointsBalance,
+      method: 'GET'
+    });
+    return response.data;
+  },
+  getSummary: async () => {
+    const response = await request<{ success: boolean; data: PointsBalance }>({
+      url: API_ENDPOINTS.pointsSummary,
       method: 'GET'
     });
     return response.data;

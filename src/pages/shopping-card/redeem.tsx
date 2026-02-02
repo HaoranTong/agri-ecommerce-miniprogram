@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { giftCardService } from '../../services/api';
 import type { GiftCard } from '../../types';
+import { getSavedAddresses, type StoredAddress } from '../../utils/storage';
 import './redeem.scss';
 
 const getBalanceNumber = (balance: string | null) => Number(balance ?? 0);
@@ -57,17 +58,27 @@ const GiftCardRedeem = () => {
     }
   }, [eligibleCards, selectedCard]);
 
-  const handleRedeem = async (card: GiftCard) => {
+  const handleRedeem = async (card: GiftCard, address: StoredAddress) => {
     if (redeemingCard) return;
 
     try {
       setRedeemingCard(card.card_number);
-      const result = await giftCardService.redeem(card.card_number);
+      const result = await giftCardService.redeem(card.card_number, {
+        shipping_address: {
+          name: address.name,
+          phone: address.phone,
+          province: address.province,
+          city: address.city,
+          district: address.district,
+          detail_address: address.detail_address,
+          postcode: address.postcode
+        }
+      });
       Taro.showToast({ title: '已创建配送订单', icon: 'success' });
       const redirectOrderId = (result as any)?.order_id;
       setTimeout(() => {
         if (redirectOrderId) {
-          Taro.redirectTo({ url: `/pages/order/order-confirm?orderId=${redirectOrderId}&from=giftcard_self` });
+          Taro.redirectTo({ url: `/pages/order/order-confirm?orderId=${redirectOrderId}` });
         } else {
           Taro.redirectTo({ url: '/pages/order/list?filter=giftcard' });
         }
@@ -78,6 +89,41 @@ const GiftCardRedeem = () => {
     } finally {
       setRedeemingCard(null);
     }
+  };
+
+  const handleConfirmRedeem = (card: GiftCard) => {
+    if (redeemingCard) return;
+
+    Taro.showModal({
+      title: '确认兑换',
+      content: '确认使用该礼品卡兑换商品？兑换后卡内余额将清零。',
+      confirmText: '确认兑换',
+      cancelText: '取消',
+      success: (res) => {
+        if (res.confirm) {
+          const addresses = getSavedAddresses();
+          if (!addresses.length) {
+            Taro.showModal({
+              title: '请先填写收货地址',
+              content: '兑换需要收货地址，请先新增地址。',
+              showCancel: false
+            }).then(() => {
+              Taro.navigateTo({ url: '/pages/address/edit' });
+            });
+            return;
+          }
+
+          Taro.navigateTo({
+            url: '/pages/address/select',
+            success: (nav) => {
+              nav.eventChannel.on('selectAddress', (addr: StoredAddress) => {
+                handleRedeem(card, addr);
+              });
+            }
+          });
+        }
+      }
+    });
   };
 
   if (loading) {
@@ -102,7 +148,7 @@ const GiftCardRedeem = () => {
     <View className='giftcard-redeem-page'>
       <View className='redeem-tip'>
         <Text className='tip-title'>兑换说明</Text>
-        <Text className='tip-text'>点击任意购物卡，即为该卡创建 0 元订单。</Text>
+        <Text className='tip-text'>选择礼品卡后确认兑换，即可创建 0 元订单。</Text>
         <Text className='tip-text'>在订单确认页填写收货地址即可完成兑换，无需额外付款。</Text>
       </View>
 
@@ -116,7 +162,7 @@ const GiftCardRedeem = () => {
               className={`card-item ${selectedCard === card.card_number ? 'selected' : ''} ${processing ? 'processing' : ''}`}
               onClick={() => {
                 setSelectedCard(card.card_number);
-                handleRedeem(card);
+                handleConfirmRedeem(card);
               }}
             >
               <View className='card-basic'>

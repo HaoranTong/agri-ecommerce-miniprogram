@@ -70,7 +70,7 @@ const PointsLedger = () => {
       earn: '获得',
       spend: '消费',
       expire: '过期',
-      refund: '退款'
+      adjust: '调整'
     };
     return map[type] || type;
   };
@@ -80,7 +80,7 @@ const PointsLedger = () => {
       earn: 'green',
       spend: 'red',
       expire: 'gray',
-      refund: 'orange'
+      adjust: 'orange'
     };
     return map[type] || 'default';
   };
@@ -114,7 +114,7 @@ const PointsLedger = () => {
     <View className='points-ledger-page'>
       <View className='filter-bar'>
         <View className='filter-row'>
-          {['all', 'earn', 'spend', 'expire', 'refund'].map((type) => (
+          {['all', 'earn', 'spend', 'expire', 'adjust'].map((type) => (
             <View
               key={type}
               className={`filter-item ${activeFilter === type ? 'active' : ''}`}

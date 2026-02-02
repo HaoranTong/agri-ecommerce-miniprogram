@@ -46,6 +46,8 @@ export interface StoredUserInfo {
   wechat_nickname?: string;
   wechat_avatar?: string;
   invite_code?: string;
+  has_phone?: boolean;
+  has_realname?: boolean;
 }
 
 export const getStoredUserInfo = (): StoredUserInfo | null => {

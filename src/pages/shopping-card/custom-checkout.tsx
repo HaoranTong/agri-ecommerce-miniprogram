@@ -210,7 +210,7 @@ const CustomCheckout = () => {
 
       <View className='section tips'>
         <Text className='section-title'>支付提示</Text>
-        <Text className='tip-text'>创建订单后请上传支付凭证，审核完成即发放礼品卡。</Text>
+        <Text className='tip-text'>创建订单后完成微信支付，系统将自动发放购物卡。</Text>
       </View>
 
       <Button className='submit-btn' loading={submitting} onClick={handleSubmit}>

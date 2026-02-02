@@ -37,7 +37,6 @@ const OrderPayment = () => {
   } | null>(null);
 
   const isPaid = order?.status === 'processing' || order?.status === 'completed';
-  const hasProof = Boolean(order?.has_payment_proof);
   
   // 计算最终应付金额
   const finalTotal = useMemo(() => {
@@ -199,7 +198,7 @@ const OrderPayment = () => {
         setTimeout(() => {
           Taro.showModal({
             title: '支付完成',
-            content: '订单已使用购物卡全额支付，无需再上传付款凭证。',
+            content: '订单已使用购物卡全额支付，无需再进行支付。',
             showCancel: false
           });
         }, 1000);
@@ -244,14 +243,6 @@ const OrderPayment = () => {
     if (!order) return;
     if (finalTotal <= 0) {
       Taro.showToast({ title: '订单已全额支付', icon: 'none' });
-      return;
-    }
-    if (hasProof) {
-      Taro.showModal({
-        title: '提示',
-        content: '您已上传过付款凭证，请勿重复支付。如有疑问请联系客服。',
-        showCancel: false
-      });
       return;
     }
     if (isPaid) {
