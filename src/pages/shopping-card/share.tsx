@@ -77,6 +77,7 @@ const GiftCardShare = () => {
   const [selectedStyleId, setSelectedStyleId] = useState<string | null>(null);
   const [shareResult, setShareResult] = useState<GiftCardShareResult | null>(null);
   const [qrMatrix, setQrMatrix] = useState<boolean[][]>([]);
+  const [forceMatrix, setForceMatrix] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stylesLoading, setStylesLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -172,9 +173,18 @@ const GiftCardShare = () => {
     []
   );
 
+  const qrImageUrl = useMemo(
+    () => (forceMatrix ? '' : shareResult?.mini_program_qr || shareResult?.qr_image_url || ''),
+    [forceMatrix, shareResult?.mini_program_qr, shareResult?.qr_image_url]
+  );
+
   useEffect(() => {
+    if (qrImageUrl) {
+      setQrMatrix([]);
+      return;
+    }
     setQrMatrix(buildQrMatrix(shareResult?.qr_payload));
-  }, [shareResult?.qr_payload]);
+  }, [shareResult?.qr_payload, qrImageUrl]);
 
   useEffect(() => {
     const fetchStyles = async () => {
@@ -308,6 +318,7 @@ const GiftCardShare = () => {
         format: 'both'
       });
       setShareResult(result);
+      setForceMatrix(false);
       Taro.showToast({ title: '分享已生成', icon: 'success' });
     } catch (error) {
       console.error('分享失败', error);
@@ -332,6 +343,30 @@ const GiftCardShare = () => {
     setShareResult(null);
     setQrMatrix([]);
   };
+
+  const handleOpenShareMenu = async () => {
+    try {
+      await Taro.showShareMenu({ withShareTicket: false });
+    } catch (error) {
+      console.error('打开分享面板失败', error);
+    }
+  };
+
+  Taro.useShareAppMessage(() => {
+    if (!shareResult) return { title: '礼品卡分享', path: '/pages/index' };
+    const title =
+      shareResult.share_meta?.message?.trim() ||
+      (shareResult.card_snapshot?.template_name
+        ? `送你一张${shareResult.card_snapshot.template_name}礼品卡`
+        : '我给你一张礼品卡，点开查看');
+    const path = shareResult.mini_program_path || `/pages/shopping-card/claim?token=${shareResult.share_token}`;
+    const imageUrl = shareResult.mini_program_qr || shareResult.qr_image_url || '';
+    return {
+      title,
+      path,
+      imageUrl
+    } as any;
+  });
 
   if (loading) {
     return <View className='gift-card-share-page loading-state'>加载中...</View>;
@@ -502,7 +537,26 @@ const GiftCardShare = () => {
       {shareResult && (
         <View className='result-section'>
           <Text className='result-title'>二维码 / 分享信息</Text>
-          {qrMatrix.length > 0 ? (
+          {qrImageUrl ? (
+            <View className='qr-wrapper'>
+              <Image
+                className='qr-image'
+                mode='widthFix'
+                src={qrImageUrl}
+                showMenuByLongpress
+                onError={() => {
+                  setForceMatrix(true);
+                  Taro.showToast({ title: '图片加载失败，已切换备用二维码', icon: 'none' });
+                }}
+              />
+              <Button className='copy-btn' onClick={() => handleCopy(shareResult.qr_payload, '已复制二维码内容')}>
+                复制二维码内容
+              </Button>
+              <Button className='copy-btn' openType='share' onClick={handleOpenShareMenu}>
+                分享电子二维码
+              </Button>
+            </View>
+          ) : qrMatrix.length > 0 ? (
             <View className='qr-wrapper'>
               <View
                 className='qr-grid'
@@ -521,8 +575,11 @@ const GiftCardShare = () => {
                   ))
                 )}
               </View>
-              <Button className='copy-btn' onClick={() => handleCopy(shareResult.qr_payload, '已复制二维码URL')}>
+              <Button className='copy-btn' onClick={() => handleCopy(shareResult.qr_payload, '已复制二维码内容')}>
                 复制二维码内容
+              </Button>
+              <Button className='copy-btn' openType='share' onClick={handleOpenShareMenu}>
+                分享电子二维码
               </Button>
             </View>
           ) : (

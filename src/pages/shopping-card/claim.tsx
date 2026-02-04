@@ -25,7 +25,17 @@ const formatDateTime = (value?: string | null) => {
 
 const GiftCardClaim = () => {
   const router = useRouter();
-  const token = useMemo(() => (router.params?.token as string) || '', [router.params]);
+  const token = useMemo(() => {
+    const directToken = (router.params?.token as string) || '';
+    if (directToken) return directToken;
+    const scene = (router.params?.scene as string) || '';
+    if (!scene) return '';
+    try {
+      return decodeURIComponent(scene);
+    } catch (error) {
+      return scene;
+    }
+  }, [router.params]);
   const [detail, setDetail] = useState<GiftCardShareDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
@@ -45,9 +55,15 @@ const GiftCardClaim = () => {
       const pages = Taro.getCurrentPages();
       const currentPage = pages[pages.length - 1];
       const currentPath = currentPage?.route || '';
-      const fullPath = `/${currentPath}?token=${token}`;
-      
-      Taro.setStorageSync('redirect_path', fullPath);
+      const redirectData = {
+        path: currentPath || 'pages/shopping-card/claim',
+        params: {
+          ...(currentPage?.options || {}),
+          token
+        }
+      };
+
+      Taro.setStorageSync('REDIRECT_AFTER_LOGIN', redirectData);
       Taro.redirectTo({
         url: '/pages/auth/login'
       });

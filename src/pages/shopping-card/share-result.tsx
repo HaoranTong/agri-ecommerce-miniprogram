@@ -40,6 +40,7 @@ const GiftCardShareResult = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [forceMatrix, setForceMatrix] = useState(false);
 
   const ensureShareEligibility = useCallback(async () => {
     try {
@@ -115,6 +116,7 @@ const GiftCardShareResult = () => {
       
       if (result) {
         setShareResult(result);
+        setForceMatrix(false);
         // 在小程序环境中，Image 组件会自动处理图片预加载
       } else {
         throw new Error('API返回数据为空');
@@ -135,7 +137,7 @@ const GiftCardShareResult = () => {
   }, [loadShareResult]);
 
   // 计算二维码矩阵（必须在所有条件返回之前）
-  const qrImageUrl = shareResult?.qr_image_url || shareResult?.mini_program_qr || '';
+  const qrImageUrl = forceMatrix ? '' : shareResult?.mini_program_qr || shareResult?.qr_image_url || '';
   const qrPayload = shareResult?.qr_payload || '';
   
   const qrMatrix = useMemo(() => {
@@ -149,7 +151,7 @@ const GiftCardShareResult = () => {
     setSaving(true);
     try {
       // 获取二维码图片URL或payload
-      const imageUrl = shareResult.qr_image_url || shareResult.mini_program_qr || '';
+      const imageUrl = shareResult.mini_program_qr || shareResult.qr_image_url || '';
       const payload = shareResult.qr_payload || '';
       
       if (!imageUrl && !payload) {
@@ -219,7 +221,7 @@ const GiftCardShareResult = () => {
     setSharing(true);
     try {
       // 获取二维码图片URL或payload
-      const imageUrl = shareResult.qr_image_url || shareResult.mini_program_qr || '';
+      const imageUrl = shareResult.mini_program_qr || shareResult.qr_image_url || '';
       const payload = shareResult.qr_payload || '';
       
       if (!imageUrl && !payload) {
@@ -227,29 +229,28 @@ const GiftCardShareResult = () => {
         return;
       }
 
-      // 如果有图片URL，下载后预览
-      if (imageUrl) {
-        try {
-          const downloadResult = await Taro.downloadFile({
-            url: imageUrl
-          });
-
-          if (downloadResult.statusCode === 200) {
-            // 使用预览图片功能，用户可以长按保存或分享
-            await Taro.previewImage({
-              urls: [downloadResult.tempFilePath],
-              current: downloadResult.tempFilePath
-            });
-            Taro.showToast({ title: '长按图片可保存或分享', icon: 'none', duration: 2000 });
-          } else {
-            Taro.showToast({ title: '下载失败', icon: 'none' });
+      // For mini-program sharing we prefer opening the native share sheet.
+      // Ensure share menu is enabled (this is a no-op on some platforms).
+      try {
+        await Taro.showShareMenu({ withShareTicket: false });
+        // The actual share payload is provided by useShareAppMessage hook below.
+      } catch (e) {
+        // Fallback: if showShareMenu fails, fall back to preview so user can save/share manually.
+        if (imageUrl) {
+          try {
+            const downloadResult = await Taro.downloadFile({ url: imageUrl });
+            if (downloadResult.statusCode === 200) {
+              await Taro.previewImage({ urls: [downloadResult.tempFilePath], current: downloadResult.tempFilePath });
+              Taro.showToast({ title: '长按图片可保存或分享', icon: 'none', duration: 2000 });
+            } else {
+              Taro.showToast({ title: '下载失败', icon: 'none' });
+            }
+          } catch {
+            Taro.showToast({ title: '图片加载失败，请使用保存功能', icon: 'none' });
           }
-        } catch {
-          Taro.showToast({ title: '图片加载失败，请使用保存功能', icon: 'none' });
+        } else {
+          Taro.showToast({ title: '请使用保存功能保存二维码', icon: 'none' });
         }
-      } else {
-        // 如果没有图片URL，提示用户使用保存功能
-        Taro.showToast({ title: '请使用保存功能保存二维码', icon: 'none' });
       }
     } catch (error) {
       // 如果预览失败，提供保存选项
@@ -267,6 +268,23 @@ const GiftCardShareResult = () => {
     }
   };
 
+  // Provide share content for the native share action (Button open-type="share")
+  Taro.useShareAppMessage(() => {
+    if (!shareResult) return { title: '礼品卡分享', path: '/pages/index' };
+    const title =
+      shareResult.share_meta?.message?.trim() ||
+      (shareResult.card_snapshot?.template_name
+        ? `送你一张${shareResult.card_snapshot.template_name}礼品卡`
+        : '我给你一张礼品卡，点开查看');
+    const path = shareResult.mini_program_path || `/pages/shopping-card/claim?token=${shareResult.share_token}`;
+    const imageUrl = shareResult.mini_program_qr || shareResult.qr_image_url || '';
+    return {
+      title,
+      path,
+      imageUrl
+    } as any;
+  });
+
   if (loading) {
     return (
       <View className='share-result-page loading-state'>
@@ -280,7 +298,17 @@ const GiftCardShareResult = () => {
       <View className='share-result-page'>
         <View className='error-state'>
           <Text>生成失败</Text>
-          <Button className='back-btn' onClick={() => Taro.navigateBack()}>
+          <Button
+            className='back-btn'
+            onClick={() => {
+              const pages = Taro.getCurrentPages();
+              if (pages.length > 1) {
+                Taro.navigateBack();
+              } else {
+                Taro.switchTab({ url: '/pages/index/index' });
+              }
+            }}
+          >
             返回
           </Button>
         </View>
@@ -304,6 +332,7 @@ const GiftCardShareResult = () => {
               lazyLoad={false}
               showMenuByLongpress
               onError={() => {
+                setForceMatrix(true);
                 Taro.showToast({ title: '图片加载失败，使用备用方案', icon: 'none', duration: 2000 });
               }}
             />
@@ -341,6 +370,7 @@ const GiftCardShareResult = () => {
         <Button
           className='btn btn-share'
           loading={sharing}
+          openType='share'
           onClick={handleShare}
         >
           {sharing ? '分享中...' : '分享电子二维码'}
@@ -355,7 +385,7 @@ const GiftCardShareResult = () => {
       </View>
 
       <View className='tips'>
-        <Text className='tip-text'>• 分享电子二维码：可直接分享给好友，好友长按识别即可领取</Text>
+        <Text className='tip-text'>• 分享电子二维码：点击后会弹出分享面板，选择渠道即可分享</Text>
         <Text className='tip-text'>• 保存购物卡：保存到相册后可打印或通过其他方式分享</Text>
       </View>
     </View>
