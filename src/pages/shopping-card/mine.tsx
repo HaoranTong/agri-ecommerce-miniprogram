@@ -1,6 +1,6 @@
 import { Button, Text, View } from '@tarojs/components';
 import Taro, { useDidShow } from '@tarojs/taro';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { giftCardService } from '../../services/api';
 import type { GiftCard } from '../../types';
@@ -59,6 +59,7 @@ const GiftCardMine = () => {
   const [cards, setCards] = useState<GiftCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [highlightBanner, setHighlightBanner] = useState(false);
+  const didShowRef = useRef(false);
 
   const shouldHighlight = useMemo(() => {
     const params = Taro.getCurrentInstance().router?.params ?? {};
@@ -70,7 +71,13 @@ const GiftCardMine = () => {
       setLoading(true);
     }
     try {
-      const data = await giftCardService.listMine();
+      const data = await giftCardService.listMine({
+        showLoading: showSpinner,
+        suppressErrorToast: !showSpinner,
+        suppressLog: !showSpinner,
+        cacheMs: 5000,
+        fallbackToCache: true
+      });
       setCards(data);
     } catch (error) {
       console.error('获取购物卡失败', error);
@@ -82,12 +89,10 @@ const GiftCardMine = () => {
     }
   }, []);
 
-  useEffect(() => {
-    fetchCards();
-  }, [fetchCards]);
-
   useDidShow(() => {
-    fetchCards(false);
+    const firstShow = !didShowRef.current;
+    didShowRef.current = true;
+    fetchCards(firstShow);
     if (shouldHighlight) {
       setHighlightBanner(true);
       Taro.showToast({ title: '购物卡已到账', icon: 'success' });

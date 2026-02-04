@@ -1,6 +1,6 @@
 import { Button, Image, Text, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { giftCardService, userService } from '../../services/api';
 import { clearToken } from '../../utils/storage';
@@ -12,39 +12,49 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [giftCardCount, setGiftCardCount] = useState<number | null>(null);
   const [avatarError, setAvatarError] = useState(false);
+  const didShowRef = useRef(false);
+  const giftCardRequestId = useRef(0);
 
-  const loadProfile = async () => {
+  const loadProfile = async (showSpinner = true) => {
     try {
-      setLoading(true);
+      if (showSpinner) {
+        setLoading(true);
+      }
       const data = await userService.getProfile();
       setProfile(data);
     } catch (error) {
       console.error('获取用户信息失败', error);
       Taro.showToast({ title: '加载失败', icon: 'none' });
     } finally {
-      setLoading(false);
+      if (showSpinner) {
+        setLoading(false);
+      }
     }
   };
 
   const loadGiftCardCount = async () => {
+    const requestId = ++giftCardRequestId.current;
     try {
-      const cards = await giftCardService.listMine();
+      const cards = await giftCardService.listMine({
+        showLoading: false,
+        suppressErrorToast: true,
+        suppressLog: true,
+        cacheMs: 5000,
+        fallbackToCache: true
+      });
+      if (requestId !== giftCardRequestId.current) return;
       setGiftCardCount(Array.isArray(cards) ? cards.length : 0);
     } catch (error) {
-      console.error('获取购物卡数量失败', error);
-      setGiftCardCount(0);
+      if (requestId !== giftCardRequestId.current) return;
+      console.warn('获取购物卡数量失败', error);
     }
   };
 
-  useEffect(() => {
-    Promise.all([loadProfile(), loadGiftCardCount()]).catch(() => {
-      // 单个 Promise 内部已处理日志/Toast，这里仅避免未处理的拒绝
-    });
-  }, []);
-
   // 页面显示时重新加载数据（从编辑页面返回时会触发）
   Taro.useDidShow(() => {
-    loadProfile();
+    const firstShow = !didShowRef.current;
+    didShowRef.current = true;
+    loadProfile(firstShow);
     loadGiftCardCount();
   });
 

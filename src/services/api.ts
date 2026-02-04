@@ -187,7 +187,28 @@ const resolveUrl = (endpoint: string) => {
 
 let isRedirecting = false; // 防止重复跳转
 let loadingCount = 0;
-const REQUEST_TIMEOUT = 15000;
+const REQUEST_TIMEOUT = MINI_ENV_VERSION === 'develop' ? 30000 : 15000;
+const MAX_CONCURRENT_REQUESTS = MINI_ENV_VERSION === 'develop' ? 4 : 6;
+let activeRequests = 0;
+const requestQueue: Array<() => void> = [];
+
+const acquireRequestSlot = async () => {
+  if (activeRequests < MAX_CONCURRENT_REQUESTS) {
+    activeRequests += 1;
+    return;
+  }
+
+  await new Promise<void>((resolve) => requestQueue.push(resolve));
+  activeRequests += 1;
+};
+
+const releaseRequestSlot = () => {
+  activeRequests = Math.max(0, activeRequests - 1);
+  const next = requestQueue.shift();
+  if (next) {
+    next();
+  }
+};
 
 const handleUnauthorized = () => {
   if (isRedirecting) return; // 如果正在跳转，直接返回
@@ -327,14 +348,15 @@ export const request = async <T = any>({
     Taro.showLoading({ title: '加载中...', mask: true });
   }
 
-  try {
-    const response = await Taro.request<T>({
-      url: finalUrl,
-      method,
-      data,
-      header: headers,
-      timeout: typeof timeout === 'number' && timeout > 0 ? timeout : REQUEST_TIMEOUT
-    });
+  const doRequest = async (attempt: number): Promise<T> => {
+    try {
+      const response = await Taro.request<T>({
+        url: finalUrl,
+        method,
+        data,
+        header: headers,
+        timeout: typeof timeout === 'number' && timeout > 0 ? timeout : REQUEST_TIMEOUT
+      });
 
     const duration = Date.now() - startedAt;
     if (!suppressLog && duration >= 3000) {
@@ -366,20 +388,33 @@ export const request = async <T = any>({
       throw new Error(payload.error_code);
     }
 
-    return payload as T;
-  } catch (error: any) {
-    const errMsg = String(error?.errMsg || error?.message || '');
-    const isTimeout = /timeout/i.test(errMsg) || /request:fail/i.test(errMsg) || error?.errno === 5;
+      return payload as T;
+    } catch (error: any) {
+      const errMsg = String(error?.errMsg || error?.message || '');
+      const isTimeout = /timeout/i.test(errMsg) || /request:fail/i.test(errMsg) || error?.errno === 5;
 
-    if (isTimeout && !suppressErrorToast) {
-      Taro.showToast({ title: '网络超时，请检查网络或切换稳定环境', icon: 'none' });
-    }
+      if (isTimeout && method === 'GET' && attempt === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+        return doRequest(1);
+      }
 
-    if (!(error instanceof Error && error.message === 'unauthorized') && !suppressLog) {
-      console.error('API 请求失败', error);
+      if (isTimeout && !suppressErrorToast) {
+        Taro.showToast({ title: '网络超时，请检查网络或切换稳定环境', icon: 'none' });
+      }
+
+      if (!(error instanceof Error && error.message === 'unauthorized') && !suppressLog) {
+        console.error('API 请求失败', error);
+      }
+      throw error;
     }
-    throw error;
+  };
+
+  await acquireRequestSlot();
+
+  try {
+    return await doRequest(0);
   } finally {
+    releaseRequestSlot();
     if (showLoading && loadingCount > 0) {
       loadingCount -= 1;
       if (loadingCount === 0) {
@@ -736,7 +771,8 @@ export const orderService = {
     request<OrderDetail>({
       url: `${API_ENDPOINTS.orders}/${orderId}`,
       method: 'GET',
-      showLoading: true
+      showLoading: true,
+      timeout: 30000
     }),
   applyCoupon: async (orderId: number | string, couponCode: string) => {
     const response = await request<{
@@ -849,14 +885,55 @@ export const paymentService = {
   }
 };
 
+let giftCardListCache: { ts: number; data: GiftCard[] } | null = null;
+let giftCardListPromise: Promise<GiftCard[]> | null = null;
+
 export const giftCardService = {
-  listMine: async () => {
-    const response = await request<{ success?: boolean; data?: GiftCard[]; cards?: GiftCard[] }>({
+  listMine: async (
+    options?: {
+      showLoading?: boolean;
+      suppressErrorToast?: boolean;
+      suppressLog?: boolean;
+      timeout?: number;
+      cacheMs?: number;
+      force?: boolean;
+      fallbackToCache?: boolean;
+    }
+  ) => {
+    const now = Date.now();
+    const cacheMs = options?.cacheMs ?? 0;
+    if (!options?.force && cacheMs > 0 && giftCardListCache && now - giftCardListCache.ts < cacheMs) {
+      return giftCardListCache.data;
+    }
+
+    if (!options?.force && giftCardListPromise) {
+      return giftCardListPromise;
+    }
+
+    giftCardListPromise = request<{ success?: boolean; data?: GiftCard[]; cards?: GiftCard[] }>({
       url: API_ENDPOINTS.giftCards,
       method: 'GET',
-      showLoading: true
-    });
-    return response.data ?? response.cards ?? [];
+      showLoading: options?.showLoading ?? true,
+      suppressErrorToast: options?.suppressErrorToast ?? false,
+      suppressLog: options?.suppressLog ?? false,
+      timeout: options?.timeout
+    })
+      .then((response) => {
+        const data = response.data ?? response.cards ?? [];
+        giftCardListCache = { ts: Date.now(), data };
+        return data;
+      })
+      .catch((error) => {
+        if (options?.fallbackToCache && giftCardListCache) {
+          return giftCardListCache.data;
+        }
+        throw error;
+      })
+      .finally(() => {
+        giftCardListPromise = null;
+      });
+
+    return giftCardListPromise;
   },
   listTemplates: async () => {
     const response = await request<{ success: boolean; data: GiftCardTemplate[] }>({

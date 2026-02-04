@@ -26,7 +26,7 @@ const OrderDetail = () => {
   }, []);
 
   const getStatusInfo = (currentOrder: OrderDetailType) => {
-    const { status, return_status } = currentOrder;
+    const { status, return_status, is_gift_card_order } = currentOrder;
 
     if (return_status === 'requested') {
       return { text: '申请退货', color: '#ff5722', icon: '🔄', tip: '已提交退货申请，等待客服处理' };
@@ -45,12 +45,21 @@ const OrderDetail = () => {
       return { text: '待支付', color: '#ff9800', icon: '⏱️', tip: '请尽快完成支付' };
     }
     if (status === 'processing') {
+      if (is_gift_card_order) {
+        return { text: '支付成功/待发卡', color: '#2196f3', icon: '🎁', tip: '购物卡正在发放' };
+      }
       return { text: '支付成功/待发货', color: '#2196f3', icon: '📦', tip: '商家正在准备商品' };
     }
     if (status === 'on-hold') {
+      if (is_gift_card_order) {
+        return { text: '待发卡', color: '#2196f3', icon: '🎁', tip: '购物卡正在发放' };
+      }
       return { text: '已发货', color: '#4caf50', icon: '🚚', tip: '包裹正在运输中' };
     }
     if (status === 'completed') {
+      if (is_gift_card_order) {
+        return { text: '已发卡', color: '#4caf50', icon: '✅', tip: '购物卡已发放' };
+      }
       return { text: '已签收', color: '#4caf50', icon: '✅', tip: '订单已完成' };
     }
     if (status === 'cancelled') {

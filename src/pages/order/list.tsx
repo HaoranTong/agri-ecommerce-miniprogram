@@ -99,6 +99,19 @@ const OrderList = () => {
       return '已退款';
     }
     
+    if (order.is_gift_card_order) {
+      const giftCardStatusMap: Record<string, string> = {
+        'pending': '待支付',
+        'processing': '支付成功/待发卡',
+        'on-hold': '待发卡',
+        'completed': '已发卡',
+        'cancelled': '已取消',
+        'refunded': '已退款',
+        'failed': '支付失败'
+      };
+      return giftCardStatusMap[status] || status;
+    }
+
     const statusMap: Record<string, string> = {
       'pending': '待支付',
       'processing': '支付成功/待发货',
