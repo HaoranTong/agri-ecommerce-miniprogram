@@ -1,10 +1,12 @@
 # WordPress 后台管理操作手册
 
 > **版本**: v1.2  
-> **最后更新**: 2025-11-27  
+> **最后更新**: 2026-02-05  
 > **适用系统**: MyShop 微信小程序无头电商系统
 
 ---
+
+> 说明：接口路径/字段/状态/错误码以 `docs/08_API_CONTRACT_V2.3.md` 与 `docs/06_DATA_DICTIONARY_v1.2.md` 为唯一来源；本文仅描述后台操作流程，不作为定义依据。
 
 ## 📋 目录
 
@@ -440,31 +442,10 @@
 ### 7.6 小程序端使用积分
 
 #### 用户查看积分
-小程序端可通过API获取积分信息：
-```
-GET /wp-json/myshop/v1/points/balance
-```
-
-返回数据：
-```json
-{
-  "available": 1500,      // 可用积分
-  "pending": 0,           // 待确认积分
-  "total_earned": 3000,   // 累计获得
-  "total_spent": 1500     // 累计消费
-}
-```
+小程序端可通过积分接口获取积分信息（接口路径与字段以 API 契约为准）。
 
 #### 下单时使用积分
-小程序创建订单时传递参数：
-```json
-{
-  "variation_id": 123,
-  "quantity": 1,
-  "points_to_use": 500,   // 使用 500 积分
-  "shipping_address": { ... }
-}
-```
+小程序创建订单时传递积分抵扣参数（字段以 API 契约为准）。
 
 系统会自动：
 1. 验证积分是否足够
@@ -476,15 +457,7 @@ GET /wp-json/myshop/v1/points/balance
 ### 7.7 手动管理积分（高级）
 
 #### 通过API手动发放积分
-```bash
-# 使用 WP-CLI 或 Postman 调用
-POST /wp-json/myshop/v1/points/grant
-{
-  "target_user_id": 123,
-  "points": 500,
-  "reason": "admin_grant"
-}
-```
+使用 WP-CLI 或 Postman 调用“积分发放”接口（路径与字段以 API 契约为准），需携带管理员凭证。
 
 #### 通过数据库查询用户积分
 ```sql

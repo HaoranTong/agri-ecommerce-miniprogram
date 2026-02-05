@@ -269,6 +269,7 @@ const PUBLIC_ENDPOINTS = new Set<string>([
   API_ENDPOINTS.productsRedeem,
   API_ENDPOINTS.login,
   API_ENDPOINTS.shareStyles,
+  API_ENDPOINTS.clientLog,
   '/gift-cards/templates'
 ]);
 
@@ -751,6 +752,23 @@ export const agentApplicationService = {
     });
     return response;
   },
+};
+
+export const debugService = {
+  logClient: async (event: string, payload?: Record<string, any>) =>
+    request<{ success: boolean }>(
+      {
+        url: API_ENDPOINTS.clientLog,
+        method: 'POST',
+        data: {
+          event,
+          payload: payload || null
+        },
+        showLoading: false,
+        suppressErrorToast: true,
+        suppressLog: true
+      }
+    )
 };
 
 export const orderService = {

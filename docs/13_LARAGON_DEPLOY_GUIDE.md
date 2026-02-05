@@ -226,7 +226,7 @@ E:\laragon\www\agri-ecommerce\wp-content\plugins\myshop-core\logs
 - 示例请求：
 
   ```json
-  POST /auth/login
+  // 登录接口示例（路径与字段见 API 契约）
   {
     "code": "wx_login_code_from_miniprogram"
   }

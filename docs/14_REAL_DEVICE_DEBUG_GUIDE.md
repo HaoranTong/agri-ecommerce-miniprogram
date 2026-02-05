@@ -7,14 +7,15 @@
 
 ## 根本原因
 真机无法访问本地开发服务器域名 `agri-ecommerce.test`，导致所有 API 请求失败。
+目前开发环境通过 Cloudflare Tunnel 对外暴露为 `https://dev.fanbaoer.com`。
 
 ## 解决方案
 
 ### ✅ 已完成配置
 
-1. **修改 API 地址为局域网 IP**
+1. **修改 API 地址为 dev 环境域名**
    - 文件：`src/utils/constants.ts`
-   - 修改：`DEV_BASE_URL` 从 `https://agri-ecommerce.test` 改为 `http://192.168.1.4`
+   - 修改：`DEV_BASE_URL` 设置为 `https://dev.fanbaoer.com`
 
 2. **关闭域名校验**
    - 文件：`project.config.json`
@@ -22,7 +23,7 @@
 
 ### 🔧 需要手动配置
 
-#### 1. 确保 Laragon 允许外网访问
+#### 1. 确保 Laragon 允许外网访问（Cloudflare Tunnel 回源）
 
 **方法一：修改 Apache 配置（推荐）**
 
@@ -52,14 +53,10 @@
 Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
 ```
 
-#### 2. 验证局域网访问
+#### 2. 验证外网访问
 
-在手机浏览器中访问：
-```
-http://192.168.1.4/wp-json/myshop/v1/config/public
-```
-
-应该能看到 JSON 数据返回。
+在手机浏览器中访问 API Base URL（见部署配置），
+应能看到可用响应（接口路径与字段以 API 契约为准）。
 
 #### 3. 重新编译小程序
 
@@ -80,22 +77,19 @@ npm run dev:weapp
 
 ### 🔍 故障排查
 
-#### 问题 1：手机浏览器无法访问 `http://192.168.1.4`
+#### 问题 1：手机浏览器无法访问 `https://dev.fanbaoer.com`
 
 **检查项：**
-- 手机和电脑是否在同一 WiFi 网络
-- 电脑防火墙是否阻止 80 端口
-- Laragon 是否正常运行
+- Cloudflare Tunnel 是否在线
+- 本地 Laragon 是否正常运行
+- 回源端口是否为 80
 
 **解决方法：**
 ```powershell
 # 1. 检查 Apache 是否监听 80 端口
 netstat -ano | findstr :80
 
-# 2. 添加防火墙入站规则
-New-NetFirewallRule -DisplayName "Laragon HTTP" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow
-
-# 3. 重启 Laragon
+# 2. 重启 Laragon
 ```
 
 #### 问题 2：API 返回 404 或 403
@@ -119,7 +113,7 @@ Get-Content .htaccess
 #### 问题 3：图片仍然无法显示
 
 **检查项：**
-- 图片 URL 是否使用了 `agri-ecommerce.test` 域名
+- 图片 URL 是否使用了 `dev.fanbaoer.com` 域名
 - 媒体库图片路径是否正确
 
 **解决方法：**
@@ -128,14 +122,14 @@ Get-Content .htaccess
 ```sql
 -- 在 phpMyAdmin 或命令行执行
 UPDATE wp_posts 
-SET post_content = REPLACE(post_content, 'https://agri-ecommerce.test', 'http://192.168.1.4');
+SET post_content = REPLACE(post_content, 'https://agri-ecommerce.test', 'https://dev.fanbaoer.com');
 
 UPDATE wp_postmeta 
-SET meta_value = REPLACE(meta_value, 'https://agri-ecommerce.test', 'http://192.168.1.4')
+SET meta_value = REPLACE(meta_value, 'https://agri-ecommerce.test', 'https://dev.fanbaoer.com')
 WHERE meta_key = '_wp_attached_file' OR meta_key = '_wp_attachment_metadata';
 
 UPDATE wp_options 
-SET option_value = REPLACE(option_value, 'https://agri-ecommerce.test', 'http://192.168.1.4')
+SET option_value = REPLACE(option_value, 'https://agri-ecommerce.test', 'https://dev.fanbaoer.com')
 WHERE option_name = 'siteurl' OR option_name = 'home' OR option_name = 'myshop_public_config';
 ```
 
@@ -146,7 +140,7 @@ WHERE option_name = 'siteurl' OR option_name = 'home' OR option_name = 'myshop_p
 // 替换响应数据中的域名
 function replaceDomain(data: any): any {
   const jsonStr = JSON.stringify(data);
-  const replaced = jsonStr.replace(/https:\/\/agri-ecommerce\.test/g, 'http://192.168.1.4');
+   const replaced = jsonStr.replace(/https:\/\/agri-ecommerce\.test/g, 'https://dev.fanbaoer.com');
   return JSON.parse(replaced);
 }
 ```
@@ -204,7 +198,7 @@ function replaceDomain(data: any): any {
 
 **切换模拟器/真机调试：**
 - 模拟器：可以使用 `agri-ecommerce.test`（通过 hosts 映射）
-- 真机：必须使用局域网 IP `192.168.1.4`
+- 真机：使用 `https://dev.fanbaoer.com`（Cloudflare Tunnel）
 
 **统一方案：** 始终使用局域网 IP，模拟器和真机都能正常访问。
 

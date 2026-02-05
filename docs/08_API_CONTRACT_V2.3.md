@@ -11,7 +11,7 @@
 
 # 📡 微信小程序 × WordPress 无头电商系统
 
-## **完整 API 接口契约（V2.3.3 - 2026-01-30 更新）**
+## **完整 API 接口契约（V2.3.4 - 2026-02-05 更新）**
 
 > **文档状态**：✅ 冻结（Final Frozen Baseline）+ V2.3.3 增量更新
 > **适用项目阶段**：一期（MVP） + 二期（虚拟购物卡 / 社交裂变 / 代理商）
@@ -19,6 +19,15 @@
 > **认证方式**：Bearer JWT Token（通过 `Authorization: Bearer <token>` 传递）
 > **编码**：UTF-8
 > **时间格式**：ISO 8601（如 `"2025-11-18T21:30:00+08:00"`）
+>
+> **V2.3.4 变更记录**（2026-02-05）：
+> 1. `POST /debug/client-log` - 客户端日志采集（匿名调试）
+> 2. `GET /orders/{order_id}` - 礼品卡兑换人可访问对应兑换订单详情
+> 3. `POST /gift-cards/share` / `GET /gift-cards/share/{token}` - 补齐分享路径、二维码、样式与分享历史字段
+> 4. `GET /gift-cards/share-styles` - 响应结构与字段名对齐实现
+> 5. 新增说明：`GET /gift-cards/templates`、`GET /gift-cards/templates/{id}`、`POST /gift-cards/share/{card_number}/revoke`、`GET /gift-cards/{card_number}/share-history`
+> 6. `POST /cart` / `PUT /cart/{variation_id}` / `DELETE /cart` - 对齐请求参数与响应结构
+> 7. 补充分销相关接口：`GET /referral/code`、`GET /referral/summary`、`GET /referral/members`
 >
 > **V2.3.3 变更记录**（2026-01-30）：
 > 1. `POST /auth/login` - 返回 `is_new_user/has_profile/has_realname/has_phone` 标记
@@ -46,26 +55,48 @@
 **成功响应（200）**：
 
 ```json
+      "template_id": 12,
 {
   "payment_qr_url": "https://yourdomain.com/uploads/pay-qr.jpg",
   "customer_service_qr": "https://yourdomain.com/uploads/cs-qr.jpg",
   "home_slider": [
+      "template_name": "稻香 200 元礼卡",
     {
       "id": "banner-001",
       "img": "https://yourdomain.com/uploads/slide1.jpg",
       "link": "/pages/product/detail?id=101",
       "title": "新品稻花香上新",
       "subtitle": "限时 9 折"
-    }
-  ],
-  "marketing_blocks": [
-    {
+      "delivery_modes": ["digital_share"],
+      "print_template_url": "https://yourdomain.com/wp-content/plugins/myshop-core/assets/giftcard/print-default.html",
+      "share_state": "shared",
+      "share_meta": {
+        "message": "新年快乐",
+        "theme": "default",
+        "format": "qr"
+      },
+      "shared_at": "2025-11-22 09:00:00",
+      "shared_count": 1,
+      "share_token_expires_at": "2025-12-22 23:59:59",
+      "purchase_order_id": 1001,
+      "card_snapshot": {
+        "card_number": "GC20251118001",
+        "template_name": "稻香 200 元礼卡",
+        "initial_amount": "200.00",
+        "balance": "200.00",
+        "expires_at": "2026-11-18T23:59:59+08:00",
+        "message": "新年快乐",
+        "theme": "default"
+      },
+      "share_history": [],
+      "created_at": "2025-11-22 09:00:00",
+      "updated_at": "2025-11-22 09:00:00"
       "code": "featured",
       "title": "精选推荐",
       "style": "grid",
       "items": [
         {
-          "type": "product",
+> 若模板名称、分享样式等衍生字段不可用，则返回 `null`；前端需做容错处理。
           "target": 101,
           "img": "https://yourdomain.com/uploads/featured1.jpg",
           "label": "热销"
@@ -90,6 +121,33 @@
 ```
 
 > 注：`payment_qr_url` 与 `customer_service_qr` 为历史保留字段（线下扫码支付已停用），小程序端不再使用，可留空。
+
+------
+
+### POST `/debug/client-log`
+
+**用途**：小程序端匿名上报调试日志（分享/领取/登录链路排障用）
+
+**请求体**：
+
+```json
+{
+  "event": "share_app_message",
+  "payload": {
+    "scene": "share_button",
+    "token": "SHR20251122XYZ",
+    "path": "/pages/shopping-card/claim?token=SHR20251122XYZ"
+  }
+}
+```
+
+**成功响应（200）**：
+
+```json
+{ "success": true }
+```
+
+> 日志写入 `wp-content/myshop-giftcard.log`，仅用于开发/测试排障，不作为业务数据。
 
 ------
 
@@ -128,6 +186,43 @@
 ```
 
 > ⚠️ 当前实现不会返回 `is_gift_card`、`stock_status` 等字段；变体 `attributes` 的 value 为 WooCommerce 原生 slug，需要前端自行映射展示。
+
+------
+
+### GET `/products/{id}`
+
+**用途**：获取单个商品/变体详情
+
+**成功响应（200）**：
+
+```json
+{
+  "id": 101,
+  "name": "五常稻花香大米",
+  "description": "...",
+  "price": "58.00",
+  "regular_price": "68.00",
+  "sale_price": "58.00",
+  "stock_status": "instock",
+  "in_stock": true,
+  "type": "variable",
+  "image_url": "https://yourdomain.com/wp-content/uploads/2025/11/rice.jpg",
+  "variations": [
+    {
+      "id": 205,
+      "attributes": {
+        "规格": "5kg",
+        "等级": "特级"
+      },
+      "price": 58,
+      "image_url": "https://.../5kg.jpg",
+      "in_stock": true
+    }
+  ]
+}
+```
+
+> 若请求的是变体ID，返回 `type: "variation"`，字段包含 `regular_price`/`sale_price`/`stock_quantity`。
 
 ------
 
@@ -198,6 +293,7 @@
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxxx",
     "openid": "oMockUser1234567890ab",
     "is_new_user": true,
+    "is_new": true,
     "has_profile": false,
     "has_realname": false,
     "has_phone": false,
@@ -215,6 +311,8 @@
 ### POST `/auth/phone`
 
 **用途**：绑定微信手机号（用户主动点击授权按钮后调用）
+
+> 该接口需要登录态（携带 JWT `Authorization: Bearer <token>`）。
 
 **请求体（二选一）**：
 
@@ -282,7 +380,7 @@
 
 ### GET `/user/profile`
 
-**用途**：获取当前登录用户的完整资料，前端 `UserProfile` 组件依赖下列字段渲染头像、昵称、积分、代理状态等信息。
+**用途**：获取当前登录用户的完整资料（与 `GET /me` 等价）
 
 **成功响应（200）**：
 
@@ -291,23 +389,18 @@
   "success": true,
   "data": {
     "user_id": 42,
-    "username": "138****8000",
-    "nickname": "禾野小店",
-    "first_name": "张",
-    "last_name": "三",
-    "email": "demo@example.com",
-    "phone": "13800138000",
-    "avatar": "https://cdn.example.com/avatar.jpg",
-    "points_balance": 260,
-    "total_points": 580,
-    "membership_level": "gold",
-    "is_test_user": false,
-    "test_code": null,
-    "invite_code": "MYSHOP66",
-    "referrer_id": 18,
-    "is_agent": true,
-    "agent_code": "AGT-0088",
-    "has_cart": true,
+    "username": "test_test001",
+    "nickname": "测试用户001",
+    "first_name": "测试用户001",
+    "last_name": "",
+    "email": "test001@test.myshop.local",
+    "phone": "13800138001",
+    "avatar": "https://yourdomain.com/avatar.jpg",
+    "openid": "oTest_User_001_FixedOpenID",
+    "referral_code": "REF000042",
+    "points_balance": 280,
+    "is_test_user": true,
+    "test_code": "test001",
     "wechat_nickname": "wx-nick",
     "wechat_avatar": "https://wx.qq.com/avatar.png",
     "has_profile": true,
@@ -317,7 +410,7 @@
 }
 ```
 
-> 其中 `points_balance` 若暂不可用需返回 `null` 并由前端提示“稍后刷新”；`is_agent` / `agent_code` 用于展示代理入口，没有代理身份时返回 `false` 与 `null`。
+> 其中 `points_balance` 若暂不可用需返回 `null` 并由前端提示“稍后刷新”。
 
 ------
 
@@ -359,6 +452,29 @@
 ```
 
 > ⚠️ 接口返回最新的整份用户资料，前端需用返回值刷新本地缓存。
+
+------
+
+### POST `/user/avatar`
+
+**用途**：上传用户头像（multipart/form-data）
+
+**请求体**：`avatar` 文件字段（JPG/PNG，≤ 2MB）
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "user_id": 42,
+    "nickname": "测试用户001",
+    "avatar": "https://yourdomain.com/wp-content/uploads/avatars/2026/02/avatar-42-xxxx.png"
+  }
+}
+```
+
+> 上传成功后返回完整用户资料（与 `GET /me` 一致），前端需刷新本地缓存。
 
 ------
 
@@ -460,7 +576,7 @@
 }
 ```
 
-**成功响应（201）**：
+**成功响应（200）**：
 
 ```json
 {
@@ -523,6 +639,8 @@
   "title": "冬季新品裂变海报",
   "image_url": "https://yourdomain.com/uploads/posters/winter-2025.png",
   "mini_program_qr": "https://yourdomain.com/qrcode/poster-2025-winter.png",
+  "poster_url": "https://yourdomain.com/uploads/posters/winter-2025.png",
+  "mini_program_path": "/pages/index/index?scene=invite",
   "share_text": "扫码领取冬日好礼，好友下单你得积分！",
   "scene": "invite",
   "valid_until": "2025-12-31T23:59:59+08:00",
@@ -572,25 +690,40 @@
 **请求体**：
 
 ```json
-{ "product_id": 101, "variation_id": 205, "quantity": 1 }
+{ "variation_id": 205, "quantity": 1 }
 ```
 
-**响应**：同 GET `/cart`
-
-**失败示例（409）**：
+**成功响应（200）**：
 
 ```json
 {
-  "error_code": "out_of_stock",
-  "message": "商品库存不足",
-  "status": 409
+  "success": true,
+  "message": "已添加到购物车",
+  "cart_count": 2
+}
+```
+
+**失败示例（400）**：
+
+```json
+{
+  "error_code": "invalid_variation",
+  "message": "无效的 SKU",
+  "status": 400
 }
 ```
 
 ### DELETE `/cart`
 
 **用途**：清空购物车
-**响应**：204 No Content
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "message": "购物车已清空"
+}
+```
 
 ------
 
@@ -608,7 +741,15 @@
 { "quantity": 2 }
 ```
 
-**成功响应（200）**：同 GET `/cart`
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "message": "购物车数量已更新",
+  "quantity": 2
+}
+```
 
 **失败示例（400）**：
 
@@ -630,7 +771,14 @@
 
 - `variation_id`: integer (required)
 
-**响应**：204 No Content
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "message": "已从购物车移除"
+}
+```
 
 ------
 
@@ -706,7 +854,9 @@
     "tracking_company": "",
     "shipped_at": "",
     "return_status": "none",
-    "return_requested_at": null
+    "return_requested_at": null,
+    "is_gift_card_order": false,
+    "giftcard_mode": null
   }
 ]
 ```
@@ -723,6 +873,11 @@
 ### GET `/orders/{order_id}`
 
 **用途**：订单详情页、支付页、支付成功页等均依赖该接口获取完整信息，包括收货地址、积分奖励等。
+
+**权限说明**：
+
+- 默认仅订单创建人可访问。
+- 若为礼品卡兑换订单（`is_gift_card_order=true`），**兑换人（redeemer_id）** 可访问对应订单详情。
 
 **成功响应（200）**：
 
@@ -773,7 +928,8 @@
   "return_images": [],
   "coupon_info": null,
   "gift_card_info": null,
-  "is_gift_card_order": false
+  "is_gift_card_order": false,
+  "giftcard_mode": null
 }
 ```
 
@@ -870,7 +1026,8 @@
     "coupon_code": "COUPON123",
     "discount_amount": "10.00",
     "original_total": "116.00",
-    "final_total": "106.00"
+    "final_total": "106.00",
+    "coupon_description": "新客专享"
   }
 }
 ```
@@ -1064,14 +1221,133 @@
 
 ------
 
+### POST `/payments/notify/wechat-refund`
+
+**用途**：微信退款回调（服务端使用，前端不调用）
+
+**说明**：
+- 与支付回调一致的验签与解密逻辑
+- 成功后将订单状态更新为退款完成，并记录退款信息
+
+------
+
+### GET `/payments/diagnose`
+
+**用途**：支付配置诊断（仅开发/运维排查）
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "app_id_set": true,
+    "app_secret_set": true,
+    "mch_id_set": true,
+    "serial_no_set": true,
+    "platform_serial_set": true,
+    "api_v3_key_length": 32,
+    "private_key_loaded": true,
+    "platform_key_loaded": true,
+    "openssl_available": true,
+    "notify_url": "https://yourdomain.com/wp-json/myshop/v1/payments/notify/wechat",
+    "home_url": "https://yourdomain.com/",
+    "site_url": "https://yourdomain.com/",
+    "plugin_file": ".../payment-controller.php"
+  }
+}
+```
+
+------
+
 ## 六、虚拟购物卡（二期）
+
+### GET `/gift-cards/templates`
+
+**用途**：获取可用的购物卡模板列表
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 12,
+      "name": "稻香 200 元礼卡",
+      "type": "fixed_amount",
+      "fixed_amount": "200.00",
+      "currency": "CNY",
+      "product_id": null,
+      "variation_ids": [],
+      "bundle_items": null,
+      "delivery_modes": ["digital_share"],
+      "valid_days": 365,
+      "created_at": "2025-11-18 09:00:00",
+      "updated_at": "2025-11-18 09:00:00",
+      "purchase_flow": "stored_value",
+      "amount_options": [100, 200, 300],
+      "min_amount": 100,
+      "max_amount": 1000,
+      "allowed_product_ids": null,
+      "allowed_variation_ids": null,
+      "max_items": null,
+      "max_total": null,
+      "success_copywriting": null
+    }
+  ]
+}
+```
+
+------
+
+### GET `/gift-cards/templates/{id}`
+
+**用途**：获取单个购物卡模板详情（含分享/打印配置）
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 12,
+    "name": "稻香 200 元礼卡",
+    "type": "fixed_amount",
+    "fixed_amount": "200.00",
+    "currency": "CNY",
+    "delivery_modes": ["digital_share"],
+    "valid_days": 365,
+    "share_template_config": {
+      "id": "default",
+      "name": "默认样式"
+    },
+    "print_template_url": "https://yourdomain.com/wp-content/plugins/myshop-core/assets/giftcard/print-default.html",
+    "purchase_flow": "stored_value",
+    "amount_options": [100, 200, 300]
+  }
+}
+```
+
+------
 
 ### POST `/gift-cards/redeem`
 
 **请求体**：
 
 ```json
-{ "card_number": "GC20251118001", "card_pin": "123456" }
+{
+  "card_number": "GC20251118001",
+  "shipping_address": {
+    "name": "张三",
+    "phone": "13800138000",
+    "province": "黑龙江省",
+    "city": "哈尔滨市",
+    "district": "五常市",
+    "detail_address": "稻花香农场1号",
+    "postcode": "150200"
+  }
+}
 ```
 
 **成功响应（200）**：
@@ -1082,7 +1358,9 @@
   "message": "礼品卡兑换成功",
   "data": {
     "card_number": "GC20251118001",
-    "status": "redeemed"
+    "status": "redeemed",
+    "order_id": 1005,
+    "order_number": "1005"
   }
 }
 ```
@@ -1137,15 +1415,47 @@
 {
   "success": true,
   "data": {
-    "share_token": "SHR20251122XYZ",
+    "card_number": "GC20251118001",
+    "template_name": "稻香 200 元礼卡",
     "delivery_mode": "digital_share",
     "channel": "wechat",
-    "expires_at": "2025-12-22 23:59:59"
+    "expires_at": "2025-12-22 23:59:59",
+    "print_template_url": "https://yourdomain.com/wp-content/plugins/myshop-core/assets/giftcard/print-default.html",
+    "allowed_delivery_modes": ["digital_share", "printable"],
+    "share_meta": {
+      "message": "新年快乐",
+      "theme": "default",
+      "format": "qr",
+      "template": {
+        "print_template_url": "https://yourdomain.com/wp-content/plugins/myshop-core/assets/giftcard/print-default.html",
+        "share_template_config": {
+          "id": "default",
+          "name": "默认样式"
+        }
+      }
+    },
+    "share_state": "shared",
+    "card_snapshot": {
+      "card_number": "GC20251118001",
+      "template_name": "稻香 200 元礼卡",
+      "initial_amount": "200.00",
+      "balance": "200.00",
+      "expires_at": "2026-11-18 23:59:59",
+      "message": "新年快乐",
+      "theme": "default"
+    },
+    "share_history": [],
+    "share_token": "SHR20251122XYZ",
+    "share_url": "https://yourdomain.com/?giftcard_token=SHR20251122XYZ",
+    "mini_program_path": "/pages/shopping-card/claim?token=SHR20251122XYZ",
+    "qr_payload": "https://yourdomain.com/?giftcard_token=SHR20251122XYZ",
+    "qr_image_url": "https://yourdomain.com/wp-content/uploads/myshop/giftcard/qr/giftcard_SHR20251122XYZ.png",
+    "mini_program_qr": "https://yourdomain.com/wp-content/uploads/myshop/giftcard/qr/giftcard_SHR20251122XYZ.png"
   }
 }
 ```
 
-> 当前实现不会直接生成 `share_url`、`mini_program_qr` 等素材链接，需要结合模板配置自行渲染。
+> 当前实现直接返回 `share_url`、`mini_program_path`、`qr_image_url`、`mini_program_qr` 等字段，前端可直接用于分享和渲染。
 
 ------
 
@@ -1169,6 +1479,12 @@
     "share_token_expires_at": "2025-12-22 23:59:59",
     "status": "active",
     "bind_status": "unbound",
+    "share_meta": {
+      "message": "新年快乐",
+      "theme": "default",
+      "format": "qr"
+    },
+    "share_state": "shared",
     "template": {
       "id": 12,
       "name": "稻香 200 元礼卡",
@@ -1176,7 +1492,23 @@
       "fixed_amount": "200.00",
       "delivery_modes": ["digital_share"],
       "valid_days": 365
-    }
+    },
+    "card_snapshot": {
+      "card_number": "GC20251118001",
+      "template_name": "稻香 200 元礼卡",
+      "initial_amount": "200.00",
+      "balance": "200.00",
+      "expires_at": "2026-11-18 23:59:59",
+      "message": "新年快乐",
+      "theme": "default"
+    },
+    "share_history": [],
+    "share_token": "SHR20251122XYZ",
+    "share_url": "https://yourdomain.com/?giftcard_token=SHR20251122XYZ",
+    "mini_program_path": "/pages/shopping-card/claim?token=SHR20251122XYZ",
+    "qr_payload": "https://yourdomain.com/?giftcard_token=SHR20251122XYZ",
+    "qr_image_url": "https://yourdomain.com/wp-content/uploads/myshop/giftcard/qr/giftcard_SHR20251122XYZ.png",
+    "mini_program_qr": "https://yourdomain.com/wp-content/uploads/myshop/giftcard/qr/giftcard_SHR20251122XYZ.png"
   }
 }
 ```
@@ -1213,6 +1545,58 @@
   "message": "分享链接已过期",
   "data": {
     "status": 410
+  }
+}
+```
+
+> 兼容别名：`POST /gift-cards/share/{token}/redeem` 与 `/claim` 行为一致。
+
+------
+
+### POST `/gift-cards/share/{card_number}/revoke`
+
+**用途**：持有人撤销分享（清除分享 token）
+
+**路径参数**：`card_number`
+
+**请求体**：_无（仅需携带 JWT）_
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "card_number": "GC20251118001",
+    "share_state": "none"
+  }
+}
+```
+
+------
+
+### GET `/gift-cards/{card_number}/share-history`
+
+**用途**：获取礼品卡分享记录（仅持有人可访问）
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "card_number": "GC20251118001",
+    "share_history": [
+      {
+        "id": 100,
+        "delivery_mode": "digital_share",
+        "channel": "wechat",
+        "share_token": "SHR20251122XYZ",
+        "print_package_url": null,
+        "ip_address": "127.0.0.1",
+        "created_at": "2025-11-22 09:00:00"
+      }
+    ]
   }
 }
 ```
@@ -1265,9 +1649,13 @@
   "success": true,
   "data": [
     {
-      "theme": "default",
-      "title": "默认样式",
-      "preview_url": "https://yourdomain.com/wp-content/plugins/myshop-core/assets/giftcard/share-default.json"
+      "id": "default",
+      "name": "默认样式",
+      "preview_image": "https://yourdomain.com/wp-content/plugins/myshop-core/assets/giftcard/share-default.png",
+      "config": {
+        "id": "default",
+        "name": "默认样式"
+      }
     }
   ]
 }
@@ -1583,6 +1971,7 @@
   "data": {
     "option_id": "coupon_10",
     "awarded_coupon_code": "CPN-2025-001234",
+    "coupon_code": "CPN-2025-001234",
     "cost_points": 120,
     "new_balance": 140
   }
@@ -1628,6 +2017,21 @@
 
 ## 八、消费者分销（二级裂变）
 
+### GET `/referral/code`
+
+**用途**：获取当前用户的邀请码
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "referral_code": "U42ABCD"
+  }
+}
+```
+
 ### GET `/referrals/my-downlines`
 
 **成功响应（200）**：
@@ -1644,27 +2048,81 @@
       "total_orders": 3,
       "lifetime_value": "486.00",
       "channel_code": "xhs-202511"
-    },
-    {
-      "user_id": 202,
-      "phone": "137****5678",
-      "registered_at": "2025-11-15T14:30:00+08:00",
-      "level": 2,
-      "first_order_status": "pending",
-      "total_orders": 0,
-      "lifetime_value": "0.00",
-      "channel_code": null
     }
   ],
   "summary": {
     "level1_count": 12,
     "level2_count": 36,
     "first_order_completed": 18
+  },
+  "pagination": {
+    "page": 1,
+    "per_page": 20,
+    "total": 1,
+    "total_pages": 1
   }
 }
 ```
 
 `first_order_status` 枚举：`"pending" | "completed" | "expired"`
+
+------
+
+### GET `/referral/members`
+
+**用途**：分销成员列表（轻量字段，含首单信息）
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "user_id": 201,
+      "nickname": "新米粉",
+      "level": 1,
+      "first_order_status": "completed",
+      "first_order_id": 1005,
+      "joined_at": "2025-11-10T10:00:00+08:00"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "per_page": 20,
+    "total": 1,
+    "total_pages": 1
+  }
+}
+```
+
+------
+
+### GET `/referral/summary`
+
+**用途**：分销概览统计
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "referral_code": "U42ABCD",
+    "total_invitees": 18,
+    "level_one_count": 12,
+    "level_two_count": 36,
+    "completed_first_orders": 18,
+    "pending_first_orders": 2,
+    "commission_totals": {
+      "pending": "128.40",
+      "approved": "86.20",
+      "rejected": "0.00",
+      "paid": "215.00"
+    }
+  }
+}
+```
 
 ------
 
@@ -1674,24 +2132,44 @@
 
 ```json
 {
+  "success": true,
+  "data": [
+    {
+      "id": 101,
+      "order_id": 1001,
+      "amount": "11.60",
+      "currency": "CNY",
+      "commission_type": "referral",
+      "referrer_id": 18,
+      "agent_id": null,
+      "status": "pending",
+      "expected_payout_at": "2025-11-30T23:59:59+08:00",
+      "paid_at": null,
+      "note": "",
+      "created_at": "2025-11-18T20:00:00+08:00"
+    }
+  ],
   "commissions": [
     {
       "id": 101,
       "order_id": 1001,
       "amount": "11.60",
+      "currency": "CNY",
       "commission_type": "referral",
-      "level": 1,
-      "channel": "xiaohongshu",
+      "referrer_id": 18,
+      "agent_id": null,
       "status": "pending",
-      "created_at": "2025-11-18T20:00:00+08:00",
-      "expected_payout_at": "2025-11-30T23:59:59+08:00"
+      "expected_payout_at": "2025-11-30T23:59:59+08:00",
+      "paid_at": null,
+      "note": "",
+      "created_at": "2025-11-18T20:00:00+08:00"
     }
   ],
-  "summary": {
-    "pending_total": "128.40",
-    "approved_total": "86.20",
-    "paid_total": "215.00",
-    "available_for_withdrawal": "86.20"
+  "pagination": {
+    "page": 1,
+    "per_page": 20,
+    "total": 1,
+    "total_pages": 1
   }
 }
 ```
@@ -1701,39 +2179,30 @@
 
 ------
 
-### POST `/commissions/payout`
-
-**用途**：运营/财务在小程序后台触发佣金打款或审核动作
-**请求体**：
-
-```json
-{
-  "commission_ids": [101, 102, 103],
-  "action": "approve",
-  "note": "11 月第一批佣金审核通过"
-}
-```
-
-`action` 枚举：`"approve" | "reject" | "mark_paid"`
+### GET `/commissions/summary`
 
 **成功响应（200）**：
 
 ```json
 {
-  "processed": [101, 102, 103],
-  "failed": []
+  "success": true,
+  "data": {
+    "totals_by_status": {
+      "pending": "128.40",
+      "approved": "86.20",
+      "rejected": "0.00",
+      "paid": "215.00"
+    },
+    "paid_this_month": "86.20"
+  }
 }
 ```
 
-**失败示例（409）**：
+------
 
-```json
-{
-  "error_code": "payout_in_progress",
-  "message": "佣金正在处理，请稍后重试",
-  "status": 409
-}
-```
+### POST `/commissions/payout`
+
+> ⚠️ 当前插件未实现该接口，后端无对应路由。
 
 ------
 
@@ -1769,19 +2238,61 @@
 
 ```json
 {
-  "agent_code": "AGT210",
-  "status": "active",
-  "region_zone": "华南大区",
-  "region_province": "广东省",
-  "region_city": "深圳市",
-  "level": 1,
-  "parent_agent_id": 8,
-  "active_until": "2026-11-25T10:00:00+08:00",
-  "is_active": true
+  "success": true,
+  "data": {
+    "agent_code": "AGT210",
+    "status": "active",
+    "active_until": "2026-11-25T10:00:00+08:00",
+    "is_active": true,
+    "parent_agent_id": 8
+  }
 }
 ```
 
 `status` 枚举：`"pending" | "active" | "rejected" | "frozen"`
+
+------
+
+### GET `/agents/profile`
+
+**用途**：获取代理档案与多区域 assignments（用于资料页/区域切换）。
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "agent_code": "AGT105",
+    "status": "active",
+    "is_active": true,
+    "active_until": "2026-06-01T10:00:00+08:00",
+    "level": 1,
+    "region_zone": "东北大区",
+    "region_province": "黑龙江省",
+    "region_city": "哈尔滨市",
+    "region": "东北大区 / 黑龙江省 / 哈尔滨市",
+    "joined_at": "2025-06-01T10:00:00+08:00",
+    "invite_qr": null,
+    "team_target": null,
+    "team_size": 3,
+    "parent_agent_id": 42,
+    "assignments": [
+      {
+        "agent_code": "AGT105",
+        "level": 1,
+        "region_zone": "东北大区",
+        "region_province": "黑龙江省",
+        "region_city": "哈尔滨市",
+        "status": "active",
+        "is_active": true,
+        "active_until": "2026-06-01T10:00:00+08:00",
+        "joined_at": "2025-06-01T10:00:00+08:00"
+      }
+    ]
+  }
+}
+```
 
 ------
 
@@ -1804,25 +2315,13 @@
   "status": "active",
   "joined_at": "2025-06-01T10:00:00+08:00",
   "total_downline_agents": 3,
-  "team_sales_amount": "12800.00",
-  "team_order_count": 86,
+  "team_sales_amount": "0.00",
+  "total_sales_amount": "0.00",
+  "team_order_count": 0,
   "pending_commission_total": "1680.00",
-  "monthly_growth_rate": "18.5%",
-  "targets": {
-    "month": "2025-11",
-    "sales_target": "20000.00",
-    "sales_progress": 0.64,
-    "new_client_target": 20,
-    "new_client_progress": 0.55
-  },
-  "recent_highlights": [
-    {
-      "order_id": 1201,
-      "order_amount": "680.00",
-      "commission_estimate": "68.00",
-      "created_at": "2025-11-21T16:30:00+08:00"
-    }
-  ],
+  "monthly_growth_rate": "0%",
+  "targets": null,
+  "recent_highlights": [],
   "assignments": [
     {
       "agent_code": "AGT105",
@@ -1906,6 +2405,11 @@
     "pending_total": "256.00",
     "approved_total": "512.00",
     "paid_total": "1,024.00"
+  },
+  "pagination": {
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 1
   }
 }
 ```
@@ -1926,28 +2430,24 @@
 
 ```json
 {
-  "agent_code": "AGT210",
-  "direct_agents": 2,
-  "indirect_agents": 5,
-  "team_total_agents": 7,
-  "pending_commission": "1680.00",
-  "paid_commission": "820.00",
-  "recent_team_members": [
-    {
-      "user_id": 201,
-      "nickname": "广州城市合伙人",
-      "level": 2,
-      "depth": 1,
-      "joined_at": "2025-11-20T10:00:00+08:00"
-    },
-    {
-      "user_id": 302,
-      "nickname": "深圳旗舰店",
-      "level": 2,
-      "depth": 2,
-      "joined_at": "2025-11-18T09:30:00+08:00"
-    }
-  ]
+  "success": true,
+  "data": {
+    "agent_code": "AGT210",
+    "direct_agents": 2,
+    "indirect_agents": 5,
+    "team_total_agents": 7,
+    "pending_commission": "1680.00",
+    "paid_commission": "820.00",
+    "recent_team_members": [
+      {
+        "user_id": 201,
+        "nickname": "广州城市合伙人",
+        "level": 2,
+        "depth": 1,
+        "joined_at": "2025-11-20T10:00:00+08:00"
+      }
+    ]
+  }
 }
 ```
 
@@ -2001,7 +2501,7 @@
 >
 > - `POST /auth/phone-login` ← 手机号验证码登录
 > - `GET /members/benefits` ← 会员权益查询
-> - `POST /agents/apply` ← 代理商申请入口
+> - `POST /agents/apply` ← 代理商申请入口（已实现，移出预留清单）
 
 ------
 
@@ -2018,8 +2518,8 @@
 
 ------
 
-**文档版本**：V2.3（最终冻结基线）
-**最后更新**：2025年11月22日
+**文档版本**：V2.3.4（冻结基线 + 增量更新）
+**最后更新**：2026年02月05日
 **作者**：超级工程师（AI 助理）
 **状态**：✅ 可作为开发、测试、验收唯一标准
 

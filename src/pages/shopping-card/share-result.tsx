@@ -3,8 +3,8 @@ import Taro, { useRouter } from '@tarojs/taro';
 import QRCode from 'qrcode-generator';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { giftCardService, userService } from '../../services/api';
-import { getStoredUserInfo } from '../../utils/storage';
+import { debugService, giftCardService, userService } from '../../services/api';
+import { getStoredUserInfo, getToken } from '../../utils/storage';
 import type { GiftCardShareResult } from '../../types';
 import './share-result.scss';
 
@@ -33,14 +33,85 @@ const buildQrMatrix = (payload?: string | null) => {
 
 const GiftCardShareResult = () => {
   const router = useRouter();
+  const logShareDebug = (stage: string, payload: Record<string, any>) => {
+    try {
+      const data = { stage, ts: Date.now(), ...payload };
+      console.info('[GiftCardShareResult]', data);
+      Taro.setStorageSync('GIFT_CARD_DEBUG_LAST', data);
+      debugService.logClient(`share-result:${stage}`, data).catch(() => undefined);
+    } catch {
+      // ignore
+    }
+  };
   const cardNumber = (router?.params?.card as string) || '';
   const styleId = (router?.params?.style as string) || '';
   const message = decodeURIComponent((router?.params?.message as string) || '');
   const [shareResult, setShareResult] = useState<GiftCardShareResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [redirecting, setRedirecting] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [sharing, setSharing] = useState(false);
+  const [sharing] = useState(false);
   const [forceMatrix, setForceMatrix] = useState(false);
+  const [shareTokenState, setShareTokenState] = useState('');
+  const miniEnvVersion = useMemo(() => {
+    try {
+      const info = (Taro.getAccountInfoSync && Taro.getAccountInfoSync()) as any;
+      return info?.miniProgram?.envVersion || 'unknown';
+    } catch {
+      return 'unknown';
+    }
+  }, []);
+  const isDevelopEnv = miniEnvVersion === 'develop';
+  // 购物卡分享必须携带 share_token，否则接收方无法领取。
+  // share_token 可能为空的场景：
+  // 1) 分享接口失败（网络/超时/权限）
+  // 2) 分享接口返回异常数据
+  // 3) 用户点击过快，分享结果尚未生成
+  const getStoredShareToken = () => {
+    try {
+      return Taro.getStorageSync<{ share_token?: string }>('GIFT_CARD_SHARE_CONTEXT')?.share_token || '';
+    } catch {
+      return '';
+    }
+  };
+  const shareToken = shareTokenState || shareResult?.share_token || getStoredShareToken();
+  const canShare = Boolean(shareToken);
+
+  const resolveClaimToken = useCallback(() => {
+    const directToken = (router?.params?.token as string) || (router?.params?.giftcard_token as string) || '';
+    const scene = (router?.params?.scene as string) || '';
+    let token = directToken;
+    if (!token && scene) {
+      try {
+        token = decodeURIComponent(scene);
+      } catch {
+        token = scene;
+      }
+    }
+    if (!token) {
+      try {
+        const enterOptions = (Taro.getEnterOptionsSync && Taro.getEnterOptionsSync()) as any;
+        const launchOptions = (Taro.getLaunchOptionsSync && Taro.getLaunchOptionsSync()) as any;
+        const query = enterOptions?.query || launchOptions?.query || {};
+        token = query.giftcard_token || query.token || '';
+        const qsScene = query.scene || '';
+        if (!token && qsScene) {
+          try {
+            token = decodeURIComponent(qsScene);
+          } catch {
+            token = qsScene;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    if (!token) {
+      const persisted = Taro.getStorageSync<string>('GIFT_CARD_CLAIM_TOKEN');
+      if (persisted) token = persisted;
+    }
+    return token;
+  }, [router?.params]);
 
   const ensureShareEligibility = useCallback(async () => {
     try {
@@ -92,18 +163,59 @@ const GiftCardShareResult = () => {
 
   const loadShareResult = useCallback(async () => {
     if (!cardNumber || !styleId) {
+      const token = resolveClaimToken();
+      if (token) {
+        logShareDebug('redirect_to_claim_from_share_result', { token, reason: 'missing_card_or_style' });
+        setRedirecting(true);
+        Taro.redirectTo({ url: `/pages/shopping-card/claim?token=${encodeURIComponent(token)}` });
+        return;
+      }
       Taro.showToast({ title: '参数缺失', icon: 'none' });
       Taro.navigateBack();
       return;
     }
 
-    const eligible = await ensureShareEligibility();
-    if (!eligible) {
+    const authToken = getToken();
+    if (!authToken) {
+      const redirectData = {
+        path: 'pages/shopping-card/share-result',
+        params: {
+          card: cardNumber,
+          style: styleId,
+          message
+        }
+      };
+      Taro.setStorageSync('REDIRECT_AFTER_LOGIN', redirectData);
+      logShareDebug('redirect_to_login', { reason: 'missing_auth' });
+      Taro.redirectTo({ url: '/pages/auth/login' });
       return;
     }
 
     setLoading(true);
     try {
+      const cards = await giftCardService.listMine({
+        showLoading: false,
+        suppressErrorToast: true,
+        suppressLog: true,
+        cacheMs: 0
+      });
+      const owned = cards.find((c) => c.card_number === cardNumber);
+      if (!owned) {
+        Taro.showToast({ title: '无权分享该礼品卡', icon: 'none' });
+        const token = resolveClaimToken();
+        if (token) {
+          Taro.redirectTo({ url: `/pages/shopping-card/claim?token=${encodeURIComponent(token)}` });
+        } else {
+          Taro.navigateBack();
+        }
+        return;
+      }
+
+      const eligible = await ensureShareEligibility();
+      if (!eligible) {
+        return;
+      }
+
       // 调用分享API生成分享内容
       const result = await giftCardService.share({
         card_number: cardNumber,
@@ -116,6 +228,18 @@ const GiftCardShareResult = () => {
       
       if (result) {
         setShareResult(result);
+        if (result?.share_token) {
+          setShareTokenState(result.share_token);
+          Taro.setStorageSync('GIFT_CARD_SHARE_CONTEXT', {
+            card_number: result.card_number,
+            share_token: result.share_token
+          });
+        }
+        logShareDebug('share_result_ready', {
+          card_number: result?.card_number,
+          share_token: result?.share_token,
+          mini_program_path: result?.mini_program_path
+        });
         setForceMatrix(false);
         // 在小程序环境中，Image 组件会自动处理图片预加载
       } else {
@@ -130,11 +254,25 @@ const GiftCardShareResult = () => {
     } finally {
       setLoading(false);
     }
-  }, [cardNumber, styleId, message, ensureShareEligibility]);
+  }, [cardNumber, styleId, message, ensureShareEligibility, resolveClaimToken]);
 
   useEffect(() => {
     loadShareResult();
   }, [loadShareResult]);
+
+  useEffect(() => {
+    if (shareResult?.share_token) {
+      setShareTokenState(shareResult.share_token);
+    }
+  }, [shareResult?.share_token]);
+
+  useEffect(() => {
+    if (canShare) {
+      Taro.showShareMenu({ withShareTicket: false }).catch(() => undefined);
+    } else if (typeof Taro.hideShareMenu === 'function') {
+      Taro.hideShareMenu();
+    }
+  }, [canShare]);
 
   // 计算二维码矩阵（必须在所有条件返回之前）
   const qrImageUrl = forceMatrix ? '' : shareResult?.mini_program_qr || shareResult?.qr_image_url || '';
@@ -215,68 +353,24 @@ const GiftCardShareResult = () => {
     }
   };
 
-  const handleShare = async () => {
-    if (!shareResult) return;
-
-    setSharing(true);
-    try {
-      // 获取二维码图片URL或payload
-      const imageUrl = shareResult.mini_program_qr || shareResult.qr_image_url || '';
-      const payload = shareResult.qr_payload || '';
-      
-      if (!imageUrl && !payload) {
-        Taro.showToast({ title: '图片生成失败', icon: 'none' });
-        return;
-      }
-
-      // For mini-program sharing we prefer opening the native share sheet.
-      // Ensure share menu is enabled (this is a no-op on some platforms).
-      try {
-        await Taro.showShareMenu({ withShareTicket: false });
-        // The actual share payload is provided by useShareAppMessage hook below.
-      } catch (e) {
-        // Fallback: if showShareMenu fails, fall back to preview so user can save/share manually.
-        if (imageUrl) {
-          try {
-            const downloadResult = await Taro.downloadFile({ url: imageUrl });
-            if (downloadResult.statusCode === 200) {
-              await Taro.previewImage({ urls: [downloadResult.tempFilePath], current: downloadResult.tempFilePath });
-              Taro.showToast({ title: '长按图片可保存或分享', icon: 'none', duration: 2000 });
-            } else {
-              Taro.showToast({ title: '下载失败', icon: 'none' });
-            }
-          } catch {
-            Taro.showToast({ title: '图片加载失败，请使用保存功能', icon: 'none' });
-          }
-        } else {
-          Taro.showToast({ title: '请使用保存功能保存二维码', icon: 'none' });
-        }
-      }
-    } catch (error) {
-      // 如果预览失败，提供保存选项
-      Taro.showModal({
-        title: '分享失败',
-        content: '是否保存图片到相册后手动分享？',
-        success: (res) => {
-          if (res.confirm) {
-            handleSaveToAlbum();
-          }
-        }
-      });
-    } finally {
-      setSharing(false);
-    }
-  };
+  // 分享按钮由 openType=share 触发，分享内容由 useShareAppMessage 提供。
 
   // Provide share content for the native share action (Button open-type="share")
   Taro.useShareAppMessage(() => {
-    if (!shareResult) return { title: '礼品卡分享', path: '/pages/index' };
+    // 没有 token 时禁止分享，避免生成无效分享路径。
+    const token = shareTokenState || shareResult?.share_token || getStoredShareToken();
+    if (!token) return { title: '礼品卡分享', path: '/pages/index/index' };
+    logShareDebug('share_app_message', {
+      token,
+      card_number: shareResult?.card_number,
+      path: `/pages/shopping-card/claim?token=${token}`
+    });
     const title =
       shareResult.share_meta?.message?.trim() ||
       (shareResult.card_snapshot?.template_name
         ? `送你一张${shareResult.card_snapshot.template_name}礼品卡`
         : '我给你一张礼品卡，点开查看');
-    const path = shareResult.mini_program_path || `/pages/shopping-card/claim?token=${shareResult.share_token}`;
+    const path = `/pages/shopping-card/claim?token=${token}`;
     const imageUrl = shareResult.mini_program_qr || shareResult.qr_image_url || '';
     return {
       title,
@@ -289,6 +383,14 @@ const GiftCardShareResult = () => {
     return (
       <View className='share-result-page loading-state'>
         <Text>生成中...</Text>
+      </View>
+    );
+  }
+
+  if (redirecting) {
+    return (
+      <View className='share-result-page loading-state'>
+        <Text>正在跳转...</Text>
       </View>
     );
   }
@@ -322,6 +424,13 @@ const GiftCardShareResult = () => {
     <View className='share-result-page'>
       <View className='result-preview'>
         <Text className='preview-title'>分享卡片预览</Text>
+        {isDevelopEnv && (
+          <View className='env-warning'>
+            <Text className='env-warning-text'>
+              当前为开发版二维码，仅开发者/体验成员可打开；非成员扫码会提示版本过期。请使用体验版/正式版或将对方加入体验成员。
+            </Text>
+          </View>
+        )}
         
         {qrImageUrl ? (
           <View className='preview-image-wrapper'>
@@ -371,10 +480,26 @@ const GiftCardShareResult = () => {
           className='btn btn-share'
           loading={sharing}
           openType='share'
-          onClick={handleShare}
+          disabled={!canShare}
+          onClick={() => {
+            if (!canShare) {
+              Taro.showToast({ title: '分享生成失败，请重新生成后再分享', icon: 'none' });
+              return;
+            }
+            const pages = Taro.getCurrentPages();
+            const current = pages[pages.length - 1] as any;
+            logShareDebug('share_button_click', {
+              token: shareToken,
+              route: current?.route,
+              params: current?.options || {}
+            });
+          }}
         >
           {sharing ? '分享中...' : '分享电子二维码'}
         </Button>
+        {!canShare && (
+          <Text className='tip-text'>分享码缺失，请返回重新生成分享内容。</Text>
+        )}
         <Button
           className='btn btn-save'
           loading={saving}

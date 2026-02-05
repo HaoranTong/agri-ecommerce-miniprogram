@@ -199,6 +199,20 @@
     }
   }
 
+  .env-warning {
+    background: #fff7e6;
+    border: 1px solid #ffd591;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 16px 0 20px;
+
+    .env-warning-text {
+      font-size: 24px;
+      color: #d46b08;
+      line-height: 1.6;
+    }
+  }
+
   /* 礼品卡列表 */
   .card-list {
     .card-item {

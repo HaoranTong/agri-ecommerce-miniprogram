@@ -2,9 +2,9 @@
 // 说明：
 // 1) 小程序端真实的多环境（develop/trial/release）由 src/service/api.ts 按 envVersion 运行时决定。
 // 2) 本文件的 BASE_URL/API_BASE 只作为“兜底回退”（例如 H5 端、或拿不到 envVersion 的场景）。
-// 3) 为避免开发态误打生产：development 兜底指向 staging，production 兜底指向生产。
+// 3) 严格区分三套环境：development -> dev.fanbaoer.com（本地 Cloudflare Tunnel），production -> fanbaoer.com。
 
-const DEV_BASE_URL = 'https://staging.fanbaoer.com';
+const DEV_BASE_URL = 'https://dev.fanbaoer.com';
 const PROD_BASE_URL = 'https://fanbaoer.com';
 
 export const BASE_URL = process.env.NODE_ENV === 'development' ? DEV_BASE_URL : PROD_BASE_URL;
@@ -30,13 +30,20 @@ export const API_ENDPOINTS = {
   redeemGiftCard: '/gift-cards/redeem',
   shareGiftCard: '/gift-cards/share',
   shareStyles: '/gift-cards/share-styles',
+  clientLog: '/debug/client-log',
   revokeGiftCardShare: (cardNumber: string) => `/gift-cards/share/${cardNumber}/revoke`,
   getShareDetail: (token: string) => `/gift-cards/share/${token}`,
   claimGiftCard: (token: string) => `/gift-cards/share/${token}/claim`,
   giftCardShareHistory: (cardNumber: string) => `/gift-cards/${cardNumber}/share-history`,
   referrals: '/referrals/my-downlines',
+  referralCode: '/referral/code',
+  referralMembers: '/referral/members',
+  referralSummary: '/referral/summary',
   commissions: '/commissions',
+  commissionsSummary: '/commissions/summary',
   agentsMe: '/agents/me',
+  agentsProfile: '/agents/profile',
+  agentsTeamStats: '/agents/team-stats',
   agentDownlines: '/agents/downlines',
   agentCommissions: '/agents/commissions',
   pointsBalance: '/points/balance',
@@ -49,7 +56,6 @@ export const API_ENDPOINTS = {
   pointsClaimMission: (missionId: string) => `/points/missions/${missionId}/claim`,
   pointsRedeemOptions: '/points/redeem/options',
   pointsRedeem: '/points/redeem',
-  // 缺失的接口
   invitationsSummary: '/invitations/summary',
   invitationsTrack: '/invitations/track',
   agentsApply: '/agents/apply',

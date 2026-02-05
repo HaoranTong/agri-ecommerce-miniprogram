@@ -1,13 +1,22 @@
 import { View, Button, Text, Checkbox, CheckboxGroup, Input, Image } from '@tarojs/components';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Taro from '@tarojs/taro';
 
-import { authService, userService } from '../../services/api';
+import { authService, debugService, userService } from '../../services/api';
 import { getToken } from '../../utils/storage';
 import type { LoginResponse } from '../../types';
 import './login.scss';
 
 const Login = () => {
+  const logLoginDebug = (stage: string, payload: Record<string, any>) => {
+    try {
+      const data = { stage, ts: Date.now(), ...payload };
+      Taro.setStorageSync('GIFT_CARD_DEBUG_LAST', data);
+      debugService.logClient(`login:${stage}`, data).catch(() => undefined);
+    } catch {
+      // ignore
+    }
+  };
   const [loading, setLoading] = useState(false);
   const [phoneLoading, setPhoneLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -16,6 +25,47 @@ const Login = () => {
   const [avatarUrl, setAvatarUrl] = useState('');
   const [nickName, setNickName] = useState('');
   const [loginResult, setLoginResult] = useState<LoginResponse | null>(null);
+
+  const resolveGiftCardToken = () => {
+    try {
+      const currentParams = Taro.getCurrentInstance().router?.params ?? {};
+      const directToken = (currentParams.token as string) || (currentParams.giftcard_token as string) || '';
+      const scene = (currentParams.scene as string) || '';
+      let token = directToken;
+      if (!token && scene) {
+        try {
+          token = decodeURIComponent(scene);
+        } catch {
+          token = scene;
+        }
+      }
+      if (!token) {
+        const enterOptions = (Taro.getEnterOptionsSync && Taro.getEnterOptionsSync()) as any;
+        const launchOptions = (Taro.getLaunchOptionsSync && Taro.getLaunchOptionsSync()) as any;
+        const query = enterOptions?.query || launchOptions?.query || {};
+        token = query.giftcard_token || query.token || '';
+        const qsScene = query.scene || '';
+        if (!token && qsScene) {
+          try {
+            token = decodeURIComponent(qsScene);
+          } catch {
+            token = qsScene;
+          }
+        }
+      }
+      return token;
+    } catch {
+      return '';
+    }
+  };
+
+  useEffect(() => {
+    const token = resolveGiftCardToken();
+    if (token) {
+      Taro.setStorageSync('GIFT_CARD_CLAIM_TOKEN', token);
+      logLoginDebug('token_resolved', { token });
+    }
+  }, []);
 
   const canChooseAvatar = typeof Taro.canIUse === 'function'
     ? Taro.canIUse('button.open-type.chooseAvatar')
@@ -99,6 +149,7 @@ const Login = () => {
         return;
       }
       setLoginResult(result);
+      logLoginDebug('wechat_login_success', { has_phone: result?.has_phone, is_new_user: result?.is_new_user ?? result?.is_new });
       Taro.showToast({ title: '登录成功', icon: 'success' });
 
       const isNewUser = Boolean(result.is_new_user ?? result.is_new);
@@ -299,6 +350,18 @@ const Login = () => {
 
   // 统一的登录后跳转逻辑
   const navigateAfterLogin = () => {
+    let claimToken = Taro.getStorageSync<string>('GIFT_CARD_CLAIM_TOKEN');
+    if (!claimToken) {
+      claimToken = resolveGiftCardToken();
+      if (claimToken) {
+        Taro.setStorageSync('GIFT_CARD_CLAIM_TOKEN', claimToken);
+      }
+    }
+    if (claimToken) {
+      logLoginDebug('redirect_to_claim', { token: claimToken });
+      Taro.redirectTo({ url: `/pages/shopping-card/claim?token=${encodeURIComponent(claimToken)}` });
+      return;
+    }
     const redirect = Taro.getStorageSync<{ path?: string; params?: Record<string, any> }>('REDIRECT_AFTER_LOGIN');
     if (redirect?.path) {
       const params = redirect.params || {};
@@ -310,11 +373,14 @@ const Login = () => {
       Taro.removeStorageSync('REDIRECT_AFTER_LOGIN');
 
       if (['pages/index/index', 'pages/order/list', 'pages/user/profile'].includes(redirect.path)) {
+        logLoginDebug('redirect_switch_tab', { path: redirect.path });
         Taro.switchTab({ url: `/${redirect.path}` });
       } else {
+        logLoginDebug('redirect_navigate', { path: redirect.path, url });
         Taro.navigateTo({ url });
       }
     } else {
+      logLoginDebug('redirect_default_home', {});
       Taro.switchTab({ url: '/pages/index/index' });
     }
   };

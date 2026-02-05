@@ -264,24 +264,7 @@ if (is_admin()) {
 
 ### **1. 测试 API 接口**
 
-```bash
-curl https://agri-ecommerce.test/wp-json/myshop/v1/config/public -k
-```
-
-**预期返回**：
-```json
-{
-  "payment_qr_url": "",
-  "customer_service_qr": "",
-  "home_slider": [
-    {
-      "img": "https://agri-ecommerce.test/wp-content/uploads/2025/11/banner1.jpg",
-      "link": "/pages/product/detail?id=8422"
-    }
-  ],
-  "last_updated_at": "2025-11-24T22:46:00+08:00"
-}
-```
+通过公共配置接口验证轮播图数据是否可读取（路径与字段见 API 契约）。
 
 ### **2. 小程序查看**
 

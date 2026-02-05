@@ -2,7 +2,7 @@ import { Button, Image, Text, View } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import { useEffect, useMemo, useState } from 'react';
 
-import { giftCardService } from '../../services/api';
+import { debugService, giftCardService } from '../../services/api';
 import type { GiftCardShareDetail } from '../../types';
 import { getToken } from '../../utils/storage';
 import './claim.scss';
@@ -25,24 +25,83 @@ const formatDateTime = (value?: string | null) => {
 
 const GiftCardClaim = () => {
   const router = useRouter();
+  const logClaimDebug = (stage: string, payload: Record<string, any>) => {
+    try {
+      const data = { stage, ts: Date.now(), ...payload };
+      Taro.setStorageSync('GIFT_CARD_DEBUG_LAST', data);
+      debugService.logClient(`claim:${stage}`, data).catch(() => undefined);
+    } catch {
+      // ignore
+    }
+  };
   const token = useMemo(() => {
-    const directToken = (router.params?.token as string) || '';
+    const directToken = (router.params?.token as string) || (router.params?.giftcard_token as string) || '';
     if (directToken) return directToken;
     const scene = (router.params?.scene as string) || '';
-    if (!scene) return '';
-    try {
-      return decodeURIComponent(scene);
-    } catch (error) {
-      return scene;
+    if (scene) {
+      try {
+        return decodeURIComponent(scene);
+      } catch (error) {
+        return scene;
+      }
     }
+    try {
+      const enterOptions = (Taro.getEnterOptionsSync && Taro.getEnterOptionsSync()) as any;
+      const launchOptions = (Taro.getLaunchOptionsSync && Taro.getLaunchOptionsSync()) as any;
+      const query = enterOptions?.query || launchOptions?.query || {};
+      const queryToken = query.giftcard_token || query.token || '';
+      if (queryToken) return queryToken;
+      const qsScene = query.scene || '';
+      if (qsScene) {
+        try {
+          return decodeURIComponent(qsScene);
+        } catch (error) {
+          return qsScene;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    const persisted = Taro.getStorageSync<string>('GIFT_CARD_CLAIM_TOKEN');
+    return persisted || '';
   }, [router.params]);
   const [detail, setDetail] = useState<GiftCardShareDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
+  const [autoClaimAttempted, setAutoClaimAttempted] = useState(false);
+  const [claimSuccessShown, setClaimSuccessShown] = useState(false);
   const [error, setError] = useState('');
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   useEffect(() => {
+    logClaimDebug('mount', { params: router.params || {} });
+    const debugFlag = (router.params?.debug as string) || '';
+    if (debugFlag) {
+      try {
+        const launchOptions = (Taro.getLaunchOptionsSync && Taro.getLaunchOptionsSync()) as any;
+        const pages = Taro.getCurrentPages();
+        const current = pages[pages.length - 1] as any;
+        const payload = {
+          launchOptions,
+          currentRoute: current?.route,
+          currentOptions: current?.options
+        };
+        setDebugInfo(JSON.stringify(payload, null, 2));
+      } catch (err) {
+        setDebugInfo(String((err as any)?.message || err));
+      }
+    }
+
+    if (token) {
+      const persisted = Taro.getStorageSync<string>('GIFT_CARD_CLAIM_TOKEN');
+      if (persisted !== token) {
+        Taro.setStorageSync('GIFT_CARD_CLAIM_TOKEN', token);
+      }
+      logClaimDebug('token_resolved', { token });
+    }
+
     if (!token) {
+      logClaimDebug('token_missing', {});
       setLoading(false);
       setError('缺少分享参数');
       return;
@@ -64,6 +123,7 @@ const GiftCardClaim = () => {
       };
 
       Taro.setStorageSync('REDIRECT_AFTER_LOGIN', redirectData);
+      logClaimDebug('redirect_to_login', { token });
       Taro.redirectTo({
         url: '/pages/auth/login'
       });
@@ -74,10 +134,12 @@ const GiftCardClaim = () => {
       try {
         setLoading(true);
         const data = await giftCardService.getShareDetail(token);
+        logClaimDebug('share_detail_success', { token });
         setDetail(data);
         setError('');
       } catch (err) {
         console.error('获取分享信息失败', err);
+        logClaimDebug('share_detail_fail', { token, error: (err as any)?.message || String(err) });
         const message = err instanceof Error ? err.message || '分享链接无效' : '分享链接无效';
         setError(message);
       } finally {
@@ -88,17 +150,43 @@ const GiftCardClaim = () => {
     fetchDetail();
   }, [token, router.params]);
 
+  useEffect(() => {
+    if (!detail || claiming || autoClaimAttempted) return;
+    const bindStatus = String(detail.bind_status || '').toLowerCase();
+    const shareState = String(detail.share_state || '').toLowerCase();
+    if (bindStatus === 'bound' || shareState === 'bound' || shareState === 'consumed') {
+      return;
+    }
+    // 自动领取：满足“打开分享后登录即绑定”的需求
+    setAutoClaimAttempted(true);
+    handleClaim();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detail, claiming, autoClaimAttempted]);
+
   const handleClaim = async () => {
     if (!token) return;
     try {
       setClaiming(true);
+      logClaimDebug('claim_attempt', { token });
       await giftCardService.claim(token);
-      Taro.showToast({ title: '领取成功', icon: 'success' });
-      setTimeout(() => {
-        Taro.redirectTo({ url: '/pages/shopping-card/mine?highlight=new' });
-      }, 800);
+      Taro.removeStorageSync('GIFT_CARD_CLAIM_TOKEN');
+      logClaimDebug('claim_success', { token });
+      if (!claimSuccessShown) {
+        setClaimSuccessShown(true);
+        Taro.showModal({
+          title: '领取成功',
+          content: '已成功获取购物卡，请到“我的”页面查看购物卡数量并前往购物卡中心使用。',
+          confirmText: '去我的',
+          cancelText: '稍后'
+        }).then((res) => {
+          if (res.confirm) {
+            Taro.redirectTo({ url: '/pages/shopping-card/mine?highlight=new' });
+          }
+        });
+      }
     } catch (err) {
       console.error('领取失败', err);
+      logClaimDebug('claim_fail', { token, error: (err as any)?.message || String(err) });
       const message = err instanceof Error ? err.message || '领取失败' : '领取失败';
       Taro.showToast({ title: message, icon: 'none' });
     } finally {
@@ -116,6 +204,12 @@ const GiftCardClaim = () => {
         <Text className='error-icon'>⚠️</Text>
         <Text className='error-title'>无法领取</Text>
         <Text className='error-desc'>{error || '分享链接已失效或不存在'}</Text>
+        {!!debugInfo && (
+          <View className='debug-info'>
+            <Text className='debug-title'>调试信息</Text>
+            <Text className='debug-text'>{debugInfo}</Text>
+          </View>
+        )}
         <Button className='back-btn' onClick={() => Taro.switchTab({ url: '/pages/index/index' })}>
           回到首页
         </Button>
@@ -135,7 +229,7 @@ const GiftCardClaim = () => {
           <Text className='hero-label'>好友赠送的购物卡</Text>
           <Text className='hero-title'>{detail.template_name || detail.template?.name || '购物卡'}</Text>
           <Text className='hero-amount'>¥{detail.balance ?? '--'}</Text>
-          <Text className='hero-expire'>有效期：{formatDateTime(detail.expires_at)}</Text>
+          <Text className='hero-expire'>购物卡有效期：{formatDateTime(detail.expires_at)}</Text>
           {detail.share_meta?.message && (
             <Text className='hero-message'>“{detail.share_meta.message}”</Text>
           )}
@@ -158,6 +252,7 @@ const GiftCardClaim = () => {
         <Text className='step'>1. 礼品卡将立即保存到“我的购物卡”。</Text>
         <Text className='step'>2. 可在卡包中随时查看、分享或再次赠送。</Text>
         <Text className='step'>3. 兑换时填写收货地址，系统生成 0 元订单安排配送。</Text>
+        <Text className='step-note'>有效期指购物卡可使用/兑换的期限，过期后将无法兑换。</Text>
       </View>
 
       <Button className='claim-btn' loading={claiming} onClick={handleClaim}>
@@ -169,6 +264,12 @@ const GiftCardClaim = () => {
       >
         我先逛逛
       </Button>
+      {!!debugInfo && (
+        <View className='debug-info'>
+          <Text className='debug-title'>调试信息</Text>
+          <Text className='debug-text'>{debugInfo}</Text>
+        </View>
+      )}
     </View>
   );
 };

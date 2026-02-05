@@ -2,6 +2,8 @@
 
 > 按顺序执行，若某一步失败，请截图 + 返回体发我，我负责分析和修复。
 
+> 说明：接口路径/字段/状态/错误码以 `docs/08_API_CONTRACT_V2.3.md` 为唯一来源；本文仅描述测试步骤，不定义具体取值。
+
 ## A. 公共准备
 1. 打开 `MyShop Dev` 环境，确保变量 `base_url`、`test_user_openid`、`admin_key` 已配置。
 2. 选择 `MyShop API Test Suite` 集合，确认 Gift Cards / Points 目录都可见。
@@ -23,11 +25,11 @@
    - 校验返回的卡信息与环境变量一致。
 6. **（可选）切换领取账号**：把 `auth_token` 改为第二个用户登录结果。
 7. **Gift Cards / Claim Shared Gift Card**
-   - 期待 `status=bound`。
+   - 期待状态为“已领取”（以 API 契约为准）。
 8. **Gift Cards / Redeem Gift Card**
-   - 期待 `status=redeemed`。
+   - 期待状态为“已兑换”（以 API 契约为准）。
 9. **Gift Cards / List My Gift Cards**
-   - 确认卡列表中最新卡片状态为 `redeemed`。
+   - 确认卡列表中最新卡片状态与步骤 8 一致（以 API 契约为准）。
 
 ## C. 积分流程
 1. **Auth / Login (WeChat Code)**（若需要重新登录）
@@ -39,7 +41,7 @@
    - 确认为步骤 2 结果。
 4. **Points / Spend Points**
    - 若返回 200：记录 `new_balance`。
-   - 若 400 且 `code=insufficient_points`：降低 `points_spend_amount` 后重试。
+   - 若返回“积分不足”类错误码（见 API 契约）：降低 `points_spend_amount` 后重试。
 5. **Points / List Points Ledger**
    - 最新记录应能看到步骤 2/4 的变更，`delta` 正负对应发放/扣减。
 
@@ -51,14 +53,14 @@
    - Body 示例：`{"region_zone":"华南大区","region_province":"广东省","region_city":"深圳市","level":1}`。
    - 默认测试环境使用 `{{agent_region_zone}}/{{agent_region_province}}/{{agent_region_city}}` 变量；若为空需先在环境中填写。
    - 记录返回的 `agent_code`，写入环境变量 `agent_code_primary`（脚本会自动落库，手动校验即可）。
-   - 确认响应包含 `active_until`（默认 +365 天）与 `is_active=true`，证明合同期生效。
+   - 确认合同期生效（字段与取值以 API 契约为准）。
 3. **Agents / Profile**
-   - 确认 `status=active`、`region_zone/province/city` 与提交一致，`is_active=true`、`active_until` 为未来日期。
+   - 确认代理状态有效、区域字段与提交一致、合同期为未来日期（字段与取值以 API 契约为准）。
 4. **Agents / Team Stats**
    - 若还未有队员，`direct_agents=0`、`team_total_agents=0`；稍后 B/C 申请后再次调用应看到数量随下级增加。
 5. **切换至用户 B 登录**
 6. **Agents / Apply (Duplicate Region)**
-   - 不修改 `agent_region_*` 变量，直接复用 A 的区域；期望返回 `409` 且 `code=region_occupied`，证明同一区域无法重复入驻。
+   - 不修改 `agent_region_*` 变量，直接复用 A 的区域；期望返回冲突类错误码（见 API 契约），证明同一区域无法重复入驻。
 7. **Agents / Apply**（Body 中 `parent_agent_code` = `{{agent_code_primary}}`，其余区域字段填写 B 实际负责的不同地区）
 8. **Agents / Profile / Team Stats**（用户 B）
    - 确认 `parent_agent_id` 有值；`region_*` 字段落库；`Team Stats` 中 `direct_agents` 应为 0。

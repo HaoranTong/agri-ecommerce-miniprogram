@@ -95,11 +95,10 @@ const GiftCardManage = () => {
   const handleViewOrder = (card: GiftCard) => {
     const purchaseOrderId = (card as any)?.purchase_order_id || card.card_snapshot?.order_id;
     if (purchaseOrderId) {
-      Taro.navigateTo({ url: `/pages/order/order-confirm?orderId=${purchaseOrderId}&from=giftcard_manage` });
+      Taro.navigateTo({ url: `/pages/order/detail?orderId=${purchaseOrderId}` });
       return;
     }
-    Taro.navigateTo({ url: '/pages/order/list?filter=giftcard' });
-    Taro.showToast({ title: '已跳转到订单列表', icon: 'none' });
+    Taro.showToast({ title: '未找到订单信息', icon: 'none' });
   };
 
   const handleRevoke = async (cardNumber: string) => {

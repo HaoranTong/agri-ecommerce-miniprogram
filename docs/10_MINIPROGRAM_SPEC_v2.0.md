@@ -4,11 +4,11 @@
 
 # 📱 微信小程序工程结构规范
 
-## `myshop-miniprogram` 工程（V2.0.1 - 2026-01-21 更新）
+## `myshop-miniprogram` 工程（V2.0.4 - 2026-02-05 更新）
 
 > **适用项目**：微信小程序 × WordPress 无头电商系统（一期 + 二期：购物卡 / 积分 / 分销 / 代理商）
 > **目标**：统一代码组织、提升可维护性、支持多人协作、便于后续迭代
-> **原则**：轻量、清晰、类型安全、与 API 契约 V2.3.2 严格对齐（含中国地址模型、商品 description、订单号、积分与购物卡字段等）
+> **原则**：轻量、清晰、类型安全、与 API 契约 V2.3.4 严格对齐（含中国地址模型、商品 description、订单号、积分与购物卡字段等）
 >
 > **V2.0.1 变更记录**（2026-01-21）：
 > 1. 登录流程优化为两步式UI（先登录获取profile，再显示手机号授权界面）
@@ -19,6 +19,14 @@
 > 1. 登录接口返回 `is_new_user/has_profile/has_phone/has_realname`，前端仅在首次登录弹出头像昵称授权
 > 2. 仅在手机号未绑定时展示手机号授权，避免重复弹窗
 > 3. 生成分享二维码前强制校验真实姓名 + 手机号（跳转资料完善）
+>
+> **V2.0.3 变更记录**（2026-02-05）：
+> 1. 购物卡分享路径统一为 `/pages/shopping-card/claim?token=...`，分享按钮启用 `openType=share` + `enableShareAppMessage`
+> 2. 领取页“有效期”文案明确为“购物卡有效期”，补充说明文案并优化排版与安全区间距
+> 3. 购物卡管理“查看订单”统一跳转订单详情页（需后端支持兑换人访问）
+>
+> **V2.0.4 变更记录**（2026-02-05）：
+> 1. 移除错误码示例与映射片段，统一引用 API 契约与数据字典作为唯一来源
 
 ------
 
@@ -370,13 +378,13 @@ export const request = async <T = any>(options: RequestOptions): Promise<T> => {
 **步骤1：微信登录**
 - 用户点击"微信登录"按钮
 - 自动调用 `getUserProfile` 获取头像昵称（需用户授权）
-- 调用 `wx.login` 获取 `code`，提交 `/auth/login`
-- 如果获取到真实用户信息（非 `is_demote` 数据），自动调用 `/user/profile` 上传头像昵称
+- 调用 `wx.login` 获取 `code`，提交登录接口（见 API 契约）
+- 如果获取到真实用户信息（非 `is_demote` 数据），自动调用用户资料更新接口（见 API 契约）上传头像昵称
 - 登录成功后显示手机号授权界面
 
 **步骤2：手机号授权**
 - 显示两个按钮："授权手机号" 和 "暂不授权"
-- 点击"授权手机号"：使用 `open-type="getPhoneNumber"` 获取 `phone_code`，调用 `/auth/phone` 绑定
+- 点击"授权手机号"：使用 `open-type="getPhoneNumber"` 获取 `phone_code`，调用手机号绑定接口（见 API 契约）
 - 点击"暂不授权"：跳过手机号绑定，直接进入小程序
 
 ```tsx
@@ -447,7 +455,7 @@ const OrderCreate = () => {
   }, [variationId]);
 
   const loadVariation = async (id: string) => {
-    const data = await request<Variation>({ url: `/variations/${id}` });
+    const data = await request<Variation>({ url: API_ENDPOINTS.variationDetail(id) });
     setVariation(data);
   };
 
@@ -458,7 +466,7 @@ const OrderCreate = () => {
     }
 
     const res = await request<{ order_id: number }>({
-      url: '/orders',
+      url: API_ENDPOINTS.orders,
       method: 'POST',
       data: {
         variation_id: variationId,
@@ -505,10 +513,10 @@ export default OrderCreate;
 
 ### 3. **退货申请（`src/pages/order/detail.tsx`）**
 
-- 当订单状态为 `processing` / `completed` 且 `return_status=none` 时显示“申请退货”按钮。
-- 图片先调用 `POST /orders/{order_id}/return-request/upload` 上传，返回 URL 列表。
-- 提交时调用 `POST /orders/{order_id}/return-request`，携带 `reason`、`contact` 与 `images`。
-- 已提交后展示 `return_status`（`requested/approved/rejected/refunded`），并隐藏重复提交入口。
+- 当订单状态满足可退货条件且 `return_status` 允许申请时显示“申请退货”按钮（状态值见 API 契约）。
+- 图片先调用退货图片上传接口（见 API 契约），返回 URL 列表。
+- 提交时调用退货申请接口（见 API 契约），携带 `reason`、`contact` 与 `images`。
+- 已提交后展示 `return_status`（状态值见 API 契约），并隐藏重复提交入口。
 
 ------
 
@@ -551,7 +559,8 @@ export interface Address {
 - 分享二维码 / PDF 均跳转到同一领取入口
 - 若未登录，先走微信登录；登录后展示确认提示页（说明领取后卡片将自动进入“购物卡中心”，并提示如何查找/使用）
 - 用户点击“确认领取”后调用 `giftCardService.claimSharedCard({ token })`，成功即绑定当前账号，并 `redirectTo('/pages/shopping-card/mine?highlight=new')`
-- 失败时需结合 `error-map.ts` 映射错误码（如 `share_token_invalid`）展示友好提示
+- 失败时需结合 `error-map.ts` 映射错误码（以 API 契约为准）展示友好提示
+- 失败时需结合 `error-map.ts` 映射错误码（以 API 契约为准）展示友好提示
 
 ```ts
 const handleConfirm = async () => {
@@ -650,17 +659,10 @@ import styles from './detail.scss';
 
 - `error-map.ts` 必须维护与 `docs/08_API_CONTRACT_V2.3.md` 一致的错误码映射
 - 页面捕获接口异常后调用 `resolveErrorMessage(error_code)`，默认兜底为「系统繁忙，请稍后再试」
-- 分享、积分、代理模块新增错误码需同步：`GIFT_CARD_TOKEN_EXPIRED`、`POINTS_REDEEM_QUOTA_EXCEEDED`、`AGENT_NOT_APPROVED`
+- 分享、积分、代理模块新增错误码需同步更新契约与数据字典，并在 `error-map.ts` 中维护映射
 
-```ts
-export const ERROR_MAP: Record<string, string> = {
-  GIFT_CARD_TOKEN_EXPIRED: '分享口令已失效，请重新索取',
-  POINTS_REDEEM_QUOTA_EXCEEDED: '当日积分兑换额度已达上限',
-  AGENT_NOT_APPROVED: '代理商申请审核中，请耐心等待',
-};
-```
-
-> 所有新增错误码必须同步更新到 `docs/DATA_DICTIONARY.md` 与 `src/services/endpoints.ts`
+> 具体映射仅维护在 `src/utils/error-map.ts`，本文不重复列举。
+> 所有新增错误码必须同步更新到 `docs/08_API_CONTRACT_V2.3.md` 与 `docs/06_DATA_DICTIONARY_v1.2.md`，并维护 `src/utils/error-map.ts`。
 
 ------
 
