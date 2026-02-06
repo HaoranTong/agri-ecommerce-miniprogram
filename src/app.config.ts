@@ -31,6 +31,7 @@ export default defineAppConfig({
     'pages/agent/dashboard',
     'pages/agent/apply',
     'pages/commission/list',
+    'pages/commission/payout',
     'pages/auth/login',
     'pages/user/profile',
     'pages/user/edit-profile',

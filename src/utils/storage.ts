@@ -5,6 +5,7 @@ import type { AddressFormState } from '../types';
 const TOKEN_KEY = 'MYSHOP_AUTH_TOKEN';
 const USER_INFO_KEY = 'MYSHOP_USER_INFO';
 const ADDRESS_KEY = 'MYSHOP_ADDRESSES';
+const ATTRIBUTION_KEY = 'MYSHOP_ATTRIBUTION';
 
 export const getToken = (): string | null => {
   try {
@@ -93,4 +94,30 @@ export const removeAddress = (id: number) => {
   const list = ensureAddresses().filter((item) => item.id !== id);
   saveAddresses(list);
   return list;
+};
+
+export interface AttributionParams {
+  channel?: string;
+  scene?: string;
+  referrer_code?: string;
+  landing_page?: string;
+  recorded_at?: string;
+}
+
+export const getAttributionParams = (): AttributionParams | null => {
+  const result = Taro.getStorageSync<AttributionParams>(ATTRIBUTION_KEY);
+  return result || null;
+};
+
+export const setAttributionParams = (params: AttributionParams) => {
+  const current = getAttributionParams() || {};
+  const next = {
+    ...current,
+    ...params
+  };
+  Taro.setStorageSync(ATTRIBUTION_KEY, next);
+};
+
+export const clearAttributionParams = () => {
+  Taro.removeStorageSync(ATTRIBUTION_KEY);
 };

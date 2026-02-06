@@ -35,8 +35,9 @@ const CommissionList = () => {
   const getStatusColor = (status: string) => {
     const map: Record<string, string> = {
       pending: 'orange',
+      approved: 'blue',
       paid: 'green',
-      cancelled: 'red'
+      rejected: 'red'
     };
     return map[status] || 'gray';
   };
@@ -44,8 +45,9 @@ const CommissionList = () => {
   const getStatusText = (status: string) => {
     const map: Record<string, string> = {
       pending: '待结算',
+      approved: '已审核',
       paid: '已支付',
-      cancelled: '已取消'
+      rejected: '已驳回'
     };
     return map[status] || status;
   };

@@ -2,7 +2,9 @@ import Taro from '@tarojs/taro';
 
 import { API_BASE, API_ENDPOINTS } from '../utils/constants';
 import {
+  clearAttributionParams,
   clearToken,
+  getAttributionParams,
   getStoredUserInfo,
   getToken,
   setStoredUserInfo,
@@ -14,7 +16,9 @@ import type {
   AgentProfile,
   CartItem,
   ChannelAnalytics,
+  CommissionPayoutRecord,
   CommissionRecord,
+  CommissionSummary,
   CreateOrderPayload,
   GiftCard,
   GiftCardPurchaseResult,
@@ -75,6 +79,7 @@ interface PointsService {
   ) => Promise<{ mission_id: string; awarded_points: number; new_balance: number; message?: string }>;
   getRedeemOptions: () => Promise<PointsRedeemOption[]>;
   redeem: (optionId: string) => Promise<PointsRedeemResult>;
+  signin: () => Promise<{ success: boolean; data: { awarded_points: number; new_balance: number; message?: string } }>;
 }
 
 interface RequestOptions {
@@ -433,13 +438,18 @@ export const authService = {
       avatar?: string;
     }
   ) {
+    const attribution = getAttributionParams();
     const response = await request<{ success: boolean; data: LoginResponse }>({
       url: API_ENDPOINTS.login,
       method: 'POST',
       data: {
         code,
         ...(wechatProfile?.nickname ? { nickname: wechatProfile.nickname } : {}),
-        ...(wechatProfile?.avatar ? { avatar: wechatProfile.avatar } : {})
+        ...(wechatProfile?.avatar ? { avatar: wechatProfile.avatar } : {}),
+        ...(attribution?.channel ? { channel: attribution.channel } : {}),
+        ...(attribution?.scene ? { scene: attribution.scene } : {}),
+        ...(attribution?.referrer_code ? { referrer_code: attribution.referrer_code } : {}),
+        ...(attribution?.landing_page ? { landing_page: attribution.landing_page } : {})
       }
     });
 
@@ -464,6 +474,7 @@ export const authService = {
       has_realname: result.has_realname
     };
     setStoredUserInfo(storedUser);
+    clearAttributionParams();
 
     return result;
   },
@@ -701,14 +712,39 @@ export const userService = {
 
 export const invitationService = {
   getSummary: async () => {
-    const response = await request<{ success: boolean; data: InvitationSummary }>({
+    const response = await request<{
+      success: boolean;
+      data: {
+        invite_code?: string;
+        total_invites?: number;
+        first_order_count?: number;
+        conversion_rate?: string;
+        pending_invitations?: number;
+        pending_rewards?: string;
+        latest_invite?: {
+          invitee_user_id: number;
+          nickname: string;
+          invited_at: string;
+          first_order_status: string;
+        } | null;
+      };
+    }>({
       url: API_ENDPOINTS.invitationsSummary,
       method: 'GET'
     });
-    return response.data;
+    const data = response.data || {};
+    return {
+      invite_code: data.invite_code,
+      total_invitations: data.total_invites ?? 0,
+      first_order_count: data.first_order_count ?? 0,
+      conversion_rate: data.conversion_rate ?? '0.00',
+      pending_invitations: data.pending_invitations ?? 0,
+      pending_rewards: data.pending_rewards,
+      latest_invite: data.latest_invite ?? null
+    } as InvitationSummary;
   },
   track: async (params: { channel?: string; scene?: string; referrer_code?: string }) => {
-    const response = await request<{ success: boolean; data: { tracked: boolean } }>({
+    const response = await request<{ success: boolean; data: { tracked: boolean; log_id?: number; recorded_at?: string } }>({
       url: API_ENDPOINTS.invitationsTrack,
       method: 'POST',
       data: params
@@ -719,11 +755,11 @@ export const invitationService = {
 
 export const analyticsService = {
   getChannelAnalytics: async () => {
-    const response = await request<{ success: boolean; data: ChannelAnalytics[] }>({
+    const response = await request<{ success: boolean; data: { channels: ChannelAnalytics[] } }>({
       url: API_ENDPOINTS.analyticsChannel,
       method: 'GET'
     });
-    return response.data ?? [];
+    return response.data?.channels ?? [];
   }
 };
 
@@ -955,7 +991,7 @@ export const giftCardService = {
   },
   listTemplates: async () => {
     const response = await request<{ success: boolean; data: GiftCardTemplate[] }>({
-      url: '/gift-cards/templates',
+      url: API_ENDPOINTS.giftCardTemplates,
       method: 'GET',
       showLoading: true
     });
@@ -963,7 +999,7 @@ export const giftCardService = {
   },
   getTemplateDetail: async (templateId: number) => {
     const response = await request<{ success: boolean; data: GiftCardTemplate }>({
-      url: `/gift-cards/templates/${templateId}`,
+      url: API_ENDPOINTS.giftCardTemplateDetail(templateId),
       method: 'GET',
       showLoading: true
     });
@@ -980,7 +1016,7 @@ export const giftCardService = {
     }
   ) => {
     const response = await request<{ success: boolean; data: GiftCardPurchaseResult }>({
-      url: '/gift-cards/purchase',
+      url: API_ENDPOINTS.giftCardPurchase,
       method: 'POST',
       data: {
         template_id,
@@ -1108,6 +1144,55 @@ export const referralService = {
     }).then((res) => res.commissions)
 };
 
+export const commissionService = {
+  getSummary: async () => {
+    const response = await request<{ success: boolean; data: CommissionSummary }>({
+      url: API_ENDPOINTS.commissionsSummary,
+      method: 'GET'
+    });
+    return response.data;
+  },
+  listPayouts: async (params?: { page?: number; per_page?: number }) => {
+    const response = await request<{
+      success: boolean;
+      data: CommissionPayoutRecord[];
+      pagination?: { total?: number };
+    }>({
+      url: API_ENDPOINTS.commissionsPayouts,
+      method: 'GET',
+      data: params
+    });
+    return {
+      items: response.data ?? [],
+      total: response.pagination?.total ?? response.data?.length ?? 0
+    };
+  },
+  requestPayout: async (payload: {
+    amount: number;
+    payout_method?: string;
+    account_name?: string;
+    account_no?: string;
+    bank_name?: string;
+  }) => {
+    const response = await request<{
+      success: boolean;
+      data: {
+        payout_id: number;
+        amount: string;
+        status: string;
+        settlement_batch?: string;
+        requested_at?: string;
+      };
+    }>({
+      url: API_ENDPOINTS.commissionsPayout,
+      method: 'POST',
+      data: payload,
+      showLoading: true
+    });
+    return response.data;
+  }
+};
+
 export const agentService = {
   getProfile: () =>
     request<AgentProfile>({
@@ -1214,5 +1299,12 @@ export const pointsService: PointsService = {
       showLoading: true
     });
     return response.data;
+  },
+  signin: async () => {
+    return request<{ success: boolean; data: { awarded_points: number; new_balance: number; message?: string } }>({
+      url: API_ENDPOINTS.pointsSignin,
+      method: 'POST',
+      showLoading: true
+    });
   }
 };

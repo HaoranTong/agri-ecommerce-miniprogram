@@ -174,6 +174,12 @@ const UserProfile = () => {
           <Text className='menu-label'>佣金明细</Text>
           <Text className='menu-arrow'>→</Text>
         </View>
+
+        <View className='menu-item' onClick={() => handleNavigate('/pages/commission/payout')}>
+          <View className='menu-icon'>🏧</View>
+          <Text className='menu-label'>佣金提现</Text>
+          <Text className='menu-arrow'>→</Text>
+        </View>
       </View>
 
       {profile.invite_code && (

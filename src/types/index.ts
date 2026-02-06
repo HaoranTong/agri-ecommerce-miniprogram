@@ -394,8 +394,28 @@ export interface CommissionRecord {
   order_id: number;
   amount: string;
   commission_type: 'referral' | 'agent';
-  status: 'pending' | 'paid' | 'cancelled';
+  status: 'pending' | 'approved' | 'rejected' | 'paid';
   created_at: string;
+}
+
+export interface CommissionSummary {
+  totals_by_status: {
+    pending: string;
+    approved: string;
+    rejected: string;
+    paid: string;
+  };
+  paid_this_month: string;
+}
+
+export interface CommissionPayoutRecord {
+  payout_id: number;
+  amount: string;
+  status: 'processing' | 'paid' | 'rejected' | 'cancelled';
+  settlement_batch?: string | null;
+  requested_at: string;
+  paid_at?: string | null;
+  note?: string | null;
 }
 
 export interface ReferralDownline {
@@ -493,10 +513,18 @@ export interface AddressFormState extends ShippingAddress {
 
 // 缺失的类型定义
 export interface InvitationSummary {
+  invite_code?: string;
   total_invitations: number;
   first_order_count: number;
   conversion_rate: string;
   pending_invitations: number;
+  pending_rewards?: string;
+  latest_invite?: {
+    invitee_user_id: number;
+    nickname: string;
+    invited_at: string;
+    first_order_status: string;
+  } | null;
 }
 
 export interface ChannelAnalytics {

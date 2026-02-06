@@ -1,9 +1,30 @@
 import { PropsWithChildren } from 'react';
 import Taro from '@tarojs/taro';
 import { debugService } from './services/api';
+import { setAttributionParams, type AttributionParams } from './utils/storage';
 import './app.scss';
 
 function App({ children }: PropsWithChildren) {
+  const syncAttributionParams = (options?: any) => {
+    if (!options) return;
+    const query = options?.query || {};
+    const channel = query.channel ? String(query.channel) : '';
+    const sceneParam = query.scene ? String(query.scene) : '';
+    const sceneCode = sceneParam || (options?.scene != null ? String(options.scene) : '');
+    const referrerCode = query.referrer_code ? String(query.referrer_code) : '';
+    const landingPage = options?.path ? String(options.path) : '';
+
+    const payload: AttributionParams = {};
+    if (channel) payload.channel = channel;
+    if (sceneCode) payload.scene = sceneCode;
+    if (referrerCode) payload.referrer_code = referrerCode;
+    if (landingPage) payload.landing_page = landingPage;
+
+    if (Object.keys(payload).length > 0) {
+      payload.recorded_at = new Date().toISOString();
+      setAttributionParams(payload);
+    }
+  };
   const redirectToGiftCardClaim = () => {
     try {
       const options = (Taro.getLaunchOptionsSync && Taro.getLaunchOptionsSync()) as any;
@@ -44,6 +65,7 @@ function App({ children }: PropsWithChildren) {
     console.log('App launched');
     try {
       const launchOptions = (Taro.getLaunchOptionsSync && Taro.getLaunchOptionsSync()) as any;
+      syncAttributionParams(launchOptions);
       debugService.logClient('app:launch', {
         query: launchOptions?.query || {},
         scene: launchOptions?.scene,
@@ -59,6 +81,7 @@ function App({ children }: PropsWithChildren) {
     // App 显示时的逻辑
     try {
       const enterOptions = (Taro.getEnterOptionsSync && Taro.getEnterOptionsSync()) as any;
+      syncAttributionParams(enterOptions);
       debugService.logClient('app:show', {
         query: enterOptions?.query || {},
         scene: enterOptions?.scene,
