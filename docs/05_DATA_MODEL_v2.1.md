@@ -21,7 +21,7 @@
 > **V2.1.1 变更记录**（2026-01-21）：
 > 1. 新增 `_wechat_avatar`、`_wechat_gender` 用户元数据字段
 > 2. 新增 `_wechat_phone`、`billing_phone` 手机号字段
-> 3. 废弃 `wechat_nickname`，改用 `wp_users.display_name`
+> 3. 废弃 `_wechat_nickname`，改用 `wp_users.display_name`
 
 ------
 
@@ -59,11 +59,11 @@
 | `phone`            | string      | 一期 | ✅    | 手机号（同时作为 `user_login`）     | `"13800138000"`                                        |
 | `_wechat_phone`    | string      | 一期 | ❌    | 微信绑定手机号（从getPhoneNumber获取） | `"13800138000"`                                     |
 | `billing_phone`    | string      | 一期 | ❌    | WooCommerce订单手机号（同步自_wechat_phone） | `"13800138000"`                         |
-| `wechat_openid`    | string      | 一期 | ✅    | 微信 openid（一对一绑定）           | `"oAbcDEF123..."`                                      |
-| `wechat_nickname`  | string      | 一期 | ❌    | 微信昵称（已废弃，见display_name）  | `"🌾五常米农"`                                          |
+| `_wechat_openid`   | string      | 一期 | ✅    | 微信 openid（一对一绑定）           | `"oAbcDEF123..."`                                      |
+| `_wechat_nickname` | string      | 一期 | ❌    | 微信昵称（已废弃，见display_name）  | `"🌾五常米农"`                                          |
 | `_wechat_avatar`   | string      | 一期 | ❌    | 微信头像 URL（绝对路径）            | `"https://thirdwx.qlogo.cn/mmopen/vi_32/..."`          |
 | `_wechat_gender`   | integer     | 一期 | ❌    | 微信性别（0=未知/1=男/2=女）        | `1`                                                    |
-| `invite_code`      | string      | 二期 | ❌    | 6位大写字母/数字，全局唯一          | `"U42ABC"`                                             |
+| `myshop_referral_code` | string  | 二期 | ❌    | 6位大写字母/数字，全局唯一（API 返回 `invite_code`） | `"U42ABC"` |
 | `referrer_id`      | integer     | 二期 | ❌    | 直接邀请人 user_id（一级分销）      | `42`                                                   |
 | `total_points`     | integer     | 二期 | ❌    | 积分余额（≥0）                      | `280`                                                  |
 | `cart_items`       | JSON string | 一期 | ❌    | 购物车内容（见下文结构）            | `[{"product_id":101,"variation_id":205,"quantity":2}]` |
@@ -73,7 +73,7 @@
 | `agent_parent_id`  | integer     | 二期 | ❌    | 上级代理商 user_id                  | `201`                                                  |
 
 > **V2.1.1 更新说明**：
-> - `wechat_nickname` 已废弃，改为使用 `wp_users.display_name` 存储昵称
+> - `_wechat_nickname` 已废弃，改为使用 `wp_users.display_name` 存储昵称
 > - 新增 `_wechat_avatar`、`_wechat_gender` 用于存储微信用户资料
 > - 新增 `_wechat_phone` 和 `billing_phone` 用于存储手机号（前者来自微信API，后者用于WooCommerce订单）
 > - 前端调用 `PUT /user/profile` 可更新 avatar、gender 和 display_name
@@ -134,7 +134,7 @@
 
 - 支持 **面值卡**、**商品券**、**组合礼包**
 - 密码可 **延迟生成**（如下载 PDF 时）
-- 购卡人可 **重置密码**
+- 购卡人可 **重置密码（预留，暂未开放 API）**
 - 支持 **转赠**、**部分抵扣**、**多次使用**
 
 ------
@@ -145,14 +145,14 @@
 CREATE TABLE wp_myshop_gift_card_templates (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   name VARCHAR(100) NOT NULL COMMENT '模板名称，如“200元通用卡”',
-  type ENUM('fixed_amount', 'product_bundle') NOT NULL COMMENT '储值卡或商品兑换卡',
+  type ENUM('fixed_amount', 'product_bundle', 'custom_bundle') NOT NULL COMMENT '储值卡或商品兑换卡',
   fixed_amount DECIMAL(10,2) NULL COMMENT '面额（type=fixed_amount 时必填）',
   currency CHAR(3) DEFAULT 'CNY',
   product_id BIGINT UNSIGNED NULL COMMENT '兑换商品ID（商品卡可选）',
-  variation_ids JSON NULL COMMENT '可兑换的变体ID数组',
-  bundle_items JSON NULL COMMENT '组合礼包：[{"product_id":101,"quantity":1}]',
-  delivery_modes JSON NOT NULL COMMENT '允许的发放形态，如 ["digital_share","printable"]',
-  share_template_config JSON NULL COMMENT '数字分享海报/文案模板配置',
+  variation_ids LONGTEXT NULL COMMENT '可兑换的变体ID数组（JSON 字符串）',
+  bundle_items LONGTEXT NULL COMMENT '组合礼包（JSON 字符串）',
+  delivery_modes LONGTEXT NOT NULL COMMENT '允许的发放形态（JSON 字符串）',
+  share_template_config LONGTEXT NULL COMMENT '数字分享海报/文案模板配置（JSON 字符串）',
   print_template_url VARCHAR(255) NULL COMMENT '默认打印模板 PDF 地址',
   valid_days INT DEFAULT 365 COMMENT '自购卡日起有效期天数',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -170,13 +170,13 @@ CREATE TABLE wp_myshop_gift_cards (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   card_number VARCHAR(32) NOT NULL COMMENT '格式：GC + YYYYMMDD + 序号',
   template_id BIGINT UNSIGNED NOT NULL,
-  template_type ENUM('fixed_amount','product_bundle') NOT NULL,
+  template_type ENUM('fixed_amount','product_bundle','custom_bundle') NOT NULL,
   initial_amount DECIMAL(10,2) DEFAULT 0 COMMENT '初始额度（储值卡使用）',
   balance DECIMAL(10,2) DEFAULT 0 COMMENT '当前余额（储值卡使用）',
   currency CHAR(3) DEFAULT 'CNY',
   linked_product_id BIGINT UNSIGNED NULL COMMENT '商品兑换卡：主商品ID',
-  linked_variation_ids JSON NULL COMMENT '商品兑换卡：变体ID列表',
-  bundle_config JSON NULL COMMENT '礼包配置，冗余模板数据',
+  linked_variation_ids LONGTEXT NULL COMMENT '商品兑换卡：变体ID列表（JSON 字符串）',
+  bundle_config LONGTEXT NULL COMMENT '礼包配置（JSON 字符串）',
   purchaser_id BIGINT UNSIGNED NOT NULL COMMENT '购卡人 user_id',
   redeemer_id BIGINT UNSIGNED NULL COMMENT '受赠人 user_id',
   order_id BIGINT UNSIGNED NOT NULL COMMENT '购卡订单ID',
@@ -185,10 +185,14 @@ CREATE TABLE wp_myshop_gift_cards (
   share_token VARCHAR(64) NULL COMMENT '当前分享令牌',
   share_channel VARCHAR(32) NULL COMMENT '最近一次分享渠道',
   share_token_expires_at DATETIME NULL COMMENT '分享令牌过期时间',
+  share_meta LONGTEXT NULL COMMENT '分享附加信息（JSON 字符串）',
+  shared_at DATETIME NULL COMMENT '最近一次分享时间',
+  shared_count INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '分享次数',
   print_package_url VARCHAR(255) NULL COMMENT '打印包下载地址',
   pin_code_hash VARCHAR(255) NULL COMMENT 'bcrypt 密码哈希',
   pin_revealed_at DATETIME NULL COMMENT 'PIN 最近一次展示时间',
   pin_reveal_limit TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '剩余可查看次数',
+  pin_reveal_count TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '已查看次数',
   expires_at DATETIME NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -205,7 +209,7 @@ CREATE TABLE wp_myshop_gift_cards (
 > 🔐 **安全要求**：
 >
 > - 若 `pin_code` 非空，必须为 `password_hash($raw_pin, PASSWORD_BCRYPT)` 结果
-> - 重置密码需验证 `purchaser_id` 身份
+> - PIN 重置/展示能力预留，当前未开放 API
 
 ------
 
@@ -336,19 +340,43 @@ value: [
 ```sql
 CREATE TABLE wp_myshop_referrals (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id BIGINT UNSIGNED NOT NULL COMMENT '被邀请人',
-  referrer_id BIGINT UNSIGNED NOT NULL COMMENT '直接邀请人',
+  inviter_id BIGINT UNSIGNED NOT NULL COMMENT '邀请人 user_id',
+  invitee_id BIGINT UNSIGNED NOT NULL COMMENT '被邀请人 user_id',
   path VARCHAR(255) NOT NULL COMMENT '路径：/42/105/201',
   level TINYINT NOT NULL DEFAULT 1 COMMENT '层级深度',
+  channel_code VARCHAR(50) NULL COMMENT '渠道来源',
+  first_order_status ENUM('pending','completed','expired') NOT NULL DEFAULT 'pending',
+  first_order_id BIGINT UNSIGNED NULL,
+  first_order_completed_at DATETIME NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY unique_user (user_id),
-  KEY idx_referrer (referrer_id),
+  UNIQUE KEY uniq_relation (inviter_id, invitee_id),
+  KEY idx_inviter (inviter_id),
+  KEY idx_invitee (invitee_id),
   KEY idx_path (path)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
 > 💡 查询某用户所有二级下级：`WHERE path LIKE '/42/%' AND level <= 2`
+
+------
+
+### 表 1A：邀请渠道归因日志
+
+```sql
+CREATE TABLE wp_myshop_invitation_logs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  inviter_id BIGINT UNSIGNED NULL,
+  channel VARCHAR(50) NULL,
+  scene VARCHAR(100) NULL,
+  landing_page VARCHAR(150) NULL,
+  extra LONGTEXT NULL,
+  recorded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_inviter (inviter_id),
+  KEY idx_channel (channel)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
 
 ------
 
@@ -426,6 +454,52 @@ CREATE TABLE wp_myshop_commissions (
 > - `referrer_id` 和 `agent_id` 互斥，便于财务分类统计
 > - 状态流转：`pending → approved → paid` 或 `pending → rejected`
 > - 支持手动标记为 `paid`（一期人工打款），后续可接入自动结算
+
+------
+
+### 表 3A：佣金策略配置（Policies）
+
+```sql
+CREATE TABLE wp_myshop_commission_policies (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  level TINYINT NOT NULL COMMENT '层级（1=一级，2=二级）',
+  rate DECIMAL(5,2) NOT NULL COMMENT '佣金比例（百分比）',
+  channel VARCHAR(32) NULL COMMENT '渠道（可选）',
+  effective_from DATETIME NOT NULL,
+  effective_to DATETIME NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_level (level),
+  KEY idx_channel (channel)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+------
+
+### 表 3B：佣金提现记录（Payouts）
+
+```sql
+CREATE TABLE wp_myshop_commission_payouts (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  earner_id BIGINT UNSIGNED NOT NULL COMMENT '提现人 user_id',
+  amount DECIMAL(10,2) NOT NULL,
+  payout_method VARCHAR(32) NOT NULL DEFAULT 'manual',
+  account_name VARCHAR(50) NULL,
+  account_no VARCHAR(64) NULL,
+  bank_name VARCHAR(80) NULL,
+  settlement_batch VARCHAR(50) NULL,
+  status ENUM('processing','paid','rejected','cancelled') NOT NULL DEFAULT 'processing',
+  requested_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  paid_at DATETIME NULL,
+  note VARCHAR(255) NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_earner (earner_id),
+  KEY idx_status (status),
+  KEY idx_batch (settlement_batch)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
 
 ------
 

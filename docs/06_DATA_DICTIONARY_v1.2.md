@@ -31,7 +31,6 @@
 | `wp_myshop_invitation_logs`        | 自定义表         | 渠道归因访问日志（scene 参数落地）                            |
 | `wp_myshop_agents`                 | 自定义表         | 代理商资料及业绩指标                                         |
 | `wp_myshop_agent_audit_logs`       | 自定义表         | 代理商后台操作审计                                            |
-| `wp_myshop_marketing_assets`       | 自定义表         | 营销素材 / 海报模板                                           |
 
 > ✅ 所有自定义表统一前缀 `wp_myshop_`，字符集 `utf8mb4`，引擎 `InnoDB`。
 
@@ -56,13 +55,13 @@
 | meta_key            | 类型         | 典型值                        | 说明                                                         | API 是否返回 |
 | ------------------- | ------------ | ----------------------------- | ------------------------------------------------------------ | ------------ |
 | `phone`             | varchar      | `13800138000`                 | 手机号，同时作为登录名（必填）                               | ✅            |
-| `wechat_openid`     | varchar      | `oAbcDefGhIjKlMn...`          | 小程序 openid（敏感，服务端存储）                            | ❌            |
+| `_wechat_openid`    | varchar      | `oAbcDefGhIjKlMn...`          | 小程序 openid（敏感，服务端存储）                            | ❌            |
 | `wechat_unionid`    | varchar      | `uXYZ123...`                  | unionid（如开放平台应用打通）                                | ❌            |
 | `_wechat_phone`     | varchar      | `13800138000`                 | 微信绑定手机号（getPhoneNumber）                              | ✅            |
 | `billing_phone`     | varchar      | `13800138000`                 | WooCommerce 订单手机号（同步自微信手机号）                    | ✅            |
 | `_wechat_avatar`    | varchar      | `https://.../avatar.jpg`      | 微信头像 URL                                                  | ✅            |
 | `_wechat_gender`    | tinyint      | `0/1/2`                       | 微信性别（0=未知/1=男/2=女）                                  | ✅            |
-| `invite_code`       | char(6)      | `U42ABC`                      | 用户专属邀请码（大写字母+数字）                              | ✅            |
+| `myshop_referral_code` | char(6)   | `U42ABC`                      | 用户专属邀请码（大写字母+数字，API 返回 `invite_code`）      | ✅            |
 | `referrer_id`       | bigint       | `105`                         | 直接邀请人 user_id（首次登录时写入）                          | ✅            |
 | `total_points`      | int          | `280`                         | 当前可用积分余额                                             | ✅            |
 | `membership_level`  | varchar      | `silver`                      | 会员等级（预留字段）                                         | ✅            |
@@ -129,14 +128,14 @@
 | ------------------- | ------------------- | ------ | ------------------------------------------------------------ |
 | `id`                | bigint unsigned     | NO     | 主键                                                         |
 | `name`              | varchar(100)        | NO     | 模板名称，如“200元通用卡”                                   |
-| `type`              | enum                | NO     | `fixed_amount` / `product_bundle`                            |
+| `type`              | enum                | NO     | `fixed_amount` / `product_bundle` / `custom_bundle`          |
 | `fixed_amount`      | decimal(10,2)       | YES    | 面额（储值卡必填）                                           |
 | `currency`          | char(3)             | NO     | 默认 `CNY`                                                   |
 | `product_id`        | bigint unsigned     | YES    | 商品兑换卡：主商品 ID                                        |
-| `variation_ids`     | json                | YES    | 允许兑换的变体 ID 数组                                       |
-| `bundle_items`      | json                | YES    | 组合礼包明细 `[{product_id, quantity}]`                      |
-| `delivery_modes`    | json                | NO     | 允许发放形态 `[]`（如 `digital_share`、`printable`）         |
-| `share_template_config` | json            | YES    | 海报/文案模板配置（变量占位符）                              |
+| `variation_ids`     | longtext            | YES    | 允许兑换的变体 ID 数组（JSON 字符串）                        |
+| `bundle_items`      | longtext            | YES    | 组合礼包明细（JSON 字符串）                                  |
+| `delivery_modes`    | longtext            | NO     | 允许发放形态（JSON 字符串）                                   |
+| `share_template_config` | longtext        | YES    | 海报/文案模板配置（JSON 字符串）                              |
 | `print_template_url`| varchar(255)        | YES    | 默认打印模板 PDF/PNG                                         |
 | `valid_days`        | int                 | NO     | 自购卡起有效天数                                             |
 | `created_at` / `updated_at` | datetime   | NO     | 创建/更新时间                                                 |
@@ -148,13 +147,13 @@
 | `id`                   | bigint unsigned     | NO     | 主键                                                         |
 | `card_number`          | varchar(32)         | NO     | 卡号（唯一，`GC+日期+序号`）                                 |
 | `template_id`          | bigint unsigned     | NO     | 关联模板 ID                                                  |
-| `template_type`        | enum                | NO     | `fixed_amount` / `product_bundle`（冗余，便于查询）          |
+| `template_type`        | enum                | NO     | `fixed_amount` / `product_bundle` / `custom_bundle`（冗余）  |
 | `initial_amount`       | decimal(10,2)       | YES    | 初始金额（储值卡）                                           |
 | `balance`              | decimal(10,2)       | YES    | 当前余额（储值卡）                                           |
 | `currency`             | char(3)             | NO     | `CNY`                                                        |
 | `linked_product_id`    | bigint unsigned     | YES    | 商品兑换卡关联商品                                           |
-| `linked_variation_ids` | json                | YES    | 可兑换变体 ID 列表                                           |
-| `bundle_config`        | json                | YES    | 冗余礼包配置                                                 |
+| `linked_variation_ids` | longtext            | YES    | 可兑换变体 ID 列表（JSON 字符串）                            |
+| `bundle_config`        | longtext            | YES    | 冗余礼包配置（JSON 字符串）                                  |
 | `purchaser_id`         | bigint unsigned     | NO     | 购卡人 user_id                                                |
 | `redeemer_id`          | bigint unsigned     | YES    | 受赠人 user_id                                                |
 | `order_id`             | bigint unsigned     | NO     | 购卡订单 ID                                                  |
@@ -163,14 +162,18 @@
 | `share_token`          | varchar(64)         | YES    | 当前分享令牌                                                 |
 | `share_channel`        | varchar(32)         | YES    | 最近一次分享渠道（wechat/dingding/email/custom）            |
 | `share_token_expires_at` | datetime          | YES    | 分享令牌有效期                                               |
+| `share_meta`            | longtext          | YES    | 分享附加信息（JSON 字符串）                                  |
+| `shared_at`             | datetime          | YES    | 最近一次分享时间                                             |
+| `shared_count`          | int unsigned      | NO     | 分享次数                                                     |
 | `print_package_url`    | varchar(255)        | YES    | 最新打印包下载地址                                           |
 | `pin_code_hash`        | varchar(255)        | YES    | PIN 的 bcrypt 哈希                                           |
 | `pin_revealed_at`      | datetime            | YES    | 最近一次 PIN 展示时间                                        |
 | `pin_reveal_limit`     | tinyint unsigned    | NO     | 剩余可查看次数（默认 1）                                     |
+| `pin_reveal_count`     | tinyint unsigned    | NO     | 已查看次数（默认 0）                                         |
 | `expires_at`           | datetime            | NO     | 过期时间                                                     |
 | `created_at` / `updated_at` | datetime       | NO     | 创建/更新时间                                                 |
 
-> 🔐 PIN 仅以哈希存储；再次查看需通过 `POST /gift-cards/{id}/reveal-pin` 二次验证。
+> 🔐 PIN 仅以哈希存储；PIN 重置/展示能力预留，当前未开放 API。
 
 #### `wp_myshop_gift_card_redemptions`
 
@@ -226,11 +229,13 @@
 | 字段        | 类型                | 说明                                |
 | ----------- | ------------------- | ----------------------------------- |
 | `id`        | bigint unsigned     | 主键                                |
-| `user_id`   | bigint unsigned     | 被邀请人 user_id                    |
-| `referrer_id`| bigint unsigned    | 直接邀请人 user_id                  |
+| `inviter_id`| bigint unsigned     | 邀请人 user_id                      |
+| `invitee_id`| bigint unsigned     | 被邀请人 user_id                    |
 | `path`      | varchar(255)        | 树路径（如 `/42/105`）               |
 | `level`     | tinyint             | 深度（一级=1，二级=2）               |
-| `channel_code` | varchar(50)      | 渠道来源（可为空）                   |
+| `first_order_status` | enum         | `pending` / `completed` / `expired` |
+| `first_order_id` | bigint unsigned | 首单 ID（可为空）                   |
+| `first_order_completed_at` | datetime | 首单完成时间（可为空）             |
 | `created_at`| datetime            | 创建时间                             |
 
 #### `wp_myshop_invitation_logs`
@@ -238,13 +243,12 @@
 | 字段             | 类型                | 说明                                                         |
 | ---------------- | ------------------- | ------------------------------------------------------------ |
 | `id`             | bigint unsigned     | 主键                                                         |
-| `invitee_openid` | varchar(64)         | 被邀请者 openid                                              |
-| `inviter_id`     | bigint unsigned     | 邀请人 user_id                                                |
-| `channel`        | varchar(32)         | 渠道，如 `xiaohongshu`                                       |
-| `scene`          | varchar(100)        | scene 参数                                                    |
+| `inviter_id`     | bigint unsigned     | 邀请人 user_id（可为空）                                      |
+| `channel`        | varchar(50)         | 渠道，如 `xiaohongshu`                                       |
+| `scene`          | varchar(100)        | scene 参数                                                   |
 | `landing_page`   | varchar(150)        | 落地页路径                                                   |
-| `visited_at`     | datetime            | 访问时间                                                     |
-| `first_order_id` | bigint unsigned     | 首单 ID（如已转化）                                          |
+| `extra`          | json / longtext     | 扩展参数                                                     |
+| `recorded_at`    | datetime            | 记录时间                                                     |
 
 ### 4. 佣金与代理体系
 
@@ -278,6 +282,24 @@
 | `paid_at`           | datetime            | 实际打款时间                                                 |
 | `note`              | varchar(255)        | 备注                                                         |
 | `created_at` / `updated_at` | datetime   | 创建/更新时间                                                 |
+
+#### `wp_myshop_commission_payouts`
+
+| 字段             | 类型                | 说明                                                         |
+| ---------------- | ------------------- | ------------------------------------------------------------ |
+| `id`             | bigint unsigned     | 主键                                                         |
+| `earner_id`      | bigint unsigned     | 提现人 user_id                                                |
+| `amount`         | decimal(10,2)       | 提现金额                                                      |
+| `payout_method`  | varchar(32)         | 提现方式（默认 `manual`）                                     |
+| `account_name`   | varchar(50)         | 收款人姓名                                                    |
+| `account_no`     | varchar(64)         | 收款账号                                                      |
+| `bank_name`      | varchar(80)         | 银行名称                                                      |
+| `settlement_batch` | varchar(50)       | 结算批次号                                                    |
+| `status`         | enum                | `processing` / `paid` / `rejected` / `cancelled`             |
+| `requested_at`   | datetime            | 申请时间                                                      |
+| `paid_at`        | datetime            | 实际打款时间                                                  |
+| `note`           | varchar(255)        | 备注                                                         |
+| `created_at` / `updated_at` | datetime | 创建/更新时间                                                 |
 
 #### `wp_myshop_agents`
 
@@ -313,22 +335,6 @@
 | `payload`     | json                | 操作前后快照                                  |
 | `created_at`  | datetime            | 操作时间                                     |
 
-### 5. 营销素材与渠道看板
-
-#### `wp_myshop_marketing_assets`
-
-| 字段          | 类型                | 说明                                                         |
-| ------------- | ------------------- | ------------------------------------------------------------ |
-| `id`          | bigint unsigned     | 主键                                                         |
-| `type`        | varchar(30)         | `poster` / `banner` / `video` / `doc` 等                      |
-| `title`       | varchar(150)        | 素材标题                                                     |
-| `content_url` | varchar(255)        | 媒体地址                                                     |
-| `config_json` | json                | 配置（变量占位符、样式、适用渠道）                            |
-| `status`      | enum                | `draft` / `published` / `archived`                             |
-| `created_at`  | datetime            | 创建时间                                                     |
-
-------
-
 ## 五、API 派生字段与缓存建议
 
 | API 路径                | 字段                     | 计算逻辑 / 来源                                               |
@@ -345,7 +351,7 @@
 
 ## 六、安全与一致性约束
 
-1. **敏感字段脱敏**：`wechat_openid`、`wechat_unionid`、`share_token`、`pin_code_hash`；日志禁止明文输出 PIN。  
+1. **敏感字段脱敏**：`_wechat_openid`、`wechat_unionid`、`share_token`、`pin_code_hash`；日志禁止明文输出 PIN。  
 2. **字段不可逆删除**：所有 meta_key、自定义表字段遵循“只增不删”，废弃字段通过状态位或文档标记 `deprecated`。  
 3. **积分过期任务**：每日定时任务扫描 `expire_at < now` 的积分并写入 `type='expire'` 记录。  
 4. **购物卡核销事务**：储值抵扣需与订单扣减在同一事务内提交；失败时回滚 `balance` 与核销流水。  

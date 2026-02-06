@@ -51,14 +51,11 @@
 ```bash
 myshop-core/
 ├── myshop-core.php                 # 插件主入口
-├── uninstall.php                   # 插件卸载逻辑（可选）
-├── composer.json                   # 依赖管理（如 firebase/php-jwt）
-├── vendor/                         # Composer 依赖（gitignore）
-│
 ├── includes/                       # 核心类库
 │   ├── class-myshop-loader.php     # 自动加载器，负责初始化插件、加载控制器、注册 REST API 路由
 │   ├── class-myshop-auth.php       # JWT 认证
-│   └── class-myshop-wc-bridge.php  # WooCommerce 集成桥接
+│   ├── class-myshop-commission-service.php  # 佣金与归因服务
+│   └── class-myshop-wechat.php     # 微信服务封装
 │
 ├── api/                            # API 控制器（按功能分）
 │   ├── auth-controller.php
@@ -76,21 +73,23 @@ myshop-core/
 │
 ├── db/                             # 数据库操作（CRUD）
 │   ├── class-myshop-db.php         # 数据库安装/升级
-│   ├── gift-cards.php
-│   ├── gift-card-share-logs.php
-│   ├── gift-card-redemptions.php
-│   ├── points-ledger.php
-│   ├── commissions.php
-│   ├── agents.php
-│   └── agent-audit-logs.php
 │   
 ├── admin/                          # 后台管理（一期可空）
-│   └── class-myshop-admin.php
+│   ├── config-page.php
+│   ├── points-manager.php
+│   ├── commission-manager.php
+│   ├── order-manager.php
+│   ├── return-manager.php
+│   ├── test-users-manager.php
+│   ├── gift-card-template-manager.php
+│   ├── gift-card-manager.php
+│   ├── gift-card-share-style-manager.php
+│   ├── cleanup-test-users.php
+│   └── slider-shortcode.php
 │
-└── utils/                          # 工具函数
-  ├── helpers.php                 # 常用函数（如 generate_invite_code）
-  ├── security.php                # 安全过滤函数
-  └── validation.php              # 参数校验/枚举映射
+├── assets/                         # 前端资源（模板、图片等）
+├── docs/                           # 插件内部文档
+└── tests/                          # 插件回归测试脚本
 ```
 
 > ✅ 所有 PHP 文件使用 **小写 + 连字符命名**（WordPress 推荐风格）。api/ 目录中的每个控制器文件必须定义一个类（如 Order_Controller），并通过类的静态或实例方法处理请求，禁止直接编写顶层函数。
@@ -162,27 +161,23 @@ myshop-core/
 
 ### 1. **JWT 认证（`class-myshop-auth.php`）**
 
-- 使用 `firebase/php-jwt`（通过 Composer 引入）
+- 使用自研 JWT（HS256 + HMAC）实现
 
 - Token 有效期：7 天
 
 - 用户登录后返回：
 
   ```json
-  { "token": "...", "user_id": 42, "invite_code": "U42ABC" }
+  { "token": "...", "user_id": 42, "openid": "oAbcDEF123..." }
   ```
 
 - 中间件验证：
 
   ```php
-  public static function validate_token( $token ) {
-      try {
-          $decoded = JWT::decode($token, new Key(MYSHOP_JWT_SECRET, 'HS256'));
-          return get_user_by('id', $decoded->user_id);
-      } catch (Exception $e) {
-          return false;
-      }
-  }
+    public static function validate_token( $token ) {
+      // 解析 token 并校验签名与 exp
+      // 校验通过后返回 WP_User
+    }
   ```
 
 ### 2. **API 路由注册（`class-myshop-loader.php`）**

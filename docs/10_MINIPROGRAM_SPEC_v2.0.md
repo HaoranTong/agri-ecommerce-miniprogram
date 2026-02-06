@@ -143,14 +143,18 @@ myshop-miniprogram/
 │   │   │
 │   │   ├── points/           # 积分中心
 │   │   │   ├── summary.tsx
-│   │   │   └── ledger.tsx
+│   │   │   ├── ledger.tsx
+│   │   │   ├── missions.tsx
+│   │   │   ├── redeem.tsx
+│   │   │   └── rules.tsx
 │   │   │
 │   │   ├── agent/            # 代理商专区
 │   │   │   ├── dashboard.tsx
 │   │   │   └── apply.tsx
 │   │   │
 │   │   ├── commission/       # 佣金明细
-│   │   │   └── list.tsx
+│   │   │   ├── list.tsx
+│   │   │   └── payout.tsx
 │   │   │
 │   │   ├── user/             # 用户中心
 │   │   │   ├── profile.tsx
@@ -172,7 +176,7 @@ myshop-miniprogram/
 │   │   ├── constants.ts      # 常量定义（如 API 路径、枚举）
 │   │   ├── storage.ts        # 本地缓存封装（Taro.setStorageSync）
 │   │   ├── helpers.ts        # 通用函数（如 formatPrice）
-│   │   └── error-map.ts      # error_code 与前端文案映射
+│   │   └── errorHandler.ts   # 通用错误处理与提示
 │   │
 │   ├── assets/               # 静态资源
 │   │   ├── icons/            # SVG / PNG 图标（建议转为 React Component）
@@ -188,7 +192,7 @@ myshop-miniprogram/
 └── babel.config.js
 ```
 
-> ✅ 所有页面和组件均采用 **独立目录**，包含 `.tsx`（逻辑+模板）和 `.scss`（样式），**无 .json/.wxml/.wxss**
+> ✅ 页面与组件采用 **独立目录**，包含 `.tsx`（逻辑+模板）和 `.scss`（样式）；仅保留少量基础文件（如 `base.wxml`、`comp.wxml/comp.json`）用于兼容构建。
 
 ------
 
@@ -240,6 +244,7 @@ export default defineAppConfig({
     'pages/agent/dashboard',
     'pages/agent/apply',
     'pages/commission/list',
+    'pages/commission/payout',
     'pages/auth/login',
     'pages/user/profile',
     'pages/user/edit-profile',
@@ -326,12 +331,12 @@ interface RequestOptions {
   url: string;
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   data?: Record<string, any>;
-  headers?: Record<string, string>;
+  header?: Record<string, string>;
 }
 
 export const request = async <T = any>(options: RequestOptions): Promise<T> => {
   const token = getToken();
-  const headers: Record<string, string> = { ...options.headers };
+  const headers: Record<string, string> = { ...options.header };
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
@@ -365,9 +370,11 @@ export const request = async <T = any>(options: RequestOptions): Promise<T> => {
 };
 ```
 
+> ⚠️ 以上为简化示例，真实实现以 `src/services/api.ts` 为准（包含多环境 API Base、并发队列与统一错误处理）。
+>
 > ✅ 所有页面调用 `request<T>()` 时应传入响应类型，实现端到端类型安全
 >
-> ✅ 新增错误码时需同步维护 `src/utils/error-map.ts` 并在调用处使用 `resolveErrorMessage`。
+> ✅ 新增错误码时需同步维护 `src/utils/errorHandler.ts` 内 `ERROR_MESSAGE_MAP`，并按需使用 `showErrorToast`/`analyzeError`。
 
 ------
 
@@ -516,6 +523,50 @@ export default OrderCreate;
 - 当订单状态满足可退货条件且 `return_status` 允许申请时显示“申请退货”按钮（状态值见 API 契约）。
 - 图片先调用退货图片上传接口（见 API 契约），返回 URL 列表。
 - 提交时调用退货申请接口（见 API 契约），携带 `reason`、`contact` 与 `images`。
+
+------
+
+## 七、帮助文案组件规范
+
+### 1. 组件命名规范（给前端/设计/测试使用）
+
+- 统一使用 `HelpTooltip` 作为帮助提示组件名称
+- 组件参数规范：
+  - `page`: 页面路径（如 `commission/payout`）
+  - `location`: 组件位置标识（如 `available_amount`）
+  - `trigger`: `click` / `hover`
+- 文案来源：`docs/25_HELP_TOOLTIP_COPY.json`
+
+**命名示例**：
+
+```tsx
+<HelpTooltip page="commission/payout" location="available_amount" trigger="hover" />
+```
+
+### 2. 前端加载示例代码（价值说明）
+
+> 用于统一加载文案并避免页面内硬编码，方便集中维护。
+
+```tsx
+import tooltipCopy from '../../docs/25_HELP_TOOLTIP_COPY.json';
+
+const getTooltip = (page: string, location: string) => {
+  return tooltipCopy.items.find(
+    (item) => item.page === page && item.location === location
+  );
+};
+
+const tooltip = getTooltip('commission/payout', 'available_amount');
+const content = tooltip?.copy || '';
+```
+
+### 3. 维护要求
+
+- 新增页面或按钮时同步更新：
+  - `docs/22_HELP_TOOLTIP_COPY.md`
+  - `docs/23_HELP_TOOLTIP_MAP.md`
+  - `docs/25_HELP_TOOLTIP_COPY.json`
+- 测试时需验证“?”提示与页面功能一致。
 - 已提交后展示 `return_status`（状态值见 API 契约），并隐藏重复提交入口。
 
 ------
@@ -558,17 +609,16 @@ export interface Address {
 
 - 分享二维码 / PDF 均跳转到同一领取入口
 - 若未登录，先走微信登录；登录后展示确认提示页（说明领取后卡片将自动进入“购物卡中心”，并提示如何查找/使用）
-- 用户点击“确认领取”后调用 `giftCardService.claimSharedCard({ token })`，成功即绑定当前账号，并 `redirectTo('/pages/shopping-card/mine?highlight=new')`
-- 失败时需结合 `error-map.ts` 映射错误码（以 API 契约为准）展示友好提示
-- 失败时需结合 `error-map.ts` 映射错误码（以 API 契约为准）展示友好提示
+- 用户点击“确认领取”后调用 `giftCardService.claim({ token })`，成功即绑定当前账号，并 `redirectTo('/pages/shopping-card/mine?highlight=new')`
+- 失败时默认由 `api.ts` 展示后端 `message`，如需自定义提示可使用 `errorHandler.ts`
 
 ```ts
 const handleConfirm = async () => {
   try {
-    await giftCardService.claimSharedCard({ token });
+    await giftCardService.claim(token);
     Taro.redirectTo({ url: '/pages/shopping-card/mine?highlight=new' });
   } catch (error) {
-    Taro.showToast({ title: resolveErrorMessage(errorCodeOf(error)), icon: 'none' });
+    showErrorToast(error);
   }
 };
 ```
@@ -577,7 +627,7 @@ const handleConfirm = async () => {
 
 ### 6. **积分中心（`src/pages/points/summary.tsx` & `ledger.tsx`）**
 
-- `summary.tsx` 初次进入需并发请求 `pointsService.getSummary()`、`pointsService.getBalance()` 与 `pointsService.getSettings()`。
+- `summary.tsx` 初次进入需并发请求 `pointsService.getSummary()`、`pointsService.getBalance()` 与 `pointsService.getRules()`。
 - `ledger.tsx` 使用 `pointsService.getLedger({ page, per_page })` 实现分页加载。
 - 积分兑换流程：先拉取 `pointsService.getRedeemOptions()`，确认后调用 `pointsService.redeem(optionId)` 并刷新余额。
 - 任务中心：`pointsService.getMissions()` + `pointsService.claimMission(missionId)`。
@@ -655,14 +705,13 @@ import styles from './detail.scss';
 
 ------
 
-## 九、错误映射与提示（`src/utils/error-map.ts`）
+## 九、错误处理与提示（`src/utils/errorHandler.ts`）
 
-- `error-map.ts` 必须维护与 `docs/08_API_CONTRACT_V2.3.md` 一致的错误码映射
-- 页面捕获接口异常后调用 `resolveErrorMessage(error_code)`，默认兜底为「系统繁忙，请稍后再试」
-- 分享、积分、代理模块新增错误码需同步更新契约与数据字典，并在 `error-map.ts` 中维护映射
+- `errorHandler.ts` 提供通用错误分类与提示（网络/权限/业务等）
+- `api.ts` 对 `error_code` 统一处理并优先展示后端 `message`
+- 页面需要自定义文案时使用 `showErrorToast` / `analyzeError`
 
-> 具体映射仅维护在 `src/utils/error-map.ts`，本文不重复列举。
-> 所有新增错误码必须同步更新到 `docs/08_API_CONTRACT_V2.3.md` 与 `docs/06_DATA_DICTIONARY_v1.2.md`，并维护 `src/utils/error-map.ts`。
+> 错误码新增时需同步更新 `docs/08_API_CONTRACT_V2.3.md` 与 `docs/06_DATA_DICTIONARY_v1.2.md`。
 
 ------
 
@@ -670,13 +719,14 @@ import styles from './detail.scss';
 
 ```ts
 // src/utils/constants.ts
-export const API_BASE =
-  process.env.NODE_ENV === 'development'
-    ? 'https://dev.yourdomain.com/wp-json/myshop/v1'
-    : 'https://yourdomain.com/wp-json/myshop/v1';
+const DEV_BASE_URL = 'https://dev.fanbaoer.com';
+const PROD_BASE_URL = 'https://fanbaoer.com';
+
+export const BASE_URL = process.env.NODE_ENV === 'development' ? DEV_BASE_URL : PROD_BASE_URL;
+export const API_BASE = `${BASE_URL}/wp-json/myshop/v1`;
 ```
 
-> 通过 Taro 的 `process.env.NODE_ENV` 区分环境，无需额外 env 文件
+> 小程序端优先按 `envVersion`（develop/trial/release）选择域名，`NODE_ENV` 仅作为兜底回退
 
 ------
 

@@ -543,15 +543,20 @@
 
 ```json
 {
-  "invite_code": "U42ABC",
-  "total_invites": 18,
-  "first_order_count": 9,
-  "pending_rewards": "56.80",
-  "latest_invite": {
-    "invitee_user_id": 128,
-    "nickname": "新米粉",
-    "invited_at": "2025-11-21T18:30:00+08:00",
-    "first_order_status": "pending"
+  "success": true,
+  "data": {
+    "invite_code": "U42ABC",
+    "total_invites": 18,
+    "first_order_count": 9,
+    "conversion_rate": "50.00",
+    "pending_invitations": 2,
+    "pending_rewards": "56.80",
+    "latest_invite": {
+      "invitee_user_id": 128,
+      "nickname": "新米粉",
+      "invited_at": "2025-11-21T18:30:00+08:00",
+      "first_order_status": "pending"
+    }
   }
 }
 ```
@@ -568,6 +573,7 @@
   "scene": "xhs-202511",
   "channel": "xiaohongshu",
   "inviter_id": 42,
+  "referrer_code": "U42ABC",
   "landing_page": "/pages/index/index",
   "extra": {
     "campaign": "winter-sale",
@@ -580,8 +586,12 @@
 
 ```json
 {
-  "log_id": 5566,
-  "recorded_at": "2025-11-21T21:00:00+08:00"
+  "success": true,
+  "data": {
+    "tracked": true,
+    "log_id": 5566,
+    "recorded_at": "2025-11-21T21:00:00+08:00"
+  }
 }
 ```
 
@@ -596,30 +606,33 @@
 
 ```json
 {
-  "range": {
-    "from": "2025-11-01",
-    "to": "2025-11-30"
-  },
-  "channels": [
-    {
-      "channel": "xiaohongshu",
-      "visits": 1350,
-      "new_users": 420,
-      "first_orders": 188,
-      "gmv": "23560.00"
+  "success": true,
+  "data": {
+    "range": {
+      "from": "2025-11-01",
+      "to": "2025-11-30"
     },
-    {
-      "channel": "douyin",
-      "visits": 980,
-      "new_users": 305,
-      "first_orders": 102,
-      "gmv": "14680.00"
+    "channels": [
+      {
+        "channel": "xiaohongshu",
+        "visits": 1350,
+        "new_users": 420,
+        "first_orders": 188,
+        "gmv": "23560.00"
+      },
+      {
+        "channel": "douyin",
+        "visits": 980,
+        "new_users": 305,
+        "first_orders": 102,
+        "gmv": "14680.00"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "page_size": 20,
+      "total_pages": 1
     }
-  ],
-  "pagination": {
-    "page": 1,
-    "page_size": 20,
-    "total_pages": 1
   }
 }
 ```
@@ -1331,6 +1344,42 @@
 
 ------
 
+### POST `/gift-cards/purchase`
+
+**用途**：购买并生成礼品卡（储值卡/商品卡/组合礼包）
+
+**请求体**：
+
+```json
+{
+  "template_id": 12,
+  "amount": 200,
+  "delivery_mode": "digital_share",
+  "remark": "生日礼物",
+  "payload": {
+    "scene": "giftcard"
+  }
+}
+```
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "card_number": "GC20251118001",
+    "template": {
+      "id": 12,
+      "name": "稻香 200 元礼卡",
+      "type": "fixed_amount"
+    }
+  }
+}
+```
+
+------
+
 ### POST `/gift-cards/redeem`
 
 **请求体**：
@@ -1378,18 +1427,6 @@
 ```
 
 > ⚠️ 现有实现未返回 `available_balance` / `redeemable_items` 等扩展信息，仅标记礼品卡状态；如需更多字段需扩展 `Gift_Card_Controller::redeem_card`。
-
-------
-
-### POST `/gift-cards/{card_id}/reset-pin`
-
-> ⚠️ 当前 `Gift_Card_Controller` 尚未实现该接口，后端无对应路由。
-
-------
-
-### POST `/gift-cards/{card_id}/reveal-pin`
-
-> ⚠️ 当前 `Gift_Card_Controller` 尚未实现该接口，后端无对应路由。
 
 ------
 
@@ -2202,7 +2239,73 @@
 
 ### POST `/commissions/payout`
 
-> ⚠️ 当前插件未实现该接口，后端无对应路由。
+**用途**：发起佣金提现申请（锁定本次结算批次）
+
+**请求体**：
+
+```json
+{
+  "amount": "1680.00",
+  "payout_method": "manual",
+  "account_name": "张三",
+  "account_no": "622202************",
+  "bank_name": "中国工商银行"
+}
+```
+
+**成功响应（201）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "payout_id": 1201,
+    "amount": "1680.00",
+    "status": "processing",
+    "settlement_batch": "2026-02-W1",
+    "requested_at": "2026-02-06T10:00:00+08:00"
+  }
+}
+```
+
+**错误码**：
+
+| code | http | message | 说明 |
+| --- | --- | --- | --- |
+| `payout_below_minimum` | 400 | "未达到提现门槛" | 小于最低提现金额 |
+| `payout_in_progress` | 409 | "佣金正在处理，请稍后重试" | 批次锁定中 |
+| `insufficient_balance` | 409 | "可提现金额不足" | 可结算金额不足 |
+
+------
+
+### GET `/commissions/payouts`
+
+**用途**：查询提现记录
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "payout_id": 1201,
+      "amount": "1680.00",
+      "status": "paid",
+      "settlement_batch": "2026-02-W1",
+      "requested_at": "2026-02-06T10:00:00+08:00",
+      "paid_at": "2026-02-07T18:00:00+08:00",
+      "note": "线下打款"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "per_page": 20,
+    "total": 1,
+    "total_pages": 1
+  }
+}
+```
 
 ------
 

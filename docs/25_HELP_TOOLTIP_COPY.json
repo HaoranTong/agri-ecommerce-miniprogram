@@ -1,0 +1,209 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-02-06",
+  "items": [
+    {
+      "page": "auth/login",
+      "location": "wechat_login_button",
+      "trigger": "click",
+      "copy": "用于完成登录与订单通知，信息仅用于本店服务。",
+      "notes": "首次登录提示"
+    },
+    {
+      "page": "auth/login",
+      "location": "profile_consent",
+      "trigger": "click",
+      "copy": "头像/昵称仅用于个人中心展示，可随时修改。",
+      "notes": "可跳过"
+    },
+    {
+      "page": "user/profile",
+      "location": "bind_phone_entry",
+      "trigger": "click",
+      "copy": "手机号用于订单通知与售后联系，请填写真实号码。",
+      "notes": "重要提示"
+    },
+    {
+      "page": "index/index",
+      "location": "banner",
+      "trigger": "click",
+      "copy": "活动内容以页面展示为准，优惠可能有时间限制。",
+      "notes": "可选"
+    },
+    {
+      "page": "product/detail",
+      "location": "spec_selector",
+      "trigger": "click",
+      "copy": "请先选择规格再加入购物车或下单。",
+      "notes": "必填提醒"
+    },
+    {
+      "page": "product/detail",
+      "location": "stock_tip",
+      "trigger": "click",
+      "copy": "库存以支付成功时为准。",
+      "notes": "防超卖说明"
+    },
+    {
+      "page": "cart/index",
+      "location": "quantity_stepper",
+      "trigger": "click",
+      "copy": "修改数量后将自动更新结算金额。",
+      "notes": "可选"
+    },
+    {
+      "page": "order/create",
+      "location": "coupon_selector",
+      "trigger": "click",
+      "copy": "下单前可使用优惠券，金额会自动扣减。",
+      "notes": "可选"
+    },
+    {
+      "page": "order/create",
+      "location": "points_toggle",
+      "trigger": "click",
+      "copy": "可用积分在结算页抵扣，具体以页面提示为准。",
+      "notes": "可选"
+    },
+    {
+      "page": "order/detail",
+      "location": "order_status",
+      "trigger": "click",
+      "copy": "订单状态：待支付 -> 处理中 -> 已发货 -> 已完成。",
+      "notes": "说明流程"
+    },
+    {
+      "page": "order/detail",
+      "location": "tracking_info",
+      "trigger": "click",
+      "copy": "发货后可查看快递公司与单号。",
+      "notes": "发货后展示"
+    },
+    {
+      "page": "address/list",
+      "location": "add_address_button",
+      "trigger": "click",
+      "copy": "请确保手机号与地址真实有效。",
+      "notes": "必填提示"
+    },
+    {
+      "page": "points/summary",
+      "location": "available_points",
+      "trigger": "click",
+      "copy": "可用于抵扣或兑换商品。",
+      "notes": "资产说明"
+    },
+    {
+      "page": "points/summary",
+      "location": "pending_points",
+      "trigger": "click",
+      "copy": "订单完成后自动到账。",
+      "notes": "规则说明"
+    },
+    {
+      "page": "points/ledger",
+      "location": "ledger_list",
+      "trigger": "click",
+      "copy": "记录每一笔积分变动。",
+      "notes": "说明字段"
+    },
+    {
+      "page": "points/rules",
+      "location": "rules_content",
+      "trigger": "click",
+      "copy": "不同活动的积分规则以页面为准。",
+      "notes": "运营可变"
+    },
+    {
+      "page": "shopping-card/detail",
+      "location": "card_expiry",
+      "trigger": "click",
+      "copy": "购物卡有效期以卡片详情页为准。",
+      "notes": "重要提示"
+    },
+    {
+      "page": "shopping-card/share",
+      "location": "share_button",
+      "trigger": "click",
+      "copy": "分享后他人可领取使用，请注意隐私。",
+      "notes": "隐私提示"
+    },
+    {
+      "page": "shopping-card/redeem",
+      "location": "balance_hint",
+      "trigger": "click",
+      "copy": "余额不足时需补差价或更换支付方式。",
+      "notes": "结算提示"
+    },
+    {
+      "page": "referral/index",
+      "location": "invite_code",
+      "trigger": "click",
+      "copy": "邀请码可分享给好友，好友注册下单后你可获得佣金。",
+      "notes": "运营说明"
+    },
+    {
+      "page": "referral/index",
+      "location": "invite_stats",
+      "trigger": "click",
+      "copy": "展示邀请人数与首单转化情况。",
+      "notes": "统计说明"
+    },
+    {
+      "page": "commission/list",
+      "location": "status_badge",
+      "trigger": "click",
+      "copy": "佣金状态：待审核 -> 已审核 -> 已支付。",
+      "notes": "状态说明"
+    },
+    {
+      "page": "commission/payout",
+      "location": "available_amount",
+      "trigger": "click",
+      "copy": "仅包含已审核佣金。",
+      "notes": "规则说明"
+    },
+    {
+      "page": "commission/payout",
+      "location": "submit_button",
+      "trigger": "click",
+      "copy": "提交后进入处理中，请耐心等待打款。",
+      "notes": "流程说明"
+    },
+    {
+      "page": "commission/payout",
+      "location": "payout_history",
+      "trigger": "click",
+      "copy": "可查看历史申请与处理结果。",
+      "notes": "可选"
+    },
+    {
+      "page": "agent/apply",
+      "location": "apply_button",
+      "trigger": "click",
+      "copy": "提交申请后等待审核通知。",
+      "notes": "提示"
+    },
+    {
+      "page": "agent/dashboard",
+      "location": "team_summary",
+      "trigger": "hover",
+      "copy": "查看团队规模与业绩概览。",
+      "notes": "数据说明"
+    },
+    {
+      "page": "order/detail",
+      "location": "refund_button",
+      "trigger": "click",
+      "copy": "在订单详情提交申请并补充说明。",
+      "notes": "售后提示"
+    },
+    {
+      "page": "order/detail",
+      "location": "refund_policy",
+      "trigger": "hover",
+      "copy": "审核通过后原路退款。",
+      "notes": "规则说明"
+    }
+  ]
+}

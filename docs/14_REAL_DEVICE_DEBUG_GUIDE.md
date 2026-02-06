@@ -135,7 +135,7 @@ WHERE option_name = 'siteurl' OR option_name = 'home' OR option_name = 'myshop_p
 
 2. **临时方案：使用代理函数**
 
-在 `src/utils/request.ts` 中添加：
+在 `src/services/api.ts` 中添加（或封装为本地调试辅助函数）：
 ```typescript
 // 替换响应数据中的域名
 function replaceDomain(data: any): any {
