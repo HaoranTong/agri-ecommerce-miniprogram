@@ -58,3 +58,4 @@ echo.
 
 echo -----------------------------------
 echo ✅ 成功推送 !BRANCH! 到 Gitee 和 GitHub
+REM Test script verification 
