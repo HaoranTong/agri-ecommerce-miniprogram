@@ -11,3 +11,8 @@ node_modules/
 .env.*
 .vscode/
 .eslintrc
+
+# IDE and AI Assistant configurations
+.codebuddy/
+.cursor/
+.idea/
