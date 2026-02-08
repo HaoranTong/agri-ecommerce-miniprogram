@@ -35,6 +35,8 @@
 | 页面帮助文案映射 | `docs/23_HELP_TOOLTIP_MAP.md` |
 | 页面帮助文案 CSV | `docs/24_HELP_TOOLTIP_COPY.csv` |
 | 页面帮助文案 JSON | `docs/25_HELP_TOOLTIP_COPY.json` |
+| Git 自动化部署指南 | `docs/26_GIT_AUTOMATION_GUIDE.md` |
+| Git 分支管理规范 | `docs/27_BRANCH_MANAGEMENT_RULES.md` |
 
 ---
 
@@ -83,4 +85,97 @@ graph TD
 5. **问题先对文档**：文档错误先修文档再改代码；代码错误按技术文档修代码并补清晰注释。
 6. **先文档后代码**：任何新增功能必须先完成文档对齐再开发。
 7. **测试门槛**：完成任一功能必须通过单元/接口测试，再进入阶段性真机测试。
+
+---
+
+## 五、开发与部署
+
+### 🚀 自动化部署脚本
+
+项目提供了一套自动化脚本，简化 Git 操作和部署流程：
+
+| 脚本 | 功能 | 平台 |
+|-----|------|------|
+| `scripts/push-all.*` | 同时推送到 Gitee 和 GitHub | Windows / Linux / macOS |
+| `scripts/deploy-trial.*` | 部署到测试环境（Trial） | Windows / Linux / macOS |
+| `scripts/deploy-prod.*` | 部署到生产环境（Prod） | Windows / Linux / macOS |
+
+**详细使用说明**: 参见 `scripts/README.md`
+
+### 快速开始
+
+#### Windows 用户
+```cmd
+# 推送当前分支到双远程
+scripts\push-all.bat
+
+# 部署到测试环境
+scripts\deploy-trial.bat
+
+# 部署到生产环境（需要确认）
+scripts\deploy-prod.bat
+```
+
+#### Linux/macOS 用户
+```bash
+# 首次使用：添加执行权限
+chmod +x scripts/*.sh
+
+# 推送当前分支到双远程
+./scripts/push-all.sh
+
+# 部署到测试环境
+./scripts/deploy-trial.sh
+
+# 部署到生产环境（需要确认）
+./scripts/deploy-prod.sh
+```
+
+### 典型开发流程
+
+```bash
+# 1. 在 dev 分支开发
+git checkout dev
+# ... 编码和测试 ...
+
+# 2. 提交并推送
+git add .
+git commit -m "feat: add new feature"
+./scripts/push-all.sh dev
+
+# 3. 部署到测试环境（自动合并 dev → trial）
+./scripts/deploy-trial.sh
+
+# 4. 测试通过后部署到生产（自动合并 trial → master）
+./scripts/deploy-prod.sh
+```
+
+### 部署架构
+
+```
+本地开发 (dev)
+    ↓ [scripts/push-all.sh]
+    ├─→ Gitee (备份 + Webhook)
+    └─→ GitHub (备份)
+    
+    ↓ [scripts/deploy-trial.sh]
+    
+Trial 分支
+    ↓ [Gitee Push]
+    → 宝塔 Webhook → Trial 站点自动部署
+    
+    ↓ [scripts/deploy-prod.sh]
+    
+Master 分支
+    ↓ [Gitee Push]
+    → 宝塔 Webhook → Prod 站点自动部署
+```
+
+### 注意事项
+
+- ✅ 所有脚本会自动同步 Gitee 和 GitHub
+- ✅ deploy 脚本会自动切回 dev 分支
+- ✅ 生产部署需要手动确认
+- ✅ 推送失败会立即终止，不会继续后续操作
+- ⚠️ 确保宝塔 Webhook 已正确配置
 

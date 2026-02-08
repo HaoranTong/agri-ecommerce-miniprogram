@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { giftCardService, orderService } from '../../services/api';
 import type { GiftCardTemplate } from '../../types';
+import { decimalAdd, decimalMult } from '../../utils/decimal';
 import './custom-checkout.scss';
 
 const STORAGE_KEY = 'GIFT_CARD_CUSTOM_SELECTION';
@@ -63,8 +64,9 @@ const CustomCheckout = () => {
     load();
   }, [templateId]);
 
+
   const totalAmount = useMemo(() => {
-    return selection.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return selection.reduce((sum, item) => decimalAdd(sum, decimalMult(item.price, item.quantity, 2)), 0);
   }, [selection]);
 
   const totalQuantity = useMemo(() => {

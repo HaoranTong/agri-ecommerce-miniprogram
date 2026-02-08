@@ -74,7 +74,7 @@ const PointsMissions = () => {
         missions.map((mission) => {
           const progressPercent = Math.min(
             100,
-            Math.round((mission.progress / mission.goal) * 100)
+            Math.round(decimalMult(decimalDiv(mission.progress, mission.goal), 100))
           );
           return (
             <View className='mission-card' key={mission.mission_id}>

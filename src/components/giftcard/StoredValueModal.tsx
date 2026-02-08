@@ -2,6 +2,7 @@ import { Button, Input, Text, View } from '@tarojs/components';
 import { useEffect, useMemo, useState } from 'react';
 
 import type { GiftCardTemplate } from '../../types';
+import { decimalCompare } from '../../utils/decimal';
 import './stored-value-modal.scss';
 
 interface StoredValueModalProps {
@@ -73,11 +74,11 @@ const StoredValueModal = ({ visible, template, submitting = false, onClose, onSu
       setError('请选择或输入购卡金额');
       return false;
     }
-    if (minAmount && amount < minAmount) {
+    if (minAmount && decimalCompare(amount, minAmount) < 0) {
       setError(`金额需不低于 ¥${formatAmount(minAmount)}`);
       return false;
     }
-    if (maxAmount && amount > maxAmount) {
+    if (maxAmount && decimalCompare(amount, maxAmount) > 0) {
       setError(`金额需不超过 ¥${formatAmount(maxAmount)}`);
       return false;
     }

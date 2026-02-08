@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { commissionService } from '../../services/api';
 import type { CommissionPayoutRecord, CommissionSummary } from '../../types';
+import { decimalCompare } from '../../utils/decimal';
 import './payout.scss';
 
 const CommissionPayout = () => {
@@ -85,12 +86,13 @@ const CommissionPayout = () => {
   const handleSubmit = async () => {
     if (submitting) return;
 
+
     const amount = parseFloat(form.amount);
     if (!amount || Number.isNaN(amount) || amount <= 0) {
       Taro.showToast({ title: '请输入有效金额', icon: 'none' });
       return;
     }
-    if (amount - availableAmount > 0.0001) {
+    if (decimalCompare(amount, availableAmount) > 0) {
       Taro.showToast({ title: '可提现金额不足', icon: 'none' });
       return;
     }

@@ -11,6 +11,7 @@ import type {
   UserProfile
 } from '../../types';
 import { getSavedAddresses, getStoredUserInfo, upsertAddress, type StoredAddress } from '../../utils/storage';
+import { decimalDiv, decimalMult, decimalSub } from '../../utils/decimal';
 import './create.scss';
 
 const DEFAULT_ADDRESS: ShippingAddress = {
@@ -154,10 +155,10 @@ const OrderCreate = () => {
   // 计算订单总金额（数值）
   const orderTotal = useMemo(() => {
     if (fromCart) {
-      return checkoutItems.reduce((sum, item) => sum + parseFloat(item.price) * item.quantity, 0);
+      return checkoutItems.reduce((sum, item) => sum + decimalMult(parseFloat(item.price), item.quantity, 2), 0);
     }
     // 从商品详情购买，使用传递的价格参数
-    return variationPrice > 0 ? variationPrice * quantity : 0;
+    return variationPrice > 0 ? decimalMult(variationPrice, quantity, 2) : 0;
   }, [fromCart, checkoutItems, variationPrice, quantity]);
 
   const giftcardPayload = useMemo<GiftCardOrderPayload | undefined>(() => {
@@ -213,10 +214,10 @@ const OrderCreate = () => {
     }
     
     // 计算最大可抵扣金额
-    const maxDiscountAmount = orderTotal * (maxDiscountPercent / 100);
+    const maxDiscountAmount = decimalMult(orderTotal, decimalDiv(maxDiscountPercent, 100), 2);
     
     // 根据抵扣金额计算需要的积分
-    const maxPointsByOrder = Math.floor(maxDiscountAmount * redeemRate);
+    const maxPointsByOrder = Math.floor(decimalMult(maxDiscountAmount, redeemRate));
 
     if (maxPointsByOrder <= 0) {
       return 0;
@@ -244,8 +245,9 @@ const OrderCreate = () => {
       return `订单金额需满¥${pointsSettings.min_order_amount_to_use}才能使用积分`;
     }
 
-    const maxDiscountAmount = orderTotal * (maxDiscountPercent / 100);
-    const maxPointsByOrder = Math.floor(maxDiscountAmount * redeemRate);
+
+    const maxDiscountAmount = decimalMult(orderTotal, decimalDiv(maxDiscountPercent, 100), 2);
+    const maxPointsByOrder = Math.floor(decimalMult(maxDiscountAmount, redeemRate));
 
     if (maxPointsByOrder <= 0) {
       return '当前订单不可使用积分';
@@ -263,12 +265,12 @@ const OrderCreate = () => {
     if (!pointsSettings || pointsToUse <= 0) {
       return 0;
     }
-    return pointsToUse / pointsSettings.redeem_rate;
+    return decimalDiv(pointsToUse, pointsSettings.redeem_rate, 2);
   }, [pointsSettings, pointsToUse]);
   
   // 计算最终应付金额
   const finalTotal = useMemo(() => {
-    return Math.max(0, orderTotal - pointsDiscountAmount);
+    return Math.max(0, decimalSub(orderTotal, pointsDiscountAmount));
   }, [orderTotal, pointsDiscountAmount]);
   
   // 自动填入最大可用积分（仅在首次加载时自动填入一次）
@@ -404,6 +406,7 @@ const OrderCreate = () => {
   }, [isGiftCardOrder, giftcardMode, pendingGiftcardPref]);
 
   useEffect(() => {
+    // 获取用户资料
     userService
       .getProfile()
       .then(setProfile)
@@ -416,17 +419,16 @@ const OrderCreate = () => {
     ]).then(([balance, settings]) => {
       if (balance) setPointsBalance(balance);
       if (settings) setPointsSettings(settings);
-      // 数据加载完成后，在下一个useEffect中自动填入最大可用积分
     });
     
-    // 从后端获取用户的默认地址（优先从后端获取，确保地址是最新的）
+    // 统一的地址初始化逻辑:优先从后端获取,失败时降级到本地存储
     if (!addressTouched && !defaultAddressLoaded) {
       userService
         .getAddresses()
         .then((addressData) => {
           setDefaultAddressLoaded(true);
           
-          // 如果后端有地址数据，使用后端的地址
+          // 优先使用后端地址数据
           if (addressData?.addresses && addressData.addresses.length > 0) {
             const formattedAddresses: StoredAddress[] = addressData.addresses.map((addr, index) => ({
               id: addr.id ? (parseInt(String(addr.id).replace(/[^0-9]/g, '')) || index + 1) : index + 1,
@@ -441,7 +443,7 @@ const OrderCreate = () => {
             }));
             setSavedAddresses(formattedAddresses);
             
-            // 如果有默认地址，自动填充到表单
+            // 如果有默认地址,自动填充到表单
             if (addressData.default_address) {
               const defaultAddr = addressData.default_address;
               applyAddress({
@@ -456,27 +458,41 @@ const OrderCreate = () => {
                 isDefault: defaultAddr.isDefault
               });
             }
-          } else if (defaultAddressSnapshot) {
-            // 如果后端没有地址，但本地有地址，使用本地地址
-            // 这个逻辑已经在初始化时处理了
+          } else {
+            // 后端无地址数据,降级使用本地存储
+            const localAddresses = getSavedAddresses();
+            if (localAddresses.length > 0) {
+              setSavedAddresses(localAddresses);
+              const defaultAddr = selectDefaultAddress(localAddresses);
+              if (defaultAddr) {
+                applyAddress(defaultAddr);
+              }
+            }
           }
         })
         .catch((error) => {
-          console.error('获取用户地址失败', error);
-          setDefaultAddressLoaded(true); // 即使失败也标记为已加载，避免重复请求
+          console.error('获取用户地址失败,降级使用本地存储', error);
+          setDefaultAddressLoaded(true);
+          
+          // 获取失败时降级到本地存储
+          const localAddresses = getSavedAddresses();
+          if (localAddresses.length > 0) {
+            setSavedAddresses(localAddresses);
+            const defaultAddr = selectDefaultAddress(localAddresses);
+            if (defaultAddr) {
+              applyAddress(defaultAddr);
+            }
+          }
         });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 页面显示时刷新本地地址列表(仅更新列表,不改变当前选中的地址)
   useDidShow(() => {
-    const latest = getSavedAddresses();
-    setSavedAddresses(latest);
-    if (!addressTouched) {
-      const nextDefault = selectDefaultAddress(latest);
-      if (nextDefault) {
-        applyAddress(nextDefault);
-      }
+    if (defaultAddressLoaded) {
+      const latest = getSavedAddresses();
+      setSavedAddresses(latest);
     }
   });
 
@@ -709,7 +725,7 @@ const OrderCreate = () => {
               </View>
               <View className='info-row highlight'>
                 <Text className='label'>小计:</Text>
-                <Text className='value subtotal'>¥{(parseFloat(item.price) * item.quantity).toFixed(2)}</Text>
+                <Text className='value subtotal'>¥{decimalMult(parseFloat(item.price), item.quantity, 2).toFixed(2)}</Text>
               </View>
               {index < checkoutItems.length - 1 && <View className='divider' />}
             </View>

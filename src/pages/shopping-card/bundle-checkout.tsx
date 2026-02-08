@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { giftCardService, orderService } from '../../services/api';
 import type { GiftCardBundleItem, GiftCardTemplate } from '../../types';
+import { decimalMult } from '../../utils/decimal';
 import './bundle-checkout.scss';
 
 const phoneRegex = /^1[3-9]\d{9}$/;
@@ -63,7 +64,7 @@ const BundleCheckout = () => {
         hasPrice = false;
         return;
       }
-      total += price * (item.quantity ?? 1);
+      total += decimalMult(price, item.quantity ?? 1, 2);
     });
     if (hasPrice && total > 0) {
       return `约 ¥${total.toFixed(2)}`;

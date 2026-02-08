@@ -63,7 +63,7 @@ const CommissionList = () => {
   const calculateTotal = (commissions: CommissionRecord[]) => {
     return commissions
       .filter(c => c.status === 'paid')
-      .reduce((sum, c) => sum + parseFloat(c.amount), 0)
+      .reduce((sum, c) => decimalAdd(sum, parseFloat(c.amount)), 0)
       .toFixed(2);
   };
 

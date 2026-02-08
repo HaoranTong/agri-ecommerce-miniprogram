@@ -107,6 +107,7 @@ export interface GiftCardOrderPayload {
   recipient_hint?: string;
   recipient_contact?: string;
   remark?: string;
+  total_amount_hint?: number;  // 用于提示后端订单总金额
   [key: string]: any;
 }
 
@@ -168,8 +169,10 @@ export interface OrderDetail extends OrderCreated {
     points_used: number;
     discount_amount: string;
   } | null;
-  points_reward?: number;
+  // 订单获得的积分 (标准字段)
   points_earned?: number;
+  // 兼容性字段:后端可能返回以下字段名称,前端统一转换为 points_earned
+  points_reward?: number;
   reward_points?: number;
   earned_points?: number;
   is_gift_card_order?: boolean;

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { cartService } from '../../services/api';
 import type { CartItem } from '../../types';
+import { decimalAdd, decimalMult, toDecimalFixed } from '../../utils/decimal';
 import './index.scss';
 
 const Cart = () => {
@@ -138,10 +139,10 @@ const Cart = () => {
   };
 
   const calculateTotal = () => {
-    return items
+    const total = items
       .filter(item => selectedIds.includes(item.variation_id))
-      .reduce((sum, item) => sum + parseFloat(item.price) * item.quantity, 0)
-      .toFixed(2);
+      .reduce((sum, item) => decimalAdd(sum, decimalMult(parseFloat(item.price), item.quantity, 2)), 0);
+    return toDecimalFixed(total, 2);
   };
 
   if (loading) {

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { giftCardService, productService } from '../../services/api';
 import type { GiftCardTemplate, Product, ProductVariation } from '../../types';
+import { decimalMult } from '../../utils/decimal';
 import './custom-builder.scss';
 
 interface VariationSnapshot {
@@ -135,7 +136,7 @@ const CustomBuilder = () => {
     return Object.entries(selectedMap).reduce((sum, [variationId, qty]) => {
       const snapshot = allowedVariations.find((item) => item.variation_id === Number(variationId));
       if (!snapshot) return sum;
-      return sum + snapshot.price * qty;
+      return sum + decimalMult(snapshot.price, qty, 2);
     }, 0);
   }, [allowedVariations, selectedMap]);
 
@@ -160,10 +161,11 @@ const CustomBuilder = () => {
         return prev;
       }
 
+
       const nextTotalAmount = Object.entries(updated).reduce((sum, [vid, qty]) => {
         const variationSnapshot = allowedVariations.find((item) => item.variation_id === Number(vid));
         if (!variationSnapshot) return sum;
-        return sum + variationSnapshot.price * qty;
+        return sum + decimalMult(variationSnapshot.price, qty, 2);
       }, 0);
       if (template?.max_total && nextTotalAmount > template.max_total) {
         Taro.showToast({ title: `金额不可超过 ¥${template.max_total}`, icon: 'none' });

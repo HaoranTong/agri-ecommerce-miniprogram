@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { couponService, giftCardService, orderService, paymentService } from '../../services/api';
 import type { GiftCard, OrderDetail } from '../../types';
 import { showErrorToast, analyzeError } from '../../utils/errorHandler';
+import { decimalSub, decimalCompare, decimalRound } from '../../utils/decimal';
 import EmptyState from '../../components/EmptyState';
 import './payment.scss';
 
@@ -36,33 +37,34 @@ const OrderPayment = () => {
     remaining_balance: string;
   } | null>(null);
 
-  const isPaid = order?.status === 'processing' || order?.status === 'completed';
+  // 根据 WooCommerce 订单状态定义,以下状态表示订单已支付
+  const PAID_STATUSES = ['processing', 'completed', 'refunded', 'on-hold'] as const;
+  const isPaid = order?.status ? PAID_STATUSES.includes(order.status as any) : false;
   
   // 计算最终应付金额
   const finalTotal = useMemo(() => {
     if (!order) return 0;
-    let total = parseFloat(order.total || '0');
-    if (couponInfo) {
-      total -= parseFloat(couponInfo.discount_amount || '0');
-    }
-    if (giftCardInfo) {
-      total -= parseFloat(giftCardInfo.used_amount || '0');
-    }
-    return Math.max(0, total);
+    const total = decimalSub(
+      parseFloat(order.total || '0'),
+      couponInfo ? parseFloat(couponInfo.discount_amount || '0') : 0,
+      giftCardInfo ? parseFloat(giftCardInfo.used_amount || '0') : 0
+    );
+    return decimalRound(Math.max(0, total), 2);
   }, [order, couponInfo, giftCardInfo]);
 
   const storedValueCardCount = storedValueCards.length;
 
+  // 订单获得的积分 - 统一使用 points_earned 字段,兼容其他字段名
   const earnedPoints = useMemo(() => {
     if (!order) return 0;
-    const candidates = [
-      order.points_reward,
-      order.points_earned,
-      order.reward_points,
-      order.earned_points
-    ];
-    const found = candidates.find((value) => typeof value === 'number' && value > 0);
-    return found || 0;
+    // 优先使用标准字段 points_earned,然后是兼容性字段
+    return (
+      order.points_earned ||
+      order.points_reward ||
+      order.reward_points ||
+      order.earned_points ||
+      0
+    );
   }, [order]);
 
   const loadOrder = useCallback(async () => {
@@ -194,7 +196,7 @@ const OrderPayment = () => {
       });
       
       // 如果订单金额为0，提示用户
-      if (parseFloat(result.final_total) <= 0) {
+      if (decimalCompare(result.final_total || '0', 0) <= 0) {
         setTimeout(() => {
           Taro.showModal({
             title: '支付完成',

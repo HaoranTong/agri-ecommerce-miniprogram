@@ -58,6 +58,7 @@
     "@tarojs/runtime": "4.1.8",
     "@tarojs/shared": "4.1.8",
     "@tarojs/taro": "4.1.8",
+    "decimal.js": "^10.4.3",
     "qrcode-generator": "^2.0.4",
     "react": "^18.0.0",
     "react-dom": "^18.0.0"
@@ -71,6 +72,7 @@
     "@tarojs/cli": "4.1.8",
     "@tarojs/plugin-generator": "4.1.8",
     "@tarojs/vite-runner": "4.1.8",
+    "@types/decimal.js": "^2.4.2",
     "@types/html-webpack-plugin": "^3.2.9",
     "@types/jest": "^30.0.0",
     "@types/minimatch": "^5",

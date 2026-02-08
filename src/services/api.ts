@@ -941,6 +941,7 @@ export const paymentService = {
 
 let giftCardListCache: { ts: number; data: GiftCard[] } | null = null;
 let giftCardListPromise: Promise<GiftCard[]> | null = null;
+let giftCardListError: Error | null = null;
 
 export const giftCardService = {
   listMine: async (
@@ -954,16 +955,25 @@ export const giftCardService = {
       fallbackToCache?: boolean;
     }
   ) => {
-    const now = Date.now();
-    const cacheMs = options?.cacheMs ?? 0;
-    if (!options?.force && cacheMs > 0 && giftCardListCache && now - giftCardListCache.ts < cacheMs) {
-      return giftCardListCache.data;
+    // 1. 检查数据缓存（优先级最高）
+    if (!options?.force && giftCardListCache) {
+      const now = Date.now();
+      const cacheMs = options?.cacheMs ?? 0;
+      if (cacheMs > 0 && now - giftCardListCache.ts < cacheMs) {
+        return giftCardListCache.data;
+      }
     }
 
+    // 2. 检查进行中的请求
     if (!options?.force && giftCardListPromise) {
+      // 如果之前的请求失败了，明确抛出错误而不是返回失败的 Promise
+      if (giftCardListError) {
+        throw giftCardListError;
+      }
       return giftCardListPromise;
     }
 
+    // 3. 发起新请求
     giftCardListPromise = request<{ success?: boolean; data?: GiftCard[]; cards?: GiftCard[] }>({
       url: API_ENDPOINTS.giftCards,
       method: 'GET',
@@ -975,16 +985,19 @@ export const giftCardService = {
       .then((response) => {
         const data = response.data ?? response.cards ?? [];
         giftCardListCache = { ts: Date.now(), data };
+        giftCardListError = null; // 清空错误状态
         return data;
       })
       .catch((error) => {
+        giftCardListError = error; // 记录错误
+        // 降级策略：如果允许回退到缓存且缓存存在，返回缓存数据
         if (options?.fallbackToCache && giftCardListCache) {
           return giftCardListCache.data;
         }
         throw error;
       })
       .finally(() => {
-        giftCardListPromise = null;
+        giftCardListPromise = null; // 清空 Promise 引用
       });
 
     return giftCardListPromise;

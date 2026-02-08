@@ -8,9 +8,9 @@ import './manage.scss';
 
 const SHARE_STATE_LABELS: Record<string, string> = {
   none: '未分享',
-  shared: '已分享',
+  shared: '已分享未领取',
   bound: '待兑换',
-  consumed: '已兑换',
+  consumed: '已被领取',
   expired: '已过期'
 };
 
@@ -198,7 +198,7 @@ const GiftCardManage = () => {
                 <Text className='card-number'>卡号：{card.card_number}</Text>
               </View>
               <View className={`status-pill status-${shareState}`}>
-                {shareState === 'shared' ? '已分享未领取' : (SHARE_STATE_LABELS[shareState] || '未分享')}
+                {SHARE_STATE_LABELS[shareState] || '未分享'}
               </View>
             </View>
             <View className='card-meta'>
