@@ -103,8 +103,21 @@ const OrderDetail = () => {
     loadPublicConfig();
   }, [loadPublicConfig]);
 
+  const toNumber = (value?: string | number | null) => {
+    if (typeof value === 'number') return value;
+    if (!value) return 0;
+    const num = Number(value);
+    return Number.isNaN(num) ? 0 : num;
+  };
+
   const handleGoPayment = () => {
-    Taro.navigateTo({ url: `/pages/order/payment?orderId=${order?.order_id}` });
+    if (!order?.order_id) return;
+    const payable = toNumber(order.total);
+    if (payable <= 0) {
+      Taro.redirectTo({ url: `/pages/order/payment-success?orderId=${order.order_id}` });
+      return;
+    }
+    Taro.navigateTo({ url: `/pages/order/payment?orderId=${order.order_id}` });
   };
 
   const handleContactService = () => {

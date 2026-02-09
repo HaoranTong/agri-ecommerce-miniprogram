@@ -1,1 +1,279 @@
-@use '../address/address.scss';
+.referral-page {
+  min-height: 100vh;
+  padding: 24px 20px 40px;
+  background: linear-gradient(180deg, #f4f8f5 0%, #ffffff 45%);
+  color: #1f2a1f;
+}
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-text {
+  font-size: 28px;
+  color: #6d7a6d;
+}
+
+.hero {
+  padding: 18px 4px 12px;
+}
+
+.hero-title {
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.hero-subtitle {
+  margin-top: 8px;
+  font-size: 24px;
+  color: #6d7a6d;
+}
+
+.code-card,
+.stats-card,
+.list-card {
+  margin-top: 18px;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(31, 42, 31, 0.08);
+}
+
+.section-title {
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.invite-tip {
+  margin-top: 10px;
+  font-size: 22px;
+  color: #7a877a;
+}
+
+.action-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.action-btn {
+  flex: 1;
+  height: 64px;
+  line-height: 64px;
+  border-radius: 12px;
+  background: #1f7a3f;
+  color: #ffffff;
+  font-size: 24px;
+}
+
+.action-btn.ghost {
+  background: #f0f5f1;
+  color: #1f7a3f;
+  border: 1px solid rgba(31, 122, 63, 0.2);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.stat-item {
+  padding: 16px;
+  border-radius: 14px;
+  background: #f7faf7;
+}
+
+.stat-number {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1f7a3f;
+}
+
+.stat-label {
+  margin-top: 6px;
+  font-size: 22px;
+  color: #6d7a6d;
+}
+
+.list-card .empty {
+  margin-top: 12px;
+  font-size: 24px;
+  color: #98a498;
+}
+
+.member-row,
+.reward-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px dashed #e3e9e3;
+}
+
+.member-row:last-child,
+.reward-row:last-child {
+  border-bottom: none;
+}
+
+.member-name {
+  font-size: 26px;
+  font-weight: 500;
+}
+
+.member-meta,
+.reward-meta {
+  margin-top: 4px;
+  font-size: 22px;
+  color: #8a978a;
+}
+
+.member-tag {
+  font-size: 20px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #f0f5f1;
+  color: #1f7a3f;
+}
+
+.reward-title {
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.reward-amount {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f7a3f;
+}
+
+.share-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 16, 10, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 99;
+}
+
+.share-panel {
+  width: 100%;
+  max-height: 80vh;
+  background: #ffffff;
+  border-radius: 24px 24px 0 0;
+  padding: 20px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.panel-title {
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.panel-close {
+  font-size: 28px;
+  color: #98a498;
+}
+
+.panel-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.link-block {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f6f8f6;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.link-label {
+  font-size: 22px;
+  color: #6d7a6d;
+}
+
+.link-text {
+  font-size: 22px;
+  color: #1f2a1f;
+  word-break: break-all;
+}
+
+.link-copy {
+  align-self: flex-start;
+  height: 52px;
+  line-height: 52px;
+  padding: 0 18px;
+  font-size: 22px;
+  border-radius: 26px;
+  background: #1f7a3f;
+  color: #ffffff;
+}
+
+.qr-image {
+  width: 360px;
+  height: 360px;
+  border-radius: 12px;
+  background: #f6f8f6;
+}
+
+.poster-image {
+  width: 100%;
+  border-radius: 12px;
+}
+
+.panel-tip {
+  font-size: 22px;
+  color: #6d7a6d;
+  text-align: center;
+}
+
+.panel-btn {
+  margin-top: 6px;
+  width: 80%;
+  height: 64px;
+  line-height: 64px;
+  border-radius: 32px;
+  background: #1f7a3f;
+  color: #ffffff;
+  font-size: 24px;
+}
+
+.panel-actions {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.panel-actions .panel-btn {
+  width: 46%;
+  margin-top: 0;
+}
+
+.panel-btn.ghost {
+  background: #f0f5f1;
+  color: #1f7a3f;
+  border: 1px solid rgba(31, 122, 63, 0.2);
+}

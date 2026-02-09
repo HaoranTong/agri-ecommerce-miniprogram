@@ -17,6 +17,7 @@ const OrderPayment = () => {
   }, []);
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [autoRedirected, setAutoRedirected] = useState(false);
   
   // 优惠券相关状态
   const [showCouponModal, setShowCouponModal] = useState(false);
@@ -104,6 +105,14 @@ const OrderPayment = () => {
   useEffect(() => {
     loadOrder();
   }, [loadOrder]);
+
+  useEffect(() => {
+    if (loading || autoRedirected || !order || isPaid) return;
+    if (finalTotal <= 0) {
+      setAutoRedirected(true);
+      Taro.redirectTo({ url: `/pages/order/payment-success?orderId=${order.order_id}` });
+    }
+  }, [autoRedirected, finalTotal, isPaid, loading, order]);
   
   // 加载储值购物卡列表
   const fetchStoredCards = useCallback(
@@ -195,15 +204,8 @@ const OrderPayment = () => {
         icon: 'success' 
       });
       
-      // 如果订单金额为0，提示用户
       if (decimalCompare(result.final_total || '0', 0) <= 0) {
-        setTimeout(() => {
-          Taro.showModal({
-            title: '支付完成',
-            content: '订单已使用购物卡全额支付，无需再进行支付。',
-            showCancel: false
-          });
-        }, 1000);
+        Taro.showToast({ title: '购物卡已全额支付', icon: 'success' });
       }
     } catch (error: any) {
       Taro.hideLoading();

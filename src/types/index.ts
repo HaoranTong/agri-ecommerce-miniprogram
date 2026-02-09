@@ -593,6 +593,11 @@ export interface PromoPoster {
   poster_url: string;
   mini_program_path: string;
   scene: string;
+  mini_program_qr?: string | null;
+  share_text?: string | null;
+  tracking_params?: Record<string, any>;
+  personal_qr?: string | null;
+  personal_poster_url?: string | null;
 }
 
 export interface AgentApplication {

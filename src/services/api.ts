@@ -406,7 +406,9 @@ export const request = async <T = any>({
 
     if (payload && typeof payload === 'object' && 'error_code' in payload) {
       const message = payload.message || '请求失败';
-      Taro.showToast({ title: message, icon: 'none' });
+      if (!suppressErrorToast) {
+        Taro.showToast({ title: message, icon: 'none' });
+      }
       throw new Error(payload.error_code);
     }
 
@@ -781,12 +783,15 @@ export const analyticsService = {
 
 export const promoService = {
   getPoster: async (params: { type?: string; referrer_code?: string; template_id?: string }) => {
-    const response = await request<{ success: boolean; data: PromoPoster }>({
+    const response = await request<{ success?: boolean; data?: PromoPoster } | PromoPoster>({
       url: API_ENDPOINTS.promoPoster,
       method: 'GET',
-      data: params
+      data: params,
+      suppressErrorToast: true
     });
-    return response.data;
+    const payload = response as any;
+    if (payload?.data) return payload.data as PromoPoster;
+    return payload as PromoPoster;
   }
 };
 
@@ -966,6 +971,8 @@ export const giftCardService = {
       cacheMs?: number;
       force?: boolean;
       fallbackToCache?: boolean;
+      scope?: 'default' | 'history';
+      within_days?: number;
     }
   ) => {
     // 1. 检查数据缓存（优先级最高）
@@ -990,6 +997,10 @@ export const giftCardService = {
     giftCardListPromise = request<{ success?: boolean; data?: GiftCard[]; cards?: GiftCard[] }>({
       url: API_ENDPOINTS.giftCards,
       method: 'GET',
+      data: {
+        ...(options?.scope ? { scope: options.scope } : {}),
+        ...(options?.within_days ? { within_days: options.within_days } : {})
+      },
       showLoading: options?.showLoading ?? true,
       suppressErrorToast: options?.suppressErrorToast ?? false,
       suppressLog: options?.suppressLog ?? false,
@@ -997,8 +1008,10 @@ export const giftCardService = {
     })
       .then((response) => {
         const data = response.data ?? response.cards ?? [];
-        giftCardListCache = { ts: Date.now(), data };
-        giftCardListError = null; // 清空错误状态
+        if (options?.scope !== 'history') {
+          giftCardListCache = { ts: Date.now(), data };
+          giftCardListError = null; // 清空错误状态
+        }
         return data;
       })
       .catch((error) => {
@@ -1161,6 +1174,13 @@ export const referralService = {
   getCode: async () => {
     const response = await request<{ success: boolean; data: { referral_code: string } }>({
       url: API_ENDPOINTS.referralCode,
+      method: 'GET'
+    });
+    return response.data;
+  },
+  getQr: async () => {
+    const response = await request<{ success: boolean; data: { referral_code: string; page: string; qr_url: string } }>({
+      url: API_ENDPOINTS.referralQr,
       method: 'GET'
     });
     return response.data;

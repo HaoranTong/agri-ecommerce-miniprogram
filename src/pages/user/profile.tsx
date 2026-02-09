@@ -182,16 +182,6 @@ const UserProfile = () => {
         </View>
       </View>
 
-      {(profile.referral_code || profile.invite_code) && (
-        <View className='menu-section'>
-          <View className='menu-item'>
-            <View className='menu-icon'>🔑</View>
-            <Text className='menu-label'>我的邀请码</Text>
-            <Text className='menu-value invite-code'>{profile.referral_code || profile.invite_code}</Text>
-          </View>
-        </View>
-      )}
-
       {/* 退出登录 */}
       <View className='logout-section'>
         <Button className='logout-btn' onClick={handleLogout}>

@@ -42,6 +42,7 @@ export const API_ENDPOINTS = {
   referralCode: '/referral/code',
   referralMembers: '/referral/members',
   referralSummary: '/referral/summary',
+  referralQr: '/referral/qr',
   commissions: '/commissions',
   commissionsSummary: '/commissions/summary',
   commissionsPayout: '/commissions/payout',

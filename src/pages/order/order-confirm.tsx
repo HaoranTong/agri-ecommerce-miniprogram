@@ -162,6 +162,11 @@ const OrderConfirm = () => {
 
   const handleGoPayment = () => {
     if (!order?.order_id) return;
+    const payable = toNumber(order.total);
+    if (payable <= 0) {
+      Taro.redirectTo({ url: `/pages/order/payment-success?orderId=${order.order_id}` });
+      return;
+    }
     Taro.navigateTo({ url: `/pages/order/payment?orderId=${order.order_id}` });
   };
 

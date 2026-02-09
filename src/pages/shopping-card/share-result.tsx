@@ -53,15 +53,6 @@ const GiftCardShareResult = () => {
   const [sharing] = useState(false);
   const [forceMatrix, setForceMatrix] = useState(false);
   const [shareTokenState, setShareTokenState] = useState('');
-  const miniEnvVersion = useMemo(() => {
-    try {
-      const info = (Taro.getAccountInfoSync && Taro.getAccountInfoSync()) as any;
-      return info?.miniProgram?.envVersion || 'unknown';
-    } catch {
-      return 'unknown';
-    }
-  }, []);
-  const isDevelopEnv = miniEnvVersion === 'develop';
   // 购物卡分享必须携带 share_token，否则接收方无法领取。
   // share_token 可能为空的场景：
   // 1) 分享接口失败（网络/超时/权限）
@@ -424,14 +415,6 @@ const GiftCardShareResult = () => {
     <View className='share-result-page'>
       <View className='result-preview'>
         <Text className='preview-title'>分享卡片预览</Text>
-        {isDevelopEnv && (
-          <View className='env-warning'>
-            <Text className='env-warning-text'>
-              当前为开发版二维码，仅开发者/体验成员可打开；非成员扫码会提示版本过期。请使用体验版/正式版或将对方加入体验成员。
-            </Text>
-          </View>
-        )}
-        
         {qrImageUrl ? (
           <View className='preview-image-wrapper'>
             <Image

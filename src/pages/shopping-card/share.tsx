@@ -93,15 +93,6 @@ const GiftCardShare = () => {
   const [stylesLoading, setStylesLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [shareTokenState, setShareTokenState] = useState('');
-  const miniEnvVersion = useMemo(() => {
-    try {
-      const info = (Taro.getAccountInfoSync && Taro.getAccountInfoSync()) as any;
-      return info?.miniProgram?.envVersion || 'unknown';
-    } catch {
-      return 'unknown';
-    }
-  }, []);
-  const isDevelopEnv = miniEnvVersion === 'develop';
 
   const ensureShareEligibility = useCallback(async () => {
     try {
@@ -602,13 +593,6 @@ const GiftCardShare = () => {
       {shareResult && (
         <View className='result-section'>
           <Text className='result-title'>二维码 / 分享信息</Text>
-          {isDevelopEnv && (
-            <View className='env-warning'>
-              <Text className='env-warning-text'>
-                当前为开发版二维码，仅开发者/体验成员可打开；非成员扫码会提示版本过期。请使用体验版/正式版或将对方加入体验成员。
-              </Text>
-            </View>
-          )}
           {qrImageUrl ? (
             <View className='qr-wrapper'>
               <Image

@@ -11,7 +11,7 @@
 
 # 📡 微信小程序 × WordPress 无头电商系统
 
-## **完整 API 接口契约（V2.3.4 - 2026-02-05 更新）**
+## **完整 API 接口契约（V2.3.5 - 2026-02-09 更新）**
 
 > **文档状态**：✅ 冻结（Final Frozen Baseline）+ V2.3.3 增量更新
 > **适用项目阶段**：一期（MVP） + 二期（虚拟购物卡 / 社交裂变 / 代理商）
@@ -19,6 +19,10 @@
 > **认证方式**：Bearer JWT Token（通过 `Authorization: Bearer <token>` 传递）
 > **编码**：UTF-8
 > **时间格式**：ISO 8601（如 `"2025-11-18T21:30:00+08:00"`）
+>
+> **V2.3.5 变更记录**（2026-02-09）：
+> 1. `GET /referral/qr` - 新增 `qr_mode` 字段（dynamic/fixed）
+> 2. `GET /gift-cards` - 新增 `scope`/`within_days` 查询参数（历史卡片）
 >
 > **V2.3.4 变更记录**（2026-02-05）：
 > 1. `POST /debug/client-log` - 客户端日志采集（匿名调试）
@@ -653,6 +657,8 @@
   "image_url": "https://yourdomain.com/uploads/posters/winter-2025.png",
   "mini_program_qr": "https://yourdomain.com/qrcode/poster-2025-winter.png",
   "poster_url": "https://yourdomain.com/uploads/posters/winter-2025.png",
+  "personal_qr": "https://yourdomain.com/wp-content/uploads/myshop/poster-qr/qr-xxxxx.png",
+  "personal_poster_url": "https://yourdomain.com/wp-content/uploads/myshop/personal-posters/poster-xxxxx.png",
   "mini_program_path": "/pages/index/index?scene=invite",
   "share_text": "扫码领取冬日好礼，好友下单你得积分！",
   "scene": "invite",
@@ -663,6 +669,8 @@
   }
 }
 ```
+
+> `valid_until` 过期后该海报会自动失效，接口将返回 404。
 
 **失败示例（404）**：
 
@@ -1644,6 +1652,12 @@
 
 > ⚠️ 文档冻结版本中的 `/gift-cards/mine` 在当前插件中并未注册，对应功能由 `/gift-cards` 提供。
 
+**查询参数**：
+- `scope`: `default | history`  
+  - `default`：仅返回当前用户可使用的购物卡（默认）
+  - `history`：返回近一年内与当前用户相关的全部购物卡记录（包含已分享/已兑换）
+- `within_days`: integer（仅 `scope=history` 时生效，默认 365）
+
 **成功响应（200）**：
 
 ```json
@@ -2226,6 +2240,29 @@
 ```
 
 > `reward_points_*` 为分销奖励积分汇总，`commission_totals` 为兼容字段（在启用积分奖励时可能为 0）。
+
+------
+
+### GET `/referral/qr`
+
+**用途**：获取当前用户推广二维码（固定打开登录页，首次生成后缓存）
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "referral_code": "U42ABCD",
+    "page": "pages/auth/login",
+    "qr_url": "https://yourdomain.com/wp-content/uploads/myshop/qr/qr-xxxxx.png",
+    "qr_mode": "dynamic",
+    "updated_at": "2026-02-09 10:00:00"
+  }
+}
+```
+
+> `qr_mode` 说明：`dynamic` 为用户专属二维码（带推荐参数）；`fixed` 为后台统一二维码图片（用于品牌统一展示）。
 
 ------
 

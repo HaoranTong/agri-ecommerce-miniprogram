@@ -3,6 +3,24 @@ export default {
   extends: "stylelint-config-standard",
   customSyntax: "postcss-scss",
   rules: {
+    "at-rule-no-unknown": [
+      true,
+      {
+        ignoreAtRules: [
+          "use",
+          "forward",
+          "mixin",
+          "include",
+          "if",
+          "else",
+          "for",
+          "each",
+          "while",
+          "function",
+          "return"
+        ]
+      }
+    ],
     "alpha-value-notation": "number",
     "color-function-notation": "legacy",
     "color-function-alias-notation": null,

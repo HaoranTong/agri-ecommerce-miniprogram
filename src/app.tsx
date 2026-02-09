@@ -17,7 +17,14 @@ function App({ children }: PropsWithChildren) {
     const payload: AttributionParams = {};
     if (channel) payload.channel = channel;
     if (sceneCode) payload.scene = sceneCode;
-    if (referrerCode) payload.referrer_code = referrerCode;
+    if (referrerCode) {
+      payload.referrer_code = referrerCode;
+    } else if (sceneCode) {
+      const match = /^U\d+[A-Za-z0-9]{4}$/.test(sceneCode) ? sceneCode : sceneCode.startsWith('rc_') ? sceneCode.slice(3) : '';
+      if (match) {
+        payload.referrer_code = match;
+      }
+    }
     if (landingPage) payload.landing_page = landingPage;
 
     if (Object.keys(payload).length > 0) {
