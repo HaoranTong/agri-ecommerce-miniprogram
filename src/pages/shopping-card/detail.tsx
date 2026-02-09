@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { giftCardService } from '../../services/api';
 import type { GiftCardShareDetail } from '../../types';
+import HelpTooltip from '../../components/HelpTooltip';
 import './detail.scss';
 
 const GiftCardDetail = () => {
@@ -116,7 +117,10 @@ const GiftCardDetail = () => {
           </Text>
         </View>
         <View className='detail-item'>
-          <Text className='detail-label'>过期时间</Text>
+          <View className='info-row'>
+            <Text className='detail-label'>过期时间</Text>
+            <HelpTooltip page='shopping-card/detail' location='card_expiry' />
+          </View>
           <Text className='detail-value expire'>
             {expiresText}
           </Text>

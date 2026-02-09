@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { pointsService } from '../../services/api';
 import type { PointsRule } from '../../types';
+import HelpTooltip from '../../components/HelpTooltip';
 import './rules.scss';
 
 const PointsRules = () => {
@@ -29,6 +30,10 @@ const PointsRules = () => {
 
   return (
     <View className='points-rules-page'>
+      <View className='info-row'>
+        <Text className='page-title'>积分规则</Text>
+        <HelpTooltip page='points/rules' location='rules_content' />
+      </View>
       {loading && rules.length === 0 ? (
         <View className='page-state'>加载中...</View>
       ) : rules.length === 0 ? (

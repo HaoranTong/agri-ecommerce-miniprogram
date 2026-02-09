@@ -3,7 +3,7 @@ import Taro, { useDidShow } from '@tarojs/taro';
 import { useState } from 'react';
 
 import { getSavedAddresses, type StoredAddress } from '../../utils/storage';
-import './address.scss';
+import './select.scss';
 
 const AddressSelect = () => {
   const [addresses, setAddresses] = useState<StoredAddress[]>([]);
@@ -19,7 +19,7 @@ const AddressSelect = () => {
   };
 
   return (
-    <View className='address-page'>
+    <View className='address-page address-select-page'>
       <View className='address-list'>
         {addresses.length === 0 && <View className='empty'>暂无地址信息</View>}
         {addresses.map((addr) => (

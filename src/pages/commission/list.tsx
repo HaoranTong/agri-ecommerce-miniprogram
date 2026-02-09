@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { agentService, referralService } from '../../services/api';
 import type { CommissionRecord } from '../../types';
+import HelpTooltip from '../../components/HelpTooltip';
 import './list.scss';
 
 const CommissionList = () => {
@@ -113,8 +114,11 @@ const CommissionList = () => {
             <View key={commission.id} className='commission-item'>
               <View className='item-header'>
                 <Text className='order-id'>订单 #{commission.order_id}</Text>
-                <View className={`status-badge ${getStatusColor(commission.status)}`}>
-                  <Text>{getStatusText(commission.status)}</Text>
+                <View className='info-row'>
+                  <View className={`status-badge ${getStatusColor(commission.status)}`}>
+                    <Text>{getStatusText(commission.status)}</Text>
+                  </View>
+                  <HelpTooltip page='commission/list' location='status_badge' />
                 </View>
               </View>
               <View className='item-body'>

@@ -1,17 +1,18 @@
 import { Text, View } from '@tarojs/components';
-import Taro from '@tarojs/taro';
+import Taro, { useDidShow } from '@tarojs/taro';
 import { useEffect, useState } from 'react';
 
 import { agentService } from '../../services/api';
 import type { AgentDownline, AgentProfile, CommissionRecord } from '../../types';
-import '../address/address.scss';
+import HelpTooltip from '../../components/HelpTooltip';
+import './dashboard.scss';
 
 const AgentDashboard = () => {
   const [profile, setProfile] = useState<AgentProfile | null>(null);
   const [downlines, setDownlines] = useState<AgentDownline[]>([]);
   const [commissions, setCommissions] = useState<CommissionRecord[]>([]);
 
-  useEffect(() => {
+  useDidShow(() => {
     const load = async () => {
       try {
         const [prof, downlineData, commissionData] = await Promise.all([
@@ -29,10 +30,21 @@ const AgentDashboard = () => {
     };
 
     load();
-  }, []);
+  });
 
   if (!profile?.is_agent) {
-    return <View className='address-page'>您尚未成为代理商</View>;
+    return (
+      <View className='address-page'>
+        <View className='address-card'>
+          <Text className='section-title'>您尚未成为代理商</Text>
+          <View className='empty'>请先提交代理申请</View>
+          <View className='info-row' onClick={() => Taro.navigateTo({ url: '/pages/agent/apply' })}>
+            <Text>前往申请</Text>
+            <Text>→</Text>
+          </View>
+        </View>
+      </View>
+    );
   }
 
   return (
@@ -58,7 +70,10 @@ const AgentDashboard = () => {
       </View>
 
       <View className='address-card'>
-        <Text className='section-title'>团队列表</Text>
+        <View className='info-row'>
+          <Text className='section-title'>团队列表</Text>
+          <HelpTooltip page='agent/dashboard' location='team_summary' />
+        </View>
         {downlines.length === 0 && <View className='empty'>暂无下级代理</View>}
         {downlines.map((agent) => (
           <View className='info-row' key={agent.agent_user_id}>

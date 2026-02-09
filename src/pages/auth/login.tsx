@@ -5,6 +5,7 @@ import Taro from '@tarojs/taro';
 import { authService, debugService, userService } from '../../services/api';
 import { getToken } from '../../utils/storage';
 import type { LoginResponse } from '../../types';
+import HelpTooltip from '../../components/HelpTooltip';
 import './login.scss';
 
 const Login = () => {
@@ -425,6 +426,7 @@ const Login = () => {
           type='primary'
         >
           <Text className='btn-text'>微信登录</Text>
+          <HelpTooltip page='auth/login' location='wechat_login_button' />
         </Button>
       ) : (
         // 第二步：手机号授权（登录成功后显示）
@@ -483,7 +485,10 @@ const Login = () => {
         <View className='privacy-modal'>
           <View className='privacy-card'>
             <Text className='privacy-title'>用户信息确认</Text>
-            <Text className='privacy-desc'>这是应用内的确认页。头像需通过微信官方“选择头像”获取，昵称请手动填写（可选）。</Text>
+            <Text className='privacy-desc'>
+              这是应用内的确认页。头像需通过微信官方“选择头像”获取，昵称请手动填写（可选）。
+              <HelpTooltip page='auth/login' location='profile_consent' />
+            </Text>
             {canChooseAvatar ? (
               <View className='profile-form'>
                 <View className='avatar-row'>

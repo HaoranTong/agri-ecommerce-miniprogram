@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { cartService, productService } from '../../services/api';
 import type { Product, ProductVariation } from '../../types';
+import HelpTooltip from '../../components/HelpTooltip';
 import './detail.scss';
 
 const ProductDetail = () => {
@@ -268,7 +269,10 @@ const ProductDetail = () => {
 
       {/* 规格选择 */}
       <View className='spec-section'>
-        <Text className='section-title'>选择规格</Text>
+        <View className='info-row'>
+          <Text className='section-title'>选择规格</Text>
+          <HelpTooltip page='product/detail' location='spec_selector' />
+        </View>
         <View className='spec-options'>
           {product.variations?.map((variation) => (
             <View
@@ -310,6 +314,7 @@ const ProductDetail = () => {
         <View className='section-header'>
           <Text className='section-icon'>📋</Text>
           <Text className='section-title'>规格参数</Text>
+          <HelpTooltip page='product/detail' location='stock_tip' />
         </View>
         <View className='specs-table'>
           {specs.map((spec, index) => (

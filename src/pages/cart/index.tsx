@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { cartService } from '../../services/api';
 import type { CartItem } from '../../types';
 import { decimalAdd, decimalMult, toDecimalFixed } from '../../utils/decimal';
+import HelpTooltip from '../../components/HelpTooltip';
 import './index.scss';
 
 const Cart = () => {
@@ -218,6 +219,7 @@ const Cart = () => {
                     +
                   </View>
                 </View>
+                <HelpTooltip page='cart/index' location='quantity_stepper' />
               </View>
             </View>
 

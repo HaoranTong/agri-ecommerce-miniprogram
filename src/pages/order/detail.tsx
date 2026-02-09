@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { configService, orderService } from '../../services/api';
 import type { OrderDetail as OrderDetailType } from '../../types';
+import HelpTooltip from '../../components/HelpTooltip';
 import './detail.scss';
 
 const OrderDetail = () => {
@@ -267,13 +268,17 @@ const OrderDetail = () => {
             </Text>
             <Text className='status-tip'>{statusInfo.tip}</Text>
           </View>
+          <HelpTooltip page='order/detail' location='order_status' />
         </View>
       </View>
 
       {/* 物流信息 */}
       {order.tracking_number && (
         <View className='card logistics-card'>
-          <Text className='card-title'>🚚 物流信息</Text>
+          <View className='info-row'>
+            <Text className='card-title'>🚚 物流信息</Text>
+            <HelpTooltip page='order/detail' location='tracking_info' />
+          </View>
           <View className='logistics-content'>
             <View className='info-row'>
               <Text className='label'>物流公司</Text>
@@ -375,6 +380,7 @@ const OrderDetail = () => {
         </Button>
         <Button className='contact-btn' onClick={handleRequestReturn}>
           申请退货
+          <HelpTooltip page='order/detail' location='refund_button' />
         </Button>
         {order.status === 'pending' && (
           <Button className='pay-btn' onClick={handleGoPayment}>

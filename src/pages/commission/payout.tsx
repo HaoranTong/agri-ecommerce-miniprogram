@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { commissionService } from '../../services/api';
 import type { CommissionPayoutRecord, CommissionSummary } from '../../types';
 import { decimalCompare } from '../../utils/decimal';
+import HelpTooltip from '../../components/HelpTooltip';
 import './payout.scss';
 
 const CommissionPayout = () => {
@@ -125,7 +126,10 @@ const CommissionPayout = () => {
     <View className='commission-payout-page'>
       <View className='summary-card'>
         <View className='summary-main'>
-          <Text className='summary-label'>可提现佣金</Text>
+          <View className='info-row'>
+            <Text className='summary-label'>可提现佣金</Text>
+            <HelpTooltip page='commission/payout' location='available_amount' />
+          </View>
           <Text className='summary-value'>¥{formatAmount(availableAmount)}</Text>
         </View>
         <View className='summary-meta'>
@@ -184,11 +188,15 @@ const CommissionPayout = () => {
         </View>
         <Button className='submit-btn' loading={submitting} onClick={handleSubmit}>
           申请提现
+          <HelpTooltip page='commission/payout' location='submit_button' />
         </Button>
       </View>
 
       <View className='history-card'>
-        <Text className='history-title'>提现记录</Text>
+        <View className='info-row'>
+          <Text className='history-title'>提现记录</Text>
+          <HelpTooltip page='commission/payout' location='payout_history' />
+        </View>
         {payouts.length === 0 ? (
           <View className='empty-state'>暂无提现记录</View>
         ) : (

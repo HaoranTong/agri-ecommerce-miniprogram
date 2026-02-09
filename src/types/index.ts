@@ -426,6 +426,34 @@ export interface ReferralDownline {
   phone: string;
   registered_at: string;
   level: number;
+  first_order_status?: 'pending' | 'completed' | 'expired' | string;
+  total_orders?: number;
+  lifetime_value?: string;
+  channel_code?: string;
+}
+
+export interface ReferralMember {
+  user_id: number;
+  nickname?: string;
+  level: number;
+  first_order_status?: 'pending' | 'completed' | 'expired' | string;
+  first_order_id?: number | null;
+  joined_at: string;
+}
+
+export interface ReferralSummary {
+  referral_code: string;
+  total_invitees: number;
+  level_one_count: number;
+  level_two_count: number;
+  completed_first_orders: number;
+  pending_first_orders: number;
+  commission_totals?: {
+    pending?: string;
+    approved?: string;
+    rejected?: string;
+    paid?: string;
+  };
 }
 
 export interface AgentProfile {
@@ -545,16 +573,20 @@ export interface PromoPoster {
 }
 
 export interface AgentApplication {
-  region_type: 'province' | 'city' | 'district';
-  region_code: string;
+  region_zone: string;
+  region_province?: string;
+  region_city?: string;
+  level: 1 | 2 | 3;
   parent_agent_code?: string;
-  company_name?: string;
-  contact_name: string;
-  contact_phone: string;
+  team_target?: {
+    monthly_gmv?: number;
+  };
 }
 
 export interface AgentApplicationResult {
   agent_code: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'active' | 'rejected' | 'frozen';
+  active_until?: string;
+  is_active?: boolean;
   message?: string;
 }

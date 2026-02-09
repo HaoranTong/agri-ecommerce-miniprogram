@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { giftCardService } from '../../services/api';
 import type { GiftCard } from '../../types';
 import { getSavedAddresses, type StoredAddress } from '../../utils/storage';
+import HelpTooltip from '../../components/HelpTooltip';
 import './redeem.scss';
 
 const getBalanceNumber = (balance: string | null) => Number(balance ?? 0);
@@ -167,7 +168,10 @@ const GiftCardRedeem = () => {
             >
               <View className='card-basic'>
                 <Text className='card-name'>{card.template_name || '礼品卡'}</Text>
-                <Text className='card-balance'>余额 ¥{card.balance ?? '--'}</Text>
+                <View className='info-row'>
+                  <Text className='card-balance'>余额 ¥{card.balance ?? '--'}</Text>
+                  <HelpTooltip page='shopping-card/redeem' location='balance_hint' />
+                </View>
               </View>
               <Text className='card-number'>卡号：{card.card_number}</Text>
               <View className='card-footer'>

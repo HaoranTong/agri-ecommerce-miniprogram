@@ -2,32 +2,35 @@ import { Text, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useEffect, useState } from 'react';
 
-import { referralService, invitationService, analyticsService } from '../../services/api';
-import type { CommissionRecord, ReferralDownline, InvitationSummary, ChannelAnalytics } from '../../types';
-import '../address/address.scss';
+import { referralService, invitationService } from '../../services/api';
+import type { CommissionRecord, ReferralMember, ReferralSummary } from '../../types';
+import HelpTooltip from '../../components/HelpTooltip';
+import './index.scss';
 
 const ReferralIndex = () => {
-  const [downlines, setDownlines] = useState<ReferralDownline[]>([]);
+  const [members, setMembers] = useState<ReferralMember[]>([]);
   const [commissions, setCommissions] = useState<CommissionRecord[]>([]);
-  const [invitationSummary, setInvitationSummary] = useState<InvitationSummary | null>(null);
-  const [channelAnalytics, setChannelAnalytics] = useState<ChannelAnalytics[]>([]);
+  const [referralCode, setReferralCode] = useState('');
+  const [summary, setSummary] = useState<ReferralSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        const [downlineData, commissionData, summaryData, analyticsData] = await Promise.all([
-          referralService.listDownlines(),
-          referralService.listCommissions(),
-          invitationService.getSummary().catch(() => null),
-          analyticsService.getChannelAnalytics().catch(() => [])
+        const [codeData, summaryData, memberData, commissionData] = await Promise.all([
+          referralService.getCode().catch(() => null),
+          referralService.getSummary().catch(() => null),
+          referralService.listMembers().catch(() => []),
+          referralService.listCommissions()
         ]);
-        
-        setDownlines(downlineData);
+
+        if (codeData?.referral_code) {
+          setReferralCode(codeData.referral_code);
+        }
+        setSummary(summaryData);
+        setMembers(memberData);
         setCommissions(commissionData);
-        setInvitationSummary(summaryData);
-        setChannelAnalytics(analyticsData);
       } catch (error) {
         console.error('加载分销数据失败', error);
         Taro.showToast({ title: '加载失败', icon: 'none' });
@@ -74,26 +77,43 @@ const ReferralIndex = () => {
 
   return (
     <View className='address-page'>
-      {/* 邀请统计 */}
-      {invitationSummary && (
+      {/* 邀请码 */}
+      {referralCode && (
         <View className='address-card'>
-          <Text className='section-title'>邀请统计</Text>
+          <View className='info-row'>
+            <Text className='section-title'>我的邀请码</Text>
+            <HelpTooltip page='referral/index' location='invite_code' />
+          </View>
+          <View className='info-row'>
+            <Text>邀请码</Text>
+            <Text>{referralCode}</Text>
+          </View>
+        </View>
+      )}
+
+      {/* 邀请统计 */}
+      {summary && (
+        <View className='address-card'>
+          <View className='info-row'>
+            <Text className='section-title'>邀请统计</Text>
+            <HelpTooltip page='referral/index' location='invite_stats' />
+          </View>
           <View className='stats-grid'>
             <View className='stat-item'>
-              <Text className='stat-number'>{invitationSummary.total_invitations}</Text>
+              <Text className='stat-number'>{summary.total_invitees}</Text>
               <Text className='stat-label'>总邀请人数</Text>
             </View>
             <View className='stat-item'>
-              <Text className='stat-number'>{invitationSummary.first_order_count}</Text>
-              <Text className='stat-label'>首单转化</Text>
+              <Text className='stat-number'>{summary.completed_first_orders}</Text>
+              <Text className='stat-label'>首单完成</Text>
             </View>
             <View className='stat-item'>
-              <Text className='stat-number'>{invitationSummary.conversion_rate}</Text>
-              <Text className='stat-label'>转化率</Text>
+              <Text className='stat-number'>{summary.level_one_count}</Text>
+              <Text className='stat-label'>一级人数</Text>
             </View>
             <View className='stat-item'>
-              <Text className='stat-number'>{invitationSummary.pending_invitations}</Text>
-              <Text className='stat-label'>待转化</Text>
+              <Text className='stat-number'>{summary.level_two_count}</Text>
+              <Text className='stat-label'>二级人数</Text>
             </View>
           </View>
         </View>
@@ -102,12 +122,12 @@ const ReferralIndex = () => {
       {/* 我的邀请 */}
       <View className='address-card'>
         <Text className='section-title'>我的邀请</Text>
-        {downlines.length === 0 && <View className='empty'>暂无下级用户</View>}
-        {downlines.map((item) => (
+        {members.length === 0 && <View className='empty'>暂无下级用户</View>}
+        {members.map((item) => (
           <View className='info-row' key={item.user_id}>
-            <Text>{item.phone}</Text>
+            <Text>{item.nickname || '匿名用户'}</Text>
             <Text>
-              {item.level}级 · 注册时间 {item.registered_at}
+              {item.level}级 · 注册时间 {item.joined_at}
             </Text>
           </View>
         ))}
@@ -127,20 +147,7 @@ const ReferralIndex = () => {
         ))}
       </View>
 
-      {/* 渠道分析 */}
-      {channelAnalytics.length > 0 && (
-        <View className='address-card'>
-          <Text className='section-title'>渠道分析</Text>
-          {channelAnalytics.map((channel, index) => (
-            <View className='info-row' key={index}>
-              <Text>{channel.channel}</Text>
-              <Text>
-                访问 {channel.visits} · 新用户 {channel.new_users} · 首单 {channel.first_orders}
-              </Text>
-            </View>
-          ))}
-        </View>
-      )}
+      {/* 渠道分析接口仅运营可用，前端不展示 */}
     </View>
   );
 };

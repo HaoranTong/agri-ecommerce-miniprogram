@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { pointsService } from '../../services/api';
 import type { PointsLedgerItem } from '../../types';
+import HelpTooltip from '../../components/HelpTooltip';
 import './ledger.scss';
 
 const PointsLedger = () => {
@@ -112,6 +113,10 @@ const PointsLedger = () => {
 
   return (
     <View className='points-ledger-page'>
+      <View className='info-row'>
+        <Text className='page-title'>积分流水</Text>
+        <HelpTooltip page='points/ledger' location='ledger_list' />
+      </View>
       <View className='filter-bar'>
         <View className='filter-row'>
           {['all', 'earn', 'spend', 'expire', 'adjust'].map((type) => (

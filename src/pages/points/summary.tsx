@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { pointsService } from '../../services/api';
 import type { PointsBalance, PointsRule } from '../../types';
+import HelpTooltip from '../../components/HelpTooltip';
 import './summary.scss';
 
 const PointsSummary = () => {
@@ -64,7 +65,10 @@ const PointsSummary = () => {
   return (
     <View className='points-summary-page'>
       <View className='balance-card'>
-        <Text className='card-label'>可用积分</Text>
+        <View className='info-row'>
+          <Text className='card-label'>可用积分</Text>
+          <HelpTooltip page='points/summary' location='available_points' />
+        </View>
         <Text className='card-value'>{balance.available}</Text>
         <View className='card-meta'>
           <View>
@@ -80,7 +84,10 @@ const PointsSummary = () => {
 
       <View className='stats-grid'>
         <View className='stat-item'>
-          <Text className='stat-label'>待入账</Text>
+          <View className='info-row'>
+            <Text className='stat-label'>待入账</Text>
+            <HelpTooltip page='points/summary' location='pending_points' />
+          </View>
           <Text className='stat-value'>{balance.pending}</Text>
           <Text className='stat-tip'>订单完成后自动发放</Text>
         </View>

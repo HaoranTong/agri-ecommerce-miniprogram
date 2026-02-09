@@ -19,7 +19,7 @@
     "lint:style": "stylelint \"src/**/*.{scss,css}\"",
     "lint": "npm run lint:js && npm run lint:style",
     "test": "npm run lint",
-    "build:weapp": "taro build --type weapp",
+    "build:weapp": "taro build --type weapp && node scripts/ensure-page-wxss.js",
     "build:swan": "taro build --type swan",
     "build:alipay": "taro build --type alipay",
     "build:tt": "taro build --type tt",

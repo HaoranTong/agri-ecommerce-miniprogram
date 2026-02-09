@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { debugService, giftCardService, userService } from '../../services/api';
 import { getStoredUserInfo } from '../../utils/storage';
 import type { GiftCard, GiftCardDeliveryMode, GiftCardShareResult, GiftCardShareStyle } from '../../types';
+import HelpTooltip from '../../components/HelpTooltip';
 import './share.scss';
 
 const getBalanceNumber = (balance: string | null) => Number(balance ?? 0);
@@ -594,6 +595,7 @@ const GiftCardShare = () => {
       <View className='action-section'>
         <Button className='share-btn' loading={submitting} onClick={handleShare}>
           {submitting ? '生成中...' : '生成分享内容'}
+          <HelpTooltip page='shopping-card/share' location='share_button' />
         </Button>
       </View>
 

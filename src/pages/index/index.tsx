@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { configService, productService } from '../../services/api';
 import type { Product, PublicConfig } from '../../types';
 import Skeleton from '../../components/Skeleton';
+import HelpTooltip from '../../components/HelpTooltip';
 import './index.scss';
 
 const Index = () => {
@@ -85,6 +86,12 @@ const Index = () => {
           );
           })}
         </Swiper>
+      )}
+      {slides.length > 0 && (
+        <View className='banner-tip'>
+          <Text>活动提示</Text>
+          <HelpTooltip page='index/index' location='banner' />
+        </View>
       )}
 
       {loading && (

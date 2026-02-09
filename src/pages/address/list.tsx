@@ -3,6 +3,7 @@ import Taro, { useDidShow } from '@tarojs/taro';
 import { useState } from 'react';
 
 import { getSavedAddresses, removeAddress, type StoredAddress } from '../../utils/storage';
+import HelpTooltip from '../../components/HelpTooltip';
 import './list.scss';
 
 const AddressList = () => {
@@ -85,6 +86,7 @@ const AddressList = () => {
 
       <Button className='add-address-btn' onClick={handleAdd}>
         ➕ 新增收货地址
+        <HelpTooltip page='address/list' location='add_address_button' />
       </Button>
     </View>
   );

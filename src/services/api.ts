@@ -14,6 +14,8 @@ import {
 import type {
   AgentDownline,
   AgentProfile,
+  AgentApplication,
+  AgentApplicationResult,
   CartItem,
   ChannelAnalytics,
   CommissionPayoutRecord,
@@ -44,6 +46,8 @@ import type {
   PromoPoster,
   PublicConfig,
   ReferralDownline,
+  ReferralMember,
+  ReferralSummary,
   ShippingAddress,
   UserProfile
 } from '../types';
@@ -775,19 +779,16 @@ export const promoService = {
 };
 
 export const agentApplicationService = {
-  create: async (orderId: number | string, provider: 'wechat' | 'offline') => {
-    const response = await request<PaymentCreateResponse>({
-      url: API_ENDPOINTS.paymentsCreate,
+  apply: async (payload: AgentApplication) => {
+    const response = await request<{ success: boolean; data: AgentApplicationResult }>({
+      url: API_ENDPOINTS.agentsApply,
       method: 'POST',
-      data: {
-        order_id: orderId,
-        provider
-      },
-      timeout: 30000, // Increase timeout to 30 seconds
-      showLoading: true
+      data: payload,
+      showLoading: true,
+      timeout: 30000
     });
-    return response;
-  },
+    return response.data;
+  }
 };
 
 export const debugService = {
@@ -1145,12 +1146,35 @@ export const couponService = {
 };
 
 export const referralService = {
-  listDownlines: () =>
-    request<{ downlines: ReferralDownline[] }>({
+  getCode: async () => {
+    const response = await request<{ success: boolean; data: { referral_code: string } }>({
+      url: API_ENDPOINTS.referralCode,
+      method: 'GET'
+    });
+    return response.data;
+  },
+  getSummary: async () => {
+    const response = await request<{ success: boolean; data: ReferralSummary }>({
+      url: API_ENDPOINTS.referralSummary,
+      method: 'GET'
+    });
+    return response.data;
+  },
+  listMembers: async () => {
+    const response = await request<{ success: boolean; data: ReferralMember[] }>({
+      url: API_ENDPOINTS.referralMembers,
+      method: 'GET'
+    });
+    return response.data ?? [];
+  },
+  listDownlines: async () => {
+    const response = await request<{ downlines: ReferralDownline[] }>({
       url: API_ENDPOINTS.referrals,
       method: 'GET'
-    }).then((res) => res.downlines),
-  listCommissions: () =>
+    });
+    return response.downlines ?? [];
+  },
+  listCommissions: async () =>
     request<{ commissions: CommissionRecord[] }>({
       url: API_ENDPOINTS.commissions,
       method: 'GET'

@@ -12,6 +12,7 @@ import type {
 } from '../../types';
 import { getSavedAddresses, getStoredUserInfo, upsertAddress, type StoredAddress } from '../../utils/storage';
 import { decimalDiv, decimalMult, decimalSub } from '../../utils/decimal';
+import HelpTooltip from '../../components/HelpTooltip';
 import './create.scss';
 
 const DEFAULT_ADDRESS: ShippingAddress = {
@@ -821,7 +822,10 @@ const OrderCreate = () => {
       {/* 积分抵扣区域 */}
       {pointsSettings?.enable_points_discount && pointsBalance && orderTotal > 0 && (
         <View className='card points-card'>
-          <Text className='section-title highlight-title'>积分抵扣</Text>
+          <View className='info-row'>
+            <Text className='section-title highlight-title'>积分抵扣</Text>
+            <HelpTooltip page='order/create' location='points_toggle' />
+          </View>
           <View className='points-info-row'>
             <Text className='points-label'>可用积分：</Text>
             <Text className='points-value'>{pointsBalance.available || 0}</Text>
