@@ -37,6 +37,8 @@ import type {
   PaymentCreateResponse,
   PaymentStatusResponse,
   PointsBalance,
+  PointsExchangeResult,
+  PointsExchangeRules,
   PointsLedgerItem,
   PointsMission,
   PointsRedeemOption,
@@ -61,6 +63,8 @@ interface PointsService {
       per_page?: number;
       type?: string;
       status?: string;
+      channel?: string;
+      channel_prefix?: string;
       from?: string;
       to?: string;
     }
@@ -77,6 +81,14 @@ interface PointsService {
     max_discount_percent: number;
     min_order_amount_to_use: number;
   }>;
+  getExchangeRules: () => Promise<PointsExchangeRules>;
+  exchangePoints: (payload: {
+    points: number;
+    payout_method?: string;
+    account_name?: string;
+    account_no?: string;
+    bank_name?: string;
+  }) => Promise<PointsExchangeResult>;
   getMissions: () => Promise<PointsMission[]>;
   claimMission: (
     missionId: string
@@ -1263,7 +1275,16 @@ export const pointsService: PointsService = {
     });
     return response.data;
   },
-  getLedger: async (params?: { page?: number; per_page?: number; type?: string; status?: string; from?: string; to?: string }) => {
+  getLedger: async (params?: {
+    page?: number;
+    per_page?: number;
+    type?: string;
+    status?: string;
+    channel?: string;
+    channel_prefix?: string;
+    from?: string;
+    to?: string;
+  }) => {
     const response = await request<{ success: boolean; data: PointsLedgerItem[]; pagination?: { total?: number } }>({
       url: API_ENDPOINTS.pointsLedger,
       method: 'GET',
@@ -1303,6 +1324,28 @@ export const pointsService: PointsService = {
     }>({
       url: API_ENDPOINTS.pointsSettings,
       method: 'GET'
+    });
+    return response.data;
+  },
+  getExchangeRules: async () => {
+    const response = await request<{ success: boolean; data: PointsExchangeRules }>({
+      url: API_ENDPOINTS.pointsExchangeRules,
+      method: 'GET'
+    });
+    return response.data;
+  },
+  exchangePoints: async (payload: {
+    points: number;
+    payout_method?: string;
+    account_name?: string;
+    account_no?: string;
+    bank_name?: string;
+  }) => {
+    const response = await request<{ success: boolean; data: PointsExchangeResult }>({
+      url: API_ENDPOINTS.pointsExchange,
+      method: 'POST',
+      data: payload,
+      showLoading: true
     });
     return response.data;
   },

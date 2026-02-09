@@ -62,6 +62,8 @@ export const API_ENDPOINTS = {
   pointsRedeemOptions: '/points/redeem/options',
   pointsRedeem: '/points/redeem',
   pointsSignin: '/points/signin',
+  pointsExchange: '/points/exchange',
+  pointsExchangeRules: '/points/exchange/rules',
   invitationsSummary: '/invitations/summary',
   invitationsTrack: '/invitations/track',
   agentsApply: '/agents/apply',

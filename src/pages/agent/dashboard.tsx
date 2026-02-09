@@ -1,6 +1,6 @@
 import { Text, View } from '@tarojs/components';
 import Taro, { useDidShow } from '@tarojs/taro';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { agentService } from '../../services/api';
 import type { AgentDownline, AgentProfile, CommissionRecord } from '../../types';

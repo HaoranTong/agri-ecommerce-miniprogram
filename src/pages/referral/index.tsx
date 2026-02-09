@@ -2,14 +2,14 @@ import { Text, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useEffect, useState } from 'react';
 
-import { referralService, invitationService } from '../../services/api';
-import type { CommissionRecord, ReferralMember, ReferralSummary } from '../../types';
+import { referralService, invitationService, pointsService } from '../../services/api';
+import type { PointsLedgerItem, ReferralMember, ReferralSummary } from '../../types';
 import HelpTooltip from '../../components/HelpTooltip';
 import './index.scss';
 
 const ReferralIndex = () => {
   const [members, setMembers] = useState<ReferralMember[]>([]);
-  const [commissions, setCommissions] = useState<CommissionRecord[]>([]);
+  const [rewardLedger, setRewardLedger] = useState<PointsLedgerItem[]>([]);
   const [referralCode, setReferralCode] = useState('');
   const [summary, setSummary] = useState<ReferralSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -18,11 +18,13 @@ const ReferralIndex = () => {
     const load = async () => {
       try {
         setLoading(true);
-        const [codeData, summaryData, memberData, commissionData] = await Promise.all([
+        const [codeData, summaryData, memberData, rewardData] = await Promise.all([
           referralService.getCode().catch(() => null),
           referralService.getSummary().catch(() => null),
           referralService.listMembers().catch(() => []),
-          referralService.listCommissions()
+          pointsService
+            .getLedger({ page: 1, per_page: 20, type: 'earn', channel_prefix: 'referral_reward' })
+            .catch(() => ({ items: [] }))
         ]);
 
         if (codeData?.referral_code) {
@@ -30,7 +32,7 @@ const ReferralIndex = () => {
         }
         setSummary(summaryData);
         setMembers(memberData);
-        setCommissions(commissionData);
+        setRewardLedger(rewardData.items || []);
       } catch (error) {
         console.error('加载分销数据失败', error);
         Taro.showToast({ title: '加载失败', icon: 'none' });
@@ -115,6 +117,10 @@ const ReferralIndex = () => {
               <Text className='stat-number'>{summary.level_two_count}</Text>
               <Text className='stat-label'>二级人数</Text>
             </View>
+            <View className='stat-item'>
+              <Text className='stat-number'>{summary.reward_points_total ?? 0}</Text>
+              <Text className='stat-label'>累计奖励积分</Text>
+            </View>
           </View>
         </View>
       )}
@@ -133,15 +139,15 @@ const ReferralIndex = () => {
         ))}
       </View>
 
-      {/* 佣金明细 */}
+      {/* 奖励积分明细 */}
       <View className='address-card'>
-        <Text className='section-title'>佣金明细</Text>
-        {commissions.length === 0 && <View className='empty'>暂无佣金记录</View>}
-        {commissions.map((commission) => (
-          <View className='info-row' key={commission.id}>
-            <Text>订单 {commission.order_id}</Text>
+        <Text className='section-title'>奖励积分明细</Text>
+        {rewardLedger.length === 0 && <View className='empty'>暂无奖励记录</View>}
+        {rewardLedger.map((item) => (
+          <View className='info-row' key={item.id}>
+            <Text>订单 {item.reference_order_id ?? '-'}</Text>
             <Text>
-              ¥{commission.amount} · {commission.status}
+              +{item.delta} · {item.status}
             </Text>
           </View>
         ))}

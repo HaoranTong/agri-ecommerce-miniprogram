@@ -217,7 +217,7 @@
 | `reference_order_id`| bigint unsigned     | YES    | 关联订单 ID                                                   |
 | `reservation_id`    | varchar(64)         | YES    | 业务标识（任务/兑换/活动等）                                  |
 | `status`            | enum                | NO     | `pending` / `confirmed` / `released`                         |
-| `channel`           | varchar(32)         | NO     | `order_complete` / `order_discount` / `order_refund` / `daily_signin` / `mission_reward` / `redeem` / `points_expire` 等 |
+| `channel`           | varchar(32)         | NO     | `order_complete` / `order_discount` / `order_refund` / `daily_signin` / `mission_reward` / `redeem` / `points_expire` / `referral_reward_l1` / `referral_reward_l2` / `points_exchange` / `referral_reward_reversal` 等 |
 | `operator_id`       | bigint unsigned     | YES    | 后台操作人                                                   |
 | `expire_at`         | datetime            | YES    | 积分到期时间（earn 类型）                                    |
 | `created_at` / `updated_at` | datetime   | NO     | 创建/更新时间                                                 |

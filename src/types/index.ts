@@ -454,6 +454,8 @@ export interface ReferralSummary {
     rejected?: string;
     paid?: string;
   };
+  reward_points_total?: number;
+  reward_points_pending?: number;
 }
 
 export interface AgentProfile {
@@ -503,6 +505,27 @@ export interface PointsRule {
   title: string;
   description: string;
   status: 'active' | 'inactive';
+}
+
+export interface PointsExchangeRules {
+  enable_points_exchange: boolean;
+  exchange_rate: number;
+  exchange_min_points: number;
+  exchange_min_amount: number;
+  exchange_max_amount: number;
+  exchange_max_amount_per_day: number;
+  exchange_max_requests_per_day: number;
+  exchange_fee_rate: number;
+}
+
+export interface PointsExchangeResult {
+  payout_id: number;
+  points: number;
+  gross_amount: string;
+  fee: string;
+  amount: string;
+  status: string;
+  requested_at?: string;
 }
 
 export interface PointsMission {

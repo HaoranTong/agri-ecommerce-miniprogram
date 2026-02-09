@@ -287,6 +287,11 @@ CREATE TABLE wp_myshop_point_ledger (
 
 > ✅ `status=pending` 保留用于延迟入账场景（如任务审核），当前主要使用 `confirmed`。
 
+> 📌 新增渠道约定：
+> - `referral_reward_l1` / `referral_reward_l2`：分销奖励积分
+> - `points_exchange`：积分兑换佣金（支出）
+> - `referral_reward_reversal`：订单取消导致的分销积分回退
+
 ### 表 2：积分任务配置（Option）
 
 ```json

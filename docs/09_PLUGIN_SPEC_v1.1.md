@@ -373,6 +373,9 @@ CREATE TABLE {$wpdb->prefix}myshop_commissions (
 ) ENGINE=InnoDB;
 ```
 
+> 📌 分销奖励积分通过 `myshop_point_ledger` 写入，`channel` 包含 `referral_reward_l1` / `referral_reward_l2`。  
+> 📌 积分兑换佣金提现使用 `myshop_commission_payouts` 表，`note` 固定为 `points_exchange` 用于区分来源。
+
 #### c) 代理商扩展
 
 ```sql

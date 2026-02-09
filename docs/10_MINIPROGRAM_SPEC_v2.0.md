@@ -630,6 +630,7 @@ const handleConfirm = async () => {
 - `summary.tsx` 初次进入需并发请求 `pointsService.getSummary()`、`pointsService.getBalance()` 与 `pointsService.getRules()`。
 - `ledger.tsx` 使用 `pointsService.getLedger({ page, per_page })` 实现分页加载。
 - 积分兑换流程：先拉取 `pointsService.getRedeemOptions()`，确认后调用 `pointsService.redeem(optionId)` 并刷新余额。
+- 积分兑换提现：`pointsService.getExchangeRules()` 获取规则，`pointsService.exchangePoints()` 提交兑换申请（展示于 `commission/payout`）。
 - 任务中心：`pointsService.getMissions()` + `pointsService.claimMission(missionId)`。
 - 每日签到：`pointsService.signin()`（每日仅一次）。
 

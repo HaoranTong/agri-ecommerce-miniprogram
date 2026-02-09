@@ -1772,6 +1772,8 @@
 - `page` / `per_page`
 - `status`: `pending | confirmed | released`
 - `type`: `earn | spend | adjust | expire`
+- `channel`: 指定渠道（支持逗号分隔多个值）
+- `channel_prefix`: 渠道前缀过滤（如 `referral_reward`）
 - `from` / `to`：时间区间（ISO 8601 或 `YYYY-MM-DD HH:mm:ss`）
 
 **成功响应（200）**：
@@ -1804,6 +1806,65 @@
 ```
 
 > `description` 字段尚未存储，前端可根据 `channel` / `type` 组合出展示文案。
+
+------
+
+### GET `/points/exchange/rules`
+
+**用途**：获取积分兑换佣金规则
+
+**成功响应（200）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "enable_points_exchange": true,
+    "exchange_rate": 100,
+    "exchange_min_points": 100,
+    "exchange_min_amount": 0,
+    "exchange_max_amount": 0,
+    "exchange_max_amount_per_day": 0,
+    "exchange_max_requests_per_day": 0,
+    "exchange_fee_rate": 2.5
+  }
+}
+```
+
+------
+
+### POST `/points/exchange`
+
+**用途**：积分兑换佣金提现申请
+
+**请求体**：
+
+```json
+{
+  "points": 1000,
+  "payout_method": "manual",
+  "account_name": "张三",
+  "account_no": "622202********",
+  "bank_name": "招商银行"
+}
+```
+
+**成功响应（201）**：
+
+```json
+{
+  "success": true,
+  "data": {
+    "payout_id": 12,
+    "points": 1000,
+    "gross_amount": "10.00",
+    "fee": "0.25",
+    "amount": "9.75",
+    "status": "processing",
+    "requested_at": "2026-02-09T08:00:00+08:00"
+  }
+}
+```
 
 ------
 
@@ -1882,6 +1943,7 @@
 | 获取规则 | 固定规则（下单返积分、邀请奖励、每日签到等） | `GET /points/rules` |
 | 任务中心 | 运营投放的限时任务（完善资料、首次下单等），完成后可领取一次性积分 | `GET /points/missions`、`POST /points/missions/{mission_id}/claim` |
 | 积分兑换 | 使用积分兑换优惠券或礼品卡，或折抵订单金额 | `GET /points/redeem/options`、`POST /points/redeem`、`POST /orders (points_to_use)` |
+| 兑换提现 | 积分兑换佣金并发起提现 | `GET /points/exchange/rules`、`POST /points/exchange` |
 | 每日签到 | 每日领取一次积分 | `POST /points/signin` |
 | 到期提醒 | 查询 30 天内过期积分，用于 UI 和消息推送 | `GET /points/summary`（`expiring_soon` 字段） |
 
@@ -2151,6 +2213,8 @@
     "level_two_count": 36,
     "completed_first_orders": 18,
     "pending_first_orders": 2,
+    "reward_points_total": 520,
+    "reward_points_pending": 0,
     "commission_totals": {
       "pending": "128.40",
       "approved": "86.20",
@@ -2160,6 +2224,8 @@
   }
 }
 ```
+
+> `reward_points_*` 为分销奖励积分汇总，`commission_totals` 为兼容字段（在启用积分奖励时可能为 0）。
 
 ------
 

@@ -2,8 +2,8 @@ import { Button, Input, Text, View } from '@tarojs/components';
 import Taro, { usePullDownRefresh } from '@tarojs/taro';
 import { useEffect, useMemo, useState } from 'react';
 
-import { commissionService } from '../../services/api';
-import type { CommissionPayoutRecord, CommissionSummary } from '../../types';
+import { commissionService, pointsService } from '../../services/api';
+import type { CommissionPayoutRecord, CommissionSummary, PointsBalance, PointsExchangeRules } from '../../types';
 import { decimalCompare } from '../../utils/decimal';
 import HelpTooltip from '../../components/HelpTooltip';
 import './payout.scss';
@@ -11,13 +11,19 @@ import './payout.scss';
 const CommissionPayout = () => {
   const [summary, setSummary] = useState<CommissionSummary | null>(null);
   const [payouts, setPayouts] = useState<CommissionPayoutRecord[]>([]);
+  const [pointsBalance, setPointsBalance] = useState<PointsBalance | null>(null);
+  const [exchangeRules, setExchangeRules] = useState<PointsExchangeRules | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [exchangeSubmitting, setExchangeSubmitting] = useState(false);
   const [form, setForm] = useState({
     amount: '',
     account_name: '',
     account_no: '',
     bank_name: ''
+  });
+  const [exchangeForm, setExchangeForm] = useState({
+    points: ''
   });
 
   const availableAmount = useMemo(() => {
@@ -34,12 +40,16 @@ const CommissionPayout = () => {
       if (showSkeleton) {
         setLoading(true);
       }
-      const [summaryData, payoutData] = await Promise.all([
+      const [summaryData, payoutData, balanceData, exchangeData] = await Promise.all([
         commissionService.getSummary().catch(() => null),
-        commissionService.listPayouts({ page: 1, per_page: 20 }).catch(() => ({ items: [] }))
+        commissionService.listPayouts({ page: 1, per_page: 20 }).catch(() => ({ items: [] })),
+        pointsService.getBalance().catch(() => null),
+        pointsService.getExchangeRules().catch(() => null)
       ]);
       setSummary(summaryData);
       setPayouts(payoutData.items || []);
+      setPointsBalance(balanceData);
+      setExchangeRules(exchangeData);
     } catch (error) {
       console.error('获取提现数据失败', error);
       Taro.showToast({ title: '加载失败', icon: 'none' });
@@ -61,6 +71,13 @@ const CommissionPayout = () => {
 
   const updateForm = (key: keyof typeof form, value: string) => {
     setForm((prev) => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const updateExchangeForm = (key: keyof typeof exchangeForm, value: string) => {
+    setExchangeForm((prev) => ({
       ...prev,
       [key]: value
     }));
@@ -115,6 +132,72 @@ const CommissionPayout = () => {
       Taro.showToast({ title: '提交失败', icon: 'none' });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const exchangePreview = useMemo(() => {
+    if (!exchangeRules) return null;
+    const points = parseInt(exchangeForm.points, 10);
+    if (!points || Number.isNaN(points) || points <= 0) return null;
+    if (exchangeRules.exchange_rate <= 0) return null;
+    const gross = points / exchangeRules.exchange_rate;
+    const fee = exchangeRules.exchange_fee_rate > 0 ? gross * (exchangeRules.exchange_fee_rate / 100) : 0;
+    const net = gross - fee;
+    return {
+      points,
+      gross,
+      fee,
+      net
+    };
+  }, [exchangeForm.points, exchangeRules]);
+
+  const handleExchangeSubmit = async () => {
+    if (exchangeSubmitting) return;
+    if (!exchangeRules?.enable_points_exchange) {
+      Taro.showToast({ title: '积分兑换未开启', icon: 'none' });
+      return;
+    }
+
+    const points = parseInt(exchangeForm.points, 10);
+    if (!points || Number.isNaN(points) || points <= 0) {
+      Taro.showToast({ title: '请输入有效积分', icon: 'none' });
+      return;
+    }
+    if (exchangeRules.exchange_min_points > 0 && points < exchangeRules.exchange_min_points) {
+      Taro.showToast({ title: '未达到最低兑换积分', icon: 'none' });
+      return;
+    }
+    if (pointsBalance && points > pointsBalance.available) {
+      Taro.showToast({ title: '积分不足', icon: 'none' });
+      return;
+    }
+    const grossAmount = exchangePreview?.gross ?? 0;
+    if (exchangeRules.exchange_min_amount > 0 && grossAmount < exchangeRules.exchange_min_amount) {
+      Taro.showToast({ title: '未达到最低兑换金额', icon: 'none' });
+      return;
+    }
+    if (exchangeRules.exchange_max_amount > 0 && grossAmount > exchangeRules.exchange_max_amount) {
+      Taro.showToast({ title: '超过单次兑换上限', icon: 'none' });
+      return;
+    }
+
+    try {
+      setExchangeSubmitting(true);
+      await pointsService.exchangePoints({
+        points,
+        payout_method: 'manual',
+        account_name: form.account_name || undefined,
+        account_no: form.account_no || undefined,
+        bank_name: form.bank_name || undefined
+      });
+      Taro.showToast({ title: '兑换申请已提交', icon: 'success' });
+      setExchangeForm({ points: '' });
+      await loadData(false);
+    } catch (error) {
+      console.error('积分兑换失败', error);
+      Taro.showToast({ title: '兑换失败', icon: 'none' });
+    } finally {
+      setExchangeSubmitting(false);
     }
   };
 
@@ -190,6 +273,49 @@ const CommissionPayout = () => {
           申请提现
           <HelpTooltip page='commission/payout' location='submit_button' />
         </Button>
+      </View>
+
+      <View className='form-card'>
+        <Text className='form-title'>积分兑换提现</Text>
+        {!exchangeRules?.enable_points_exchange ? (
+          <View className='empty-state'>积分兑换功能暂未开启</View>
+        ) : (
+          <>
+            <View className='info-row'>
+              <Text className='form-label'>可用积分</Text>
+              <Text>{pointsBalance?.available ?? 0}</Text>
+            </View>
+            <View className='info-row'>
+              <Text className='form-label'>兑换比例</Text>
+              <Text>{exchangeRules.exchange_rate} 积分 = ¥1</Text>
+            </View>
+            <View className='info-row'>
+              <Text className='form-label'>手续费</Text>
+              <Text>{exchangeRules.exchange_fee_rate}%</Text>
+            </View>
+            <View className='form-row'>
+              <Text className='form-label'>兑换积分</Text>
+              <Input
+                className='form-input'
+                type='number'
+                placeholder='请输入积分'
+                value={exchangeForm.points}
+                onInput={(e) => updateExchangeForm('points', e.detail.value)}
+              />
+            </View>
+            {exchangePreview && (
+              <View className='info-row'>
+                <Text className='form-label'>预计到账</Text>
+                <Text>
+                  ¥{formatAmount(exchangePreview.net)}（含手续费 ¥{formatAmount(exchangePreview.fee)}）
+                </Text>
+              </View>
+            )}
+            <Button className='submit-btn' loading={exchangeSubmitting} onClick={handleExchangeSubmit}>
+              兑换并提现
+            </Button>
+          </>
+        )}
       </View>
 
       <View className='history-card'>
