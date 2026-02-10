@@ -152,22 +152,20 @@ const Login = () => {
       }
       setLoginResult(result);
       logLoginDebug('wechat_login_success', { has_phone: result?.has_phone, is_new_user: result?.is_new_user ?? result?.is_new });
-      Taro.showToast({ title: '登录成功', icon: 'success' });
 
       const cached = getStoredUserInfo();
       const isNewUser = Boolean(result.is_new_user ?? result.is_new);
-      const nickname = result.wechat_nickname || cached?.wechat_nickname || '';
-      const avatar = result.wechat_avatar || cached?.wechat_avatar || '';
-      const isPlaceholderNickname = /^wx_user_/i.test(nickname);
-      const hasProfile = Boolean((nickname && !isPlaceholderNickname) || avatar);
+      const hasProfile = typeof result.has_profile === 'boolean'
+        ? result.has_profile
+        : Boolean(result.wechat_nickname || result.wechat_avatar || cached?.wechat_nickname || cached?.wechat_avatar);
+      const hasPhone = Boolean(result.has_phone || result.phone || cached?.phone || cached?.has_phone);
       const needsProfile = !hasProfile;
-      const hasPhone = Boolean(result.phone || cached?.phone || cached?.has_phone);
 
       logLoginDebug('post_login_flags', {
         is_new_user: isNewUser,
         needs_profile: needsProfile,
         has_phone: hasPhone,
-        nickname_placeholder: isPlaceholderNickname
+        has_profile: hasProfile
       });
 
       if (needsProfile || isNewUser) {
@@ -181,9 +179,12 @@ const Login = () => {
       }
 
       if (hasPhone) {
+        Taro.showToast({ title: '登录成功', icon: 'success' });
         navigateAfterLogin();
         return;
       }
+
+      Taro.showToast({ title: '登录成功', icon: 'success' });
       setShowPhoneAuth(true);
     } catch (error) {
       console.error('登录失败', error);
