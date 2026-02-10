@@ -281,11 +281,16 @@
 {
   "code": "wx_login_code_from_miniprogram",
   "nickname": "可选",
-  "avatar": "可选"
+  "avatar": "可选",
+  "channel": "可选",
+  "scene": "可选",
+  "referrer_code": "可选",
+  "landing_page": "可选"
 }
 ```
 
-> ✅ **更新说明**：登录接口支持可选 `nickname`/`avatar` 字段（用于首次登录兜底保存）。如需完整/真实用户信息，仍建议登录后调用 `PUT /user/profile` 上传头像和昵称。
+> ✅ **更新说明**：登录接口支持可选 `nickname`/`avatar` 字段（用于首次登录兜底保存），并可携带 `channel/scene/referrer_code/landing_page` 作为渠道归因与推荐绑定依据。如需完整/真实用户信息，仍建议登录后调用 `PUT /user/profile` 上传头像和昵称。
+> ✅ **推荐绑定规则**：仅**首次注册/首次登录的新用户**在携带 `referrer_code`（或 `scene` 映射）时绑定推荐关系；已注册用户不会再次绑定。
 
 **成功响应（200）**（`myshop-core/api/auth-controller.php` 当前实现）：
 
@@ -1471,6 +1476,7 @@
       "message": "新年快乐",
       "theme": "default",
       "format": "qr",
+      "referrer_code": "U42ABCD",
       "template": {
         "print_template_url": "https://yourdomain.com/wp-content/plugins/myshop-core/assets/giftcard/print-default.html",
         "share_template_config": {
@@ -1501,6 +1507,7 @@
 ```
 
 > 当前实现直接返回 `share_url`、`mini_program_path`、`qr_image_url`、`mini_program_qr` 等字段，前端可直接用于分享和渲染。
+> 购物卡分享的小程序码会在 `scene` 中携带推荐码（如 `gc_<token>_rc_<referrer_code>`），仅用于新用户首次登录绑定推荐关系。
 
 ------
 

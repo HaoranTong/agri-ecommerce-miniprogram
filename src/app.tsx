@@ -5,6 +5,22 @@ import { setAttributionParams, type AttributionParams } from './utils/storage';
 import './app.scss';
 
 function App({ children }: PropsWithChildren) {
+  const parseGiftCardScene = (scene?: string) => {
+    if (!scene) return { token: '', referrerCode: '' };
+    if (scene.startsWith('gc_')) {
+      const rest = scene.slice(3);
+      const rcIndex = rest.indexOf('_rc_');
+      if (rcIndex > -1) {
+        return {
+          token: rest.slice(0, rcIndex),
+          referrerCode: rest.slice(rcIndex + 4)
+        };
+      }
+      return { token: rest, referrerCode: '' };
+    }
+    return { token: '', referrerCode: '' };
+  };
+
   const syncAttributionParams = (options?: any) => {
     if (!options) return;
     const query = options?.query || {};
@@ -12,6 +28,7 @@ function App({ children }: PropsWithChildren) {
     const sceneParam = query.scene ? String(query.scene) : '';
     const sceneCode = sceneParam || (options?.scene != null ? String(options.scene) : '');
     const referrerCode = query.referrer_code ? String(query.referrer_code) : '';
+    const giftcardScene = parseGiftCardScene(sceneCode);
     const landingPage = options?.path ? String(options.path) : '';
 
     const payload: AttributionParams = {};
@@ -19,6 +36,8 @@ function App({ children }: PropsWithChildren) {
     if (sceneCode) payload.scene = sceneCode;
     if (referrerCode) {
       payload.referrer_code = referrerCode;
+    } else if (giftcardScene.referrerCode) {
+      payload.referrer_code = giftcardScene.referrerCode;
     } else if (sceneCode) {
       const match = /^U\d+[A-Za-z0-9]{4}$/.test(sceneCode) ? sceneCode : sceneCode.startsWith('rc_') ? sceneCode.slice(3) : '';
       if (match) {
@@ -41,9 +60,12 @@ function App({ children }: PropsWithChildren) {
       let token = rawToken;
       if (!token && scene) {
         try {
-          token = decodeURIComponent(scene);
+          const decoded = decodeURIComponent(scene);
+          const parsed = parseGiftCardScene(decoded);
+          token = parsed.token || decoded;
         } catch {
-          token = scene;
+          const parsed = parseGiftCardScene(scene);
+          token = parsed.token || scene;
         }
       }
       const persisted = Taro.getStorageSync<string>('GIFT_CARD_CLAIM_TOKEN');

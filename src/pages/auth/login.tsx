@@ -73,12 +73,26 @@ const Login = () => {
       const routerParams = Taro.getCurrentInstance().router?.params ?? {};
       const sceneParam = routerParams.scene ? String(routerParams.scene) : '';
       const referrerCode = routerParams.referrer_code ? String(routerParams.referrer_code) : '';
+      const parseGiftCardScene = (scene?: string) => {
+        if (!scene) return { referrerCode: '' };
+        if (scene.startsWith('gc_')) {
+          const rest = scene.slice(3);
+          const rcIndex = rest.indexOf('_rc_');
+          if (rcIndex > -1) {
+            return { referrerCode: rest.slice(rcIndex + 4) };
+          }
+        }
+        return { referrerCode: '' };
+      };
+      const giftcardScene = parseGiftCardScene(sceneParam);
       if (!sceneParam && !referrerCode) return;
 
       const payload: AttributionParams = {};
       if (sceneParam) payload.scene = sceneParam;
       if (referrerCode) {
         payload.referrer_code = referrerCode;
+      } else if (giftcardScene.referrerCode) {
+        payload.referrer_code = giftcardScene.referrerCode;
       } else if (sceneParam) {
         const match = /^U\d+[A-Za-z0-9]{4}$/.test(sceneParam)
           ? sceneParam
