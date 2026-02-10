@@ -11,6 +11,7 @@ import {
   setToken,
   type StoredUserInfo
 } from '../utils/storage';
+import { getMaintenanceMessage, isMaintenancePayload } from '../utils/maintenance';
 import type {
   AgentDownline,
   AgentProfile,
@@ -207,6 +208,7 @@ const resolveUrl = (endpoint: string) => {
 };
 
 let isRedirecting = false; // 防止重复跳转
+let maintenanceNotified = false;
 let loadingCount = 0;
 const REQUEST_TIMEOUT = MINI_ENV_VERSION === 'develop' ? 30000 : 15000;
 const MAX_CONCURRENT_REQUESTS = MINI_ENV_VERSION === 'develop' ? 4 : 6;
@@ -282,6 +284,16 @@ const handleUnauthorized = () => {
         });
     }, 1500);
   }, 100);
+};
+
+const showMaintenanceNotice = (message?: string) => {
+  if (maintenanceNotified) return;
+  maintenanceNotified = true;
+  Taro.showModal({
+    title: '系统维护中',
+    content: message || '系统正在维护升级，请稍后再试。',
+    showCancel: false
+  });
 };
 
 const PUBLIC_ENDPOINTS = new Set<string>([
@@ -398,6 +410,10 @@ export const request = async <T = any>({
 
     if (statusCode >= 400) {
       const message = payload?.message || '请求失败';
+      if (isMaintenancePayload(statusCode, payload)) {
+        showMaintenanceNotice(getMaintenanceMessage(payload));
+        throw new Error('maintenance');
+      }
       if (!suppressErrorToast) {
         Taro.showToast({ title: message, icon: 'none' });
       }
