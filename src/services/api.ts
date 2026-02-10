@@ -410,8 +410,10 @@ export const request = async <T = any>({
 
     if (statusCode >= 400) {
       const message = payload?.message || '请求失败';
-      if (isMaintenancePayload(statusCode, payload)) {
-        showMaintenanceNotice(getMaintenanceMessage(payload));
+      if (statusCode === 503 || isMaintenancePayload(statusCode, payload)) {
+        const maintenanceMessage =
+          payload && typeof payload === 'object' ? getMaintenanceMessage(payload) : undefined;
+        showMaintenanceNotice(maintenanceMessage);
         throw new Error('maintenance');
       }
       if (!suppressErrorToast) {
