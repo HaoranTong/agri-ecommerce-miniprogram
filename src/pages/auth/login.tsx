@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Taro from '@tarojs/taro';
 
 import { authService, debugService } from '../../services/api';
-import { getStoredUserInfo, getToken } from '../../utils/storage';
+import { getStoredUserInfo, getToken, setAttributionParams, type AttributionParams } from '../../utils/storage';
 import type { LoginResponse } from '../../types';
 import HelpTooltip from '../../components/HelpTooltip';
 import './login.scss';
@@ -65,6 +65,37 @@ const Login = () => {
     if (token) {
       Taro.setStorageSync('GIFT_CARD_CLAIM_TOKEN', token);
       logLoginDebug('token_resolved', { token });
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const routerParams = Taro.getCurrentInstance().router?.params ?? {};
+      const sceneParam = routerParams.scene ? String(routerParams.scene) : '';
+      const referrerCode = routerParams.referrer_code ? String(routerParams.referrer_code) : '';
+      if (!sceneParam && !referrerCode) return;
+
+      const payload: AttributionParams = {};
+      if (sceneParam) payload.scene = sceneParam;
+      if (referrerCode) {
+        payload.referrer_code = referrerCode;
+      } else if (sceneParam) {
+        const match = /^U\d+[A-Za-z0-9]{4}$/.test(sceneParam)
+          ? sceneParam
+          : sceneParam.startsWith('rc_')
+            ? sceneParam.slice(3)
+            : '';
+        if (match) {
+          payload.referrer_code = match;
+        }
+      }
+
+      if (Object.keys(payload).length > 0) {
+        payload.recorded_at = new Date().toISOString();
+        setAttributionParams(payload);
+      }
+    } catch {
+      // ignore
     }
   }, []);
 
