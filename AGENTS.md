@@ -6,7 +6,6 @@ This file provides project-specific instructions and context for coding agents w
 - Project: Agri E-commerce Mini Program (Taro 4 + React 18 + TypeScript)
 - Repo path: e:\projects\agri-ecommerce-miniprogram
 - Branch: dev
--
 - Frontend and backend are separate repos. Each repo should have its own AGENTS.md.
   Shared rules should match; repo-specific details should differ.
 
@@ -59,6 +58,14 @@ This file provides project-specific instructions and context for coding agents w
   - `scripts\deploy-trial.bat`: merges dev -> trial, pushes both remotes.
   - `scripts\deploy-prod.bat`: merges trial -> master, pushes both remotes.
   - `scripts\check-branch-protection.bat`: blocks edits on trial/master.
+
+## Commit / Merge / Push Rules (Must Follow)
+- Always work on `dev` and commit there.
+- Before merging: ensure tests are green and docs are aligned.
+- Frontend deploy flow:
+  1) `scripts\push-all.bat dev`
+  2) `scripts\deploy-trial.bat` (merge dev -> trial + push both remotes)
+- Never merge into `master` unless explicitly instructed.
 
 ## Performance Notes
 - Cloudflare tunnel can be slow in trial; do not over-optimize until functionality is complete.
