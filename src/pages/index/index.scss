@@ -88,6 +88,10 @@
   align-items: center;
 }
 
+.recommended-spec.disabled {
+  opacity: 0.5;
+}
+
 .spec-label {
   font-size: 28rpx;
   color: #ff6b35;
@@ -99,6 +103,12 @@
   font-size: 28rpx;
   color: #333;
   font-weight: 500;
+}
+
+.spec-badge {
+  font-size: 22rpx;
+  color: #ff4d4f;
+  margin-left: 12rpx;
 }
 
 // 更多规格提示

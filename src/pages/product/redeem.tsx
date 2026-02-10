@@ -10,6 +10,30 @@ const ProductRedeem = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const isVariationInStock = (variation: any) => {
+    if (!variation) return true;
+    const rawQuantity = variation.stock_quantity;
+    if (rawQuantity !== null && rawQuantity !== undefined) {
+      const parsed = typeof rawQuantity === 'string' ? parseFloat(rawQuantity) : rawQuantity;
+      if (!Number.isNaN(parsed)) {
+        return parsed > 0;
+      }
+    }
+    if (typeof variation.in_stock === 'boolean') {
+      return variation.in_stock;
+    }
+    const stockStatus = variation.stock_status;
+    if (stockStatus) {
+      return !['outofstock', 'out_of_stock', 'soldout', 'sold_out'].includes(stockStatus);
+    }
+    return true;
+  };
+
+  const pickRecommendedVariation = (product: Product) => {
+    if (!product.variations || product.variations.length === 0) return null;
+    return product.variations.find((v) => isVariationInStock(v)) || product.variations[0];
+  };
+
   const loadProducts = async (showSkeleton = true) => {
     try {
       if (showSkeleton) {
@@ -70,7 +94,7 @@ const ProductRedeem = () => {
       {/* 商品列表 */}
       <View className='product-list'>
         {products.map((product) => {
-          const recommendedVariation = product.variations?.[0]; // 推荐第一个变体
+          const recommendedVariation = pickRecommendedVariation(product);
           return (
             <View key={product.id} className='product-item'>
               {/* 商品图片（满屏宽） */}

@@ -15,6 +15,8 @@ export interface ProductVariation {
   price: string | number;
   image_url?: string;
   in_stock?: boolean;
+  stock_status?: string;
+  stock_quantity?: number | string;
 }
 
 export interface Product {

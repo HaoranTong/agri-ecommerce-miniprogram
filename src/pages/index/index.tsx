@@ -13,6 +13,30 @@ const Index = () => {
   const [banner, setBanner] = useState<PublicConfig | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const isVariationInStock = (variation: any) => {
+    if (!variation) return true;
+    const rawQuantity = variation.stock_quantity;
+    if (rawQuantity !== null && rawQuantity !== undefined) {
+      const parsed = typeof rawQuantity === 'string' ? parseFloat(rawQuantity) : rawQuantity;
+      if (!Number.isNaN(parsed)) {
+        return parsed > 0;
+      }
+    }
+    if (typeof variation.in_stock === 'boolean') {
+      return variation.in_stock;
+    }
+    const stockStatus = variation.stock_status;
+    if (stockStatus) {
+      return !['outofstock', 'out_of_stock', 'soldout', 'sold_out'].includes(stockStatus);
+    }
+    return true;
+  };
+
+  const pickRecommendedVariation = (product: Product) => {
+    if (!product.variations || product.variations.length === 0) return null;
+    return product.variations.find((v) => isVariationInStock(v)) || product.variations[0];
+  };
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -107,7 +131,8 @@ const Index = () => {
       {/* 商品列表 */}
       <View className='product-list'>
         {products.map((product) => {
-          const recommendedVariation = product.variations?.[0]; // 推荐第一个变体
+          const recommendedVariation = pickRecommendedVariation(product);
+          const recommendedInStock = recommendedVariation ? isVariationInStock(recommendedVariation) : true;
           return (
             <View key={product.id} className='product-item'>
               {/* 商品图片（满屏宽） */}
@@ -130,13 +155,14 @@ const Index = () => {
                 {/* 推荐规格 */}
                 {recommendedVariation && (
                   <View 
-                    className='recommended-spec'
-                    onClick={() => handleVariantSelect(product, recommendedVariation)}
+                    className={`recommended-spec ${recommendedInStock ? '' : 'disabled'}`}
+                    onClick={() => recommendedInStock && handleVariantSelect(product, recommendedVariation)}
                   >
                     <Text className='spec-label'>推荐：</Text>
                     <Text className='spec-value'>
                       {Object.keys(recommendedVariation.attributes).join(' ')} 🔥
                     </Text>
+                    {!recommendedInStock && <Text className='spec-badge'>缺货</Text>}
                   </View>
                 )}
                 

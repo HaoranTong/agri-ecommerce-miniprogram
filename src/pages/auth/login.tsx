@@ -2,8 +2,8 @@ import { View, Button, Text, Checkbox, CheckboxGroup, Input, Image } from '@taro
 import { useEffect, useState } from 'react';
 import Taro from '@tarojs/taro';
 
-import { authService, debugService, userService } from '../../services/api';
-import { getToken } from '../../utils/storage';
+import { authService, debugService } from '../../services/api';
+import { getStoredUserInfo, getToken } from '../../utils/storage';
 import type { LoginResponse } from '../../types';
 import HelpTooltip from '../../components/HelpTooltip';
 import './login.scss';
@@ -119,7 +119,8 @@ const Login = () => {
   };
 
   const proceedAfterLogin = (result: LoginResponse) => {
-    const hasPhone = Boolean(result.has_phone);
+    const cached = getStoredUserInfo();
+    const hasPhone = Boolean(result.has_phone || result.phone || cached?.phone || cached?.has_phone);
     if (hasPhone) {
       navigateAfterLogin();
       return;
@@ -153,8 +154,23 @@ const Login = () => {
       logLoginDebug('wechat_login_success', { has_phone: result?.has_phone, is_new_user: result?.is_new_user ?? result?.is_new });
       Taro.showToast({ title: '登录成功', icon: 'success' });
 
+      const cached = getStoredUserInfo();
       const isNewUser = Boolean(result.is_new_user ?? result.is_new);
-      if (isNewUser) {
+      const nickname = result.wechat_nickname || cached?.wechat_nickname || '';
+      const avatar = result.wechat_avatar || cached?.wechat_avatar || '';
+      const isPlaceholderNickname = /^wx_user_/i.test(nickname);
+      const hasProfile = Boolean((nickname && !isPlaceholderNickname) || avatar);
+      const needsProfile = !hasProfile;
+      const hasPhone = Boolean(result.phone || cached?.phone || cached?.has_phone);
+
+      logLoginDebug('post_login_flags', {
+        is_new_user: isNewUser,
+        needs_profile: needsProfile,
+        has_phone: hasPhone,
+        nickname_placeholder: isPlaceholderNickname
+      });
+
+      if (needsProfile || isNewUser) {
         const needAuth = await checkPrivacyAuthorization();
         if (needAuth) {
           setShowPrivacyAuth(true);
@@ -164,7 +180,11 @@ const Login = () => {
         return;
       }
 
-      proceedAfterLogin(result);
+      if (hasPhone) {
+        navigateAfterLogin();
+        return;
+      }
+      setShowPhoneAuth(true);
     } catch (error) {
       console.error('登录失败', error);
       Taro.showToast({ title: '登录失败，请重试', icon: 'none' });
@@ -304,9 +324,9 @@ const Login = () => {
 
   // Step 2: 手机号授权（可选）
   const handlePhoneAuth = async (e: any) => {
-    const { code: phoneCode } = e.detail;
+    const { code: phoneCode, encryptedData, iv } = e.detail || {};
 
-    if (!phoneCode) {
+    if (!phoneCode && !(encryptedData && iv)) {
       // 用户拒绝，跳过手机号绑定
       handleSkipPhoneAuth();
       return;
@@ -314,6 +334,14 @@ const Login = () => {
 
     try {
       setPhoneLoading(true);
+
+      if (!getToken()) {
+        await doWechatLogin();
+      }
+      if (!getToken()) {
+        Taro.showToast({ title: '登录态失效，请重试', icon: 'none' });
+        return;
+      }
 
       // 获取新的登录凭证用于验证身份
       const loginRes = await Taro.login();
@@ -324,7 +352,11 @@ const Login = () => {
       }
 
       // 调用后端接口：传递登录code + 手机号授权码
-      await authService.bindPhone(loginCode, phoneCode);
+      await authService.bindPhone(
+        loginCode,
+        phoneCode,
+        encryptedData && iv ? { encryptedData, iv } : undefined
+      );
       Taro.showToast({ title: '手机号绑定成功', icon: 'success' });
 
       // 绑定成功后跳转
@@ -526,7 +558,11 @@ const Login = () => {
                 className='privacy-decline'
                 onClick={() => {
                   setShowProfileConsent(false);
-                  doWechatLogin();
+                  if (loginResult) {
+                    proceedAfterLogin(loginResult);
+                  } else {
+                    doWechatLogin();
+                  }
                 }}
               >
                 跳过头像昵称，直接登录

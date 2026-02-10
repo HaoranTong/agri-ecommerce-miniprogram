@@ -695,7 +695,14 @@ const OrderCreate = () => {
       }
     } catch (error) {
       console.error('创建订单失败', error);
-      Taro.showToast({ title: '创建订单失败', icon: 'none' });
+      const rawMessage = typeof (error as any)?.message === 'string'
+        ? (error as any).message
+        : '创建订单失败';
+      const isStockIssue = /out\s?of\s?stock|库存|缺货|sold\s?out/i.test(rawMessage);
+      Taro.showToast({
+        title: isStockIssue ? '库存不足，暂无法下单' : rawMessage || '创建订单失败',
+        icon: 'none'
+      });
     } finally {
       setSubmitting(false);
     }

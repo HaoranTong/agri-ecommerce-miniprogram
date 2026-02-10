@@ -23,16 +23,28 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
 
+  const getVariationStockQuantity = useCallback((variation: ProductVariation) => {
+    const rawQuantity = (variation as any).stock_quantity;
+    if (rawQuantity === null || rawQuantity === undefined) return null;
+    const parsed = typeof rawQuantity === 'string' ? parseFloat(rawQuantity) : rawQuantity;
+    if (Number.isNaN(parsed)) return null;
+    return parsed as number;
+  }, []);
+
   const isVariationInStock = useCallback((variation: ProductVariation) => {
+    const stockQuantity = getVariationStockQuantity(variation);
+    if (typeof stockQuantity === 'number') {
+      return stockQuantity > 0;
+    }
     if (typeof variation.in_stock === 'boolean') {
       return variation.in_stock;
     }
     const stockStatus = (variation as any).stock_status as string | undefined;
     if (stockStatus) {
-      return stockStatus !== 'outofstock';
+      return !['outofstock', 'out_of_stock', 'soldout', 'sold_out'].includes(stockStatus);
     }
     return true;
-  }, []);
+  }, [getVariationStockQuantity]);
 
   useEffect(() => {
     const loadProduct = async () => {
