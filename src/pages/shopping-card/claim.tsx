@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { debugService, giftCardService } from '../../services/api';
 import type { GiftCardShareDetail } from '../../types';
-import { getToken } from '../../utils/storage';
+import { getToken, setAttributionParams } from '../../utils/storage';
+import { parseReferrerFromScene } from '../../utils/referral';
 import './claim.scss';
 
 const formatDateTime = (value?: string | null) => {
@@ -98,6 +99,23 @@ const GiftCardClaim = () => {
         Taro.setStorageSync('GIFT_CARD_CLAIM_TOKEN', token);
       }
       logClaimDebug('token_resolved', { token });
+    }
+
+    try {
+      const sceneParam = (router.params?.scene as string) || '';
+      const referrerParam = (router.params?.referrer_code as string) || '';
+      const referrerFromScene = parseReferrerFromScene(sceneParam);
+      const referrer = referrerParam || referrerFromScene;
+      if (referrer || sceneParam) {
+        setAttributionParams({
+          ...(referrer ? { referrer_code: referrer } : {}),
+          ...(sceneParam ? { scene: sceneParam } : {}),
+          landing_page: 'pages/shopping-card/claim',
+          recorded_at: new Date().toISOString()
+        });
+      }
+    } catch {
+      // ignore
     }
 
     if (!token) {

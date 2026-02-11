@@ -36,7 +36,7 @@
 | 字段              | 类型         | 说明                                       |
 | ----------------- | ------------ | ------------------------------------------ |
 | `ID`              | bigint       | 用户唯一ID（主键）                         |
-| `user_login`      | varchar(60)  | 登录名（一期设为手机号）                   |
+| `user_login`      | varchar(60)  | 登录名（系统生成；手机号可在实名认证后补充） |
 | `user_pass`       | varchar(255) | 密码哈希（一期微信登录不使用，三期可启用） |
 | `user_email`      | varchar(100) | 邮箱（可为空）                             |
 | `user_registered` | datetime     | 注册时间                                   |
@@ -56,9 +56,9 @@
 
 | meta_key           | 数据类型    | 分期 | 必填 | 说明                                | 示例值                                                 |
 | ------------------ | ----------- | ---- | ---- | ----------------------------------- | ------------------------------------------------------ |
-| `phone`            | string      | 一期 | ✅    | 手机号（同时作为 `user_login`）     | `"13800138000"`                                        |
-| `_wechat_phone`    | string      | 一期 | ❌    | 微信绑定手机号（从getPhoneNumber获取） | `"13800138000"`                                     |
-| `billing_phone`    | string      | 一期 | ❌    | WooCommerce订单手机号（同步自_wechat_phone） | `"13800138000"`                         |
+| `phone`            | string      | 一期 | ❌    | 手机号（可选；实名认证/提现时需要） | `"13800138000"`                                        |
+| `_wechat_phone`    | string      | 一期 | ❌    | 微信绑定手机号（可选，来自getPhoneNumber） | `"13800138000"`                                     |
+| `billing_phone`    | string      | 一期 | ❌    | WooCommerce订单手机号（可选，同步自_wechat_phone） | `"13800138000"`                         |
 | `_wechat_openid`   | string      | 一期 | ✅    | 微信 openid（一对一绑定）           | `"oAbcDEF123..."`                                      |
 | `_wechat_nickname` | string      | 一期 | ❌    | 微信昵称（已废弃，见display_name）  | `"🌾五常米农"`                                          |
 | `_wechat_avatar`   | string      | 一期 | ❌    | 微信头像 URL（绝对路径）            | `"https://thirdwx.qlogo.cn/mmopen/vi_32/..."`          |

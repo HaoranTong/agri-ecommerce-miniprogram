@@ -43,7 +43,7 @@
 | 字段              | 类型                | 说明                                                         |
 | ----------------- | ------------------- | ------------------------------------------------------------ |
 | `ID`              | bigint(20) unsigned | 用户唯一标识（主键），在业务中作为 `user_id` 使用           |
-| `user_login`      | varchar(60)         | 登录名。微信登录用户设置为手机号或系统生成的账号。          |
+| `user_login`      | varchar(60)         | 登录名。微信登录用户默认使用系统生成账号，实名认证后可补充手机号。 |
 | `user_pass`       | varchar(255)        | 密码哈希（一期不使用，三期短信登录可启用）                   |
 | `user_email`      | varchar(100)        | 邮箱（可为空）                                               |
 | `user_registered` | datetime            | 注册时间                                                     |
@@ -54,10 +54,10 @@
 
 | meta_key            | 类型         | 典型值                        | 说明                                                         | API 是否返回 |
 | ------------------- | ------------ | ----------------------------- | ------------------------------------------------------------ | ------------ |
-| `phone`             | varchar      | `13800138000`                 | 手机号，同时作为登录名（必填）                               | ✅            |
+| `phone`             | varchar      | `13800138000`                 | 手机号（可选；实名认证/提现时需要）                         | ✅            |
 | `_wechat_openid`    | varchar      | `oAbcDefGhIjKlMn...`          | 小程序 openid（敏感，服务端存储）                            | ❌            |
 | `wechat_unionid`    | varchar      | `uXYZ123...`                  | unionid（如开放平台应用打通）                                | ❌            |
-| `_wechat_phone`     | varchar      | `13800138000`                 | 微信绑定手机号（getPhoneNumber）                              | ✅            |
+| `_wechat_phone`     | varchar      | `13800138000`                 | 微信绑定手机号（可选，getPhoneNumber）                        | ✅            |
 | `billing_phone`     | varchar      | `13800138000`                 | WooCommerce 订单手机号（同步自微信手机号）                    | ✅            |
 | `_wechat_avatar`    | varchar      | `https://.../avatar.jpg`      | 微信头像 URL                                                  | ✅            |
 | `_wechat_gender`    | tinyint      | `0/1/2`                       | 微信性别（0=未知/1=男/2=女）                                  | ✅            |

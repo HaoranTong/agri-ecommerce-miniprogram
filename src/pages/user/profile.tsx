@@ -86,6 +86,7 @@ const UserProfile = () => {
       </View>
     );
   }
+  const isVerified = Boolean(profile.first_name && profile.first_name.trim() && profile.phone && profile.phone.trim());
 
   return (
     <View className='user-profile-page'>
@@ -108,6 +109,9 @@ const UserProfile = () => {
             {profile.nickname || profile.first_name || '未设置昵称'}
           </Text>
           <Text className='user-id'>ID: {profile.username}</Text>
+          <Text className={`user-verify ${isVerified ? 'verified' : 'unverified'}`}>
+            {isVerified ? '已实名认证' : '未实名认证'}
+          </Text>
         </View>
       </View>
 

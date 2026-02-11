@@ -1,10 +1,10 @@
-import { View, Button, Text, Checkbox, CheckboxGroup, Input, Image } from '@tarojs/components';
+import { View, Button, Text, Checkbox, CheckboxGroup } from '@tarojs/components';
 import { useEffect, useState } from 'react';
 import Taro from '@tarojs/taro';
 
 import { authService, debugService } from '../../services/api';
-import { getStoredUserInfo, getToken, setAttributionParams, type AttributionParams } from '../../utils/storage';
-import type { LoginResponse } from '../../types';
+import { getToken, setAttributionParams, type AttributionParams } from '../../utils/storage';
+import { parseReferrerFromScene } from '../../utils/referral';
 import HelpTooltip from '../../components/HelpTooltip';
 import './login.scss';
 
@@ -19,13 +19,8 @@ const Login = () => {
     }
   };
   const [loading, setLoading] = useState(false);
-  const [phoneLoading, setPhoneLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
-  const [showPrivacyAuth, setShowPrivacyAuth] = useState(false);
-  const [showProfileConsent, setShowProfileConsent] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState('');
-  const [nickName, setNickName] = useState('');
-  const [loginResult, setLoginResult] = useState<LoginResponse | null>(null);
+
 
   const resolveGiftCardToken = () => {
     try {
@@ -73,35 +68,15 @@ const Login = () => {
       const routerParams = Taro.getCurrentInstance().router?.params ?? {};
       const sceneParam = routerParams.scene ? String(routerParams.scene) : '';
       const referrerCode = routerParams.referrer_code ? String(routerParams.referrer_code) : '';
-      const parseGiftCardScene = (scene?: string) => {
-        if (!scene) return { referrerCode: '' };
-        if (scene.startsWith('gc_')) {
-          const rest = scene.slice(3);
-          const rcIndex = rest.indexOf('_rc_');
-          if (rcIndex > -1) {
-            return { referrerCode: rest.slice(rcIndex + 4) };
-          }
-        }
-        return { referrerCode: '' };
-      };
-      const giftcardScene = parseGiftCardScene(sceneParam);
+      const referrerFromScene = parseReferrerFromScene(sceneParam);
       if (!sceneParam && !referrerCode) return;
 
       const payload: AttributionParams = {};
       if (sceneParam) payload.scene = sceneParam;
       if (referrerCode) {
         payload.referrer_code = referrerCode;
-      } else if (giftcardScene.referrerCode) {
-        payload.referrer_code = giftcardScene.referrerCode;
-      } else if (sceneParam) {
-        const match = /^U\d+[A-Za-z0-9]{4}$/.test(sceneParam)
-          ? sceneParam
-          : sceneParam.startsWith('rc_')
-            ? sceneParam.slice(3)
-            : '';
-        if (match) {
-          payload.referrer_code = match;
-        }
+      } else if (referrerFromScene) {
+        payload.referrer_code = referrerFromScene;
       }
 
       if (Object.keys(payload).length > 0) {
@@ -113,67 +88,7 @@ const Login = () => {
     }
   }, []);
 
-  const canChooseAvatar = typeof Taro.canIUse === 'function'
-    ? Taro.canIUse('button.open-type.chooseAvatar')
-    : false;
-
-  const isRemoteUrl = (url?: string) => !!url && /^https?:\/\//i.test(url);
-
-  const logUserProfile = (stage: string, payload?: any) => {
-    try {
-      console.info(`[Login][getUserProfile] ${stage}`, payload || '');
-    } catch (error) {
-      // ignore
-    }
-  };
-
-  const notifyUserProfileFail = async (error: any) => {
-    const errMsg = String(error?.errMsg || '');
-    logUserProfile('fail', { errMsg, error });
-
-    if (/deny|拒绝|authorize|auth/i.test(errMsg)) {
-      await Taro.showModal({
-        title: '无法获取昵称/头像',
-        content: '微信侧未授权或已拒绝。请到微信「设置 > 隐私 > 授权管理」中找到本小程序重新授权后再试。若后台未申报头像昵称场景也会失败。',
-        showCancel: false
-      });
-      return;
-    }
-
-    Taro.showToast({ title: '获取微信信息失败', icon: 'none' });
-  };
-
-  // Step 1: 微信登录 - 仅依赖 code 完成登录，用户头像昵称是可选项
-  const checkPrivacyAuthorization = async () => {
-    if (typeof Taro.getPrivacySetting !== 'function') {
-      return false;
-    }
-
-    try {
-      const needAuth = await new Promise<boolean>((resolve) => {
-        Taro.getPrivacySetting({
-          success: (res: any) => resolve(Boolean(res?.needAuthorization)),
-          fail: () => resolve(false)
-        });
-      });
-      console.info('[Login][privacy] needAuthorization:', needAuth);
-      return needAuth;
-    } catch (error) {
-      return false;
-    }
-  };
-
-  const proceedAfterLogin = (result: LoginResponse) => {
-    const cached = getStoredUserInfo();
-    const hasPhone = Boolean(result.has_phone || result.phone || cached?.phone || cached?.has_phone);
-    if (hasPhone) {
-      navigateAfterLogin();
-      return;
-    }
-    setShowPhoneAuth(true);
-  };
-
-  // 仅以 code 登录，profile 只作为可选补充信息，不应阻塞登录
+  // 仅以 code 登录，不要求头像/昵称/手机号
   const doWechatLogin = async () => {
     if (loading) return;
 
@@ -189,48 +104,15 @@ const Login = () => {
         return;
       }
 
-      const result = await authService.login(code);
+      await authService.login(code);
       const savedToken = getToken();
       if (!savedToken) {
         Taro.showToast({ title: '登录失败，请重试', icon: 'none' });
         return;
       }
-      setLoginResult(result);
-      logLoginDebug('wechat_login_success', { has_phone: result?.has_phone, is_new_user: result?.is_new_user ?? result?.is_new });
-
-      const cached = getStoredUserInfo();
-      const isNewUser = Boolean(result.is_new_user ?? result.is_new);
-      const hasProfile = typeof result.has_profile === 'boolean'
-        ? result.has_profile
-        : Boolean(result.wechat_nickname || result.wechat_avatar || cached?.wechat_nickname || cached?.wechat_avatar);
-      const hasPhone = Boolean(result.has_phone || result.phone || cached?.phone || cached?.has_phone);
-      const needsProfile = !hasProfile;
-
-      logLoginDebug('post_login_flags', {
-        is_new_user: isNewUser,
-        needs_profile: needsProfile,
-        has_phone: hasPhone,
-        has_profile: hasProfile
-      });
-
-      if (needsProfile || isNewUser) {
-        const needAuth = await checkPrivacyAuthorization();
-        if (needAuth) {
-          setShowPrivacyAuth(true);
-          return;
-        }
-        setShowProfileConsent(true);
-        return;
-      }
-
-      if (hasPhone) {
-        Taro.showToast({ title: '登录成功', icon: 'success' });
-        navigateAfterLogin();
-        return;
-      }
-
+      logLoginDebug('wechat_login_success', {});
       Taro.showToast({ title: '登录成功', icon: 'success' });
-      setShowPhoneAuth(true);
+      navigateAfterLogin();
     } catch (error) {
       console.error('登录失败', error);
       Taro.showToast({ title: '登录失败，请重试', icon: 'none' });
@@ -248,183 +130,6 @@ const Login = () => {
     }
 
     await doWechatLogin();
-  };
-
-  const handleAgreePrivacyAuthorization = () => {
-    setShowPrivacyAuth(false);
-    setShowProfileConsent(true);
-  };
-
-  const handleDeclinePrivacyAuthorization = async () => {
-    setShowPrivacyAuth(false);
-    if (loginResult) {
-      proceedAfterLogin(loginResult);
-    }
-  };
-
-  // getUserProfile 必须由用户点击触发（Tap 事件），不能在异步链路中调用
-  const handleGetUserProfile = async () => {
-    if (loading) return;
-    setShowProfileConsent(false);
-
-    if (typeof Taro.getUserProfile !== 'function') {
-      logUserProfile('not_supported');
-      if (loginResult) {
-        proceedAfterLogin(loginResult);
-      }
-      return;
-    }
-
-    try {
-      logUserProfile('request');
-      const res = await Taro.getUserProfile({
-        desc: '用于同步个人中心展示'
-      });
-      logUserProfile('success', res);
-      const userInfo = res?.userInfo || null;
-      if (!userInfo?.nickName && !userInfo?.avatarUrl) {
-        console.warn('[Login] 未获取到微信昵称/头像，继续登录');
-        if (loginResult) {
-          proceedAfterLogin(loginResult);
-        }
-        return;
-      }
-      try {
-        const updatePayload: { nickname?: string; avatar?: string; gender?: number } = {
-          nickname: userInfo.nickName,
-          gender: userInfo.gender
-        };
-        if (isRemoteUrl(userInfo.avatarUrl)) {
-          updatePayload.avatar = userInfo.avatarUrl;
-        }
-        await userService.updateProfile(updatePayload);
-      } catch (error) {
-        // 不阻塞流程
-      }
-
-      if (userInfo.avatarUrl && !isRemoteUrl(userInfo.avatarUrl)) {
-        try {
-          const updated = await userService.uploadAvatar(userInfo.avatarUrl);
-          if (updated?.avatar) {
-            setAvatarUrl(updated.avatar);
-          }
-        } catch (error) {
-          // 不阻塞流程
-        }
-      }
-
-      if (loginResult) {
-        proceedAfterLogin(loginResult);
-      }
-    } catch (error) {
-      await notifyUserProfileFail(error);
-      if (loginResult) {
-        proceedAfterLogin(loginResult);
-      }
-    }
-  };
-
-  const handleChooseAvatar = (e: any) => {
-    const url = e?.detail?.avatarUrl || '';
-    if (!url) return;
-    setAvatarUrl(url);
-  };
-
-  const handleConfirmProfile = async () => {
-    setShowProfileConsent(false);
-
-    if (!canChooseAvatar) {
-      await handleGetUserProfile();
-      return;
-    }
-
-    const trimmedName = nickName.trim();
-    const hasProfile = Boolean(avatarUrl || trimmedName);
-    if (!hasProfile) {
-      if (loginResult) {
-        proceedAfterLogin(loginResult);
-      }
-      return;
-    }
-
-    try {
-      const updatePayload: { nickname?: string; avatar?: string } = {
-        nickname: trimmedName
-      };
-      if (avatarUrl && isRemoteUrl(avatarUrl)) {
-        updatePayload.avatar = avatarUrl;
-      }
-      await userService.updateProfile(updatePayload);
-
-      if (avatarUrl && !isRemoteUrl(avatarUrl)) {
-        await userService.uploadAvatar(avatarUrl);
-      }
-    } catch (error) {
-      // 不阻塞流程
-    }
-
-    if (loginResult) {
-      proceedAfterLogin(loginResult);
-    }
-  };
-
-  // Step 2: 手机号授权（可选）
-  const handlePhoneAuth = async (e: any) => {
-    const { code: phoneCode, encryptedData, iv } = e.detail || {};
-
-    if (!phoneCode && !(encryptedData && iv)) {
-      // 用户拒绝，跳过手机号绑定
-      handleSkipPhoneAuth();
-      return;
-    }
-
-    try {
-      setPhoneLoading(true);
-
-      if (!getToken()) {
-        await doWechatLogin();
-      }
-      if (!getToken()) {
-        Taro.showToast({ title: '登录态失效，请重试', icon: 'none' });
-        return;
-      }
-
-      // 获取新的登录凭证用于验证身份
-      const loginRes = await Taro.login();
-      const loginCode = loginRes.code;
-
-      if (!loginCode) {
-        throw new Error('获取登录凭证失败');
-      }
-
-      // 调用后端接口：传递登录code + 手机号授权码
-      await authService.bindPhone(
-        loginCode,
-        phoneCode,
-        encryptedData && iv ? { encryptedData, iv } : undefined
-      );
-      Taro.showToast({ title: '手机号绑定成功', icon: 'success' });
-
-      // 绑定成功后跳转
-      setTimeout(() => {
-        navigateAfterLogin();
-      }, 300);
-    } catch (error) {
-      console.error('手机号绑定失败', error);
-      Taro.showToast({ title: '手机号绑定失败', icon: 'none' });
-      // 即使失败也允许跳过
-      setTimeout(() => {
-        navigateAfterLogin();
-      }, 1000);
-    } finally {
-      setPhoneLoading(false);
-    }
-  };
-
-  // 跳过手机号授权
-  const handleSkipPhoneAuth = () => {
-    console.log('用户跳过手机号授权');
-    navigateAfterLogin();
   };
 
   // 统一的登录后跳转逻辑
@@ -464,8 +169,6 @@ const Login = () => {
     }
   };
 
-  const [showPhoneAuth, setShowPhoneAuth] = useState(false);
-
   const handleAgreeChange = (e: any) => {
     const values: string[] = e?.detail?.value || [];
     setAgreed(values.includes('agree'));
@@ -494,129 +197,16 @@ const Login = () => {
         <Text className='subtitle'>精选五常好米，直供到家</Text>
       </View>
 
-      {!showPhoneAuth ? (
-        // 第一步：微信登录按钮
-        <Button
-          className='btn-login'
-          loading={loading}
-          disabled={loading}
-          onClick={handleWechatLogin}
-          type='primary'
-        >
-          <Text className='btn-text'>微信登录</Text>
-          <HelpTooltip page='auth/login' location='wechat_login_button' />
-        </Button>
-      ) : (
-        // 第二步：手机号授权（登录成功后显示）
-        <View className='phone-auth-section'>
-          <Text className='auth-title'>为了更好地为您服务</Text>
-          <Text className='auth-desc'>需要获取您的手机号用于订单联系</Text>
-          
-          <Button
-            className='btn-phone'
-            openType='getPhoneNumber'
-            onGetPhoneNumber={handlePhoneAuth}
-            loading={phoneLoading}
-            type='primary'
-          >
-            <Text className='btn-text'>授权手机号</Text>
-          </Button>
-
-          <Button
-            className='btn-skip'
-            onClick={handleSkipPhoneAuth}
-            disabled={phoneLoading}
-          >
-            <Text className='btn-text'>暂不授权</Text>
-          </Button>
-        </View>
-      )}
-
-      {showPrivacyAuth && (
-        <View className='privacy-modal'>
-          <View className='privacy-card'>
-            <Text className='privacy-title'>隐私授权提示</Text>
-            <Text className='privacy-desc'>需要您同意《用户隐私保护指引》后，才能获取头像昵称等信息。</Text>
-            <View className='privacy-actions'>
-              <Button className='privacy-link' onClick={handleOpenPrivacy}>
-                查看隐私指引
-              </Button>
-              <Button
-                className='privacy-agree'
-                openType='agreePrivacyAuthorization'
-                onAgreePrivacyAuthorization={handleAgreePrivacyAuthorization}
-              >
-                同意并继续
-              </Button>
-              <Button
-                className='privacy-decline'
-                onClick={handleDeclinePrivacyAuthorization}
-              >
-                不同意，继续登录
-              </Button>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {showProfileConsent && (
-        <View className='privacy-modal'>
-          <View className='privacy-card'>
-            <Text className='privacy-title'>用户信息确认</Text>
-            <Text className='privacy-desc'>
-              这是应用内的确认页。头像需通过微信官方“选择头像”获取，昵称请手动填写（可选）。
-              <HelpTooltip page='auth/login' location='profile_consent' />
-            </Text>
-            {canChooseAvatar ? (
-              <View className='profile-form'>
-                <View className='avatar-row'>
-                  <Image
-                    className='avatar-preview'
-                    src={avatarUrl || 'https://mmbiz.qpic.cn/mmbiz_png/Okj5cBvW2mV6aG9rZ0m1t3KzR5B9dJtv6LzVVqQwXn8mVib1mlwC2R2R2GQn9s7A0XfKq9c8nqQKJqX9uGxS6jQ/0?wx_fmt=png'}
-                    mode='aspectFill'
-                  />
-                  <Button
-                    className='avatar-btn'
-                    openType='chooseAvatar'
-                    onChooseAvatar={handleChooseAvatar}
-                  >
-                    选择头像
-                  </Button>
-                </View>
-                <Input
-                  className='nickname-input'
-                  value={nickName}
-                  placeholder='请输入昵称（可选）'
-                  onInput={(e) => setNickName(e.detail.value)}
-                />
-              </View>
-            ) : (
-              <Text className='privacy-desc'>当前基础库不支持头像选择，将尝试旧授权方式。</Text>
-            )}
-            <View className='privacy-actions'>
-              <Button
-                className='privacy-agree'
-                onClick={handleConfirmProfile}
-              >
-                确认并登录
-              </Button>
-              <Button
-                className='privacy-decline'
-                onClick={() => {
-                  setShowProfileConsent(false);
-                  if (loginResult) {
-                    proceedAfterLogin(loginResult);
-                  } else {
-                    doWechatLogin();
-                  }
-                }}
-              >
-                跳过头像昵称，直接登录
-              </Button>
-            </View>
-          </View>
-        </View>
-      )}
+      <Button
+        className='btn-login'
+        loading={loading}
+        disabled={loading}
+        onClick={handleWechatLogin}
+        type='primary'
+      >
+        <Text className='btn-text'>微信登录</Text>
+        <HelpTooltip page='auth/login' location='wechat_login_button' />
+      </Button>
 
       <View className='footer'>
         <CheckboxGroup onChange={handleAgreeChange}>

@@ -229,7 +229,11 @@ const GiftCardShareResult = () => {
         logShareDebug('share_result_ready', {
           card_number: result?.card_number,
           share_token: result?.share_token,
-          mini_program_path: result?.mini_program_path
+          mini_program_path: result?.mini_program_path,
+          mini_program_qr: result?.mini_program_qr || null,
+          qr_image_url: result?.qr_image_url || null,
+          qr_payload: result?.qr_payload || null,
+          share_url: result?.share_url || null
         });
         setForceMatrix(false);
         // 在小程序环境中，Image 组件会自动处理图片预加载
@@ -267,7 +271,7 @@ const GiftCardShareResult = () => {
 
   // 计算二维码矩阵（必须在所有条件返回之前）
   const qrImageUrl = forceMatrix ? '' : shareResult?.mini_program_qr || shareResult?.qr_image_url || '';
-  const qrPayload = shareResult?.qr_payload || '';
+  const qrPayload = shareResult?.qr_payload || shareResult?.share_url || '';
   
   const qrMatrix = useMemo(() => {
     if (qrImageUrl) return null; // 如果有图片URL，就不需要前端生成

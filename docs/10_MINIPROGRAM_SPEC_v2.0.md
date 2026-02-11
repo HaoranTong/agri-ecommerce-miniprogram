@@ -27,6 +27,11 @@
 >
 > **V2.0.4 变更记录**（2026-02-05）：
 > 1. 移除错误码示例与映射片段，统一引用 API 契约与数据字典作为唯一来源
+>
+> **V2.0.5 变更记录**（2026-02-11）：
+> 1. 登录简化为单步微信登录，取消登录时头像/昵称/手机号授权弹窗
+> 2. 资料完善与实名认证改为用户在个人中心主动补齐（提现/实名场景再触发）
+> 3. 分享/购物卡流程不再强制要求登录时完善资料
 
 ------
 
@@ -380,61 +385,23 @@ export const request = async <T = any>(options: RequestOptions): Promise<T> => {
 
 ### 3. **认证流程（`src/pages/auth/login.tsx`）**
 
-**V2.0.1 更新**：采用两步式授权流程，提升用户体验
-
-**步骤1：微信登录**
-- 用户点击"微信登录"按钮
-- 自动调用 `getUserProfile` 获取头像昵称（需用户授权）
+**单步微信登录**
+- 用户点击“微信登录”按钮
 - 调用 `wx.login` 获取 `code`，提交登录接口（见 API 契约）
-- 如果获取到真实用户信息（非 `is_demote` 数据），自动调用用户资料更新接口（见 API 契约）上传头像昵称
-- 登录成功后显示手机号授权界面
+- 登录成功后直接进入小程序
+- 头像/昵称/手机号不在登录阶段强制获取
 
-**步骤2：手机号授权**
-- 显示两个按钮："授权手机号" 和 "暂不授权"
-- 点击"授权手机号"：使用 `open-type="getPhoneNumber"` 获取 `phone_code`，调用手机号绑定接口（见 API 契约）
-- 点击"暂不授权"：跳过手机号绑定，直接进入小程序
+**资料完善与实名认证**
+- 用户可在“个人中心”编辑头像/昵称/真实姓名/手机号
+- 实名信息仅在提现等强实名场景触发校验与提示
 
 ```tsx
-const [showPhoneAuth, setShowPhoneAuth] = useState(false);
-
 const handleWechatLogin = async () => {
-  let userProfile = null;
-  try {
-    const profileRes = await Taro.getUserProfile({ desc: '用于完善用户资料' });
-    userProfile = profileRes.userInfo;
-    Taro.setStorageSync('USER_PROFILE', userProfile);
-  } catch (error) {
-    console.log('用户取消授权或获取失败');
-  }
-
   const { code } = await Taro.login();
   await authService.login(code);
-
-  // 上传真实用户资料到后端
-  if (userProfile && !userProfile.is_demote) {
-    await authService.updateProfile({
-      nickname: userProfile.nickName,
-      avatar: userProfile.avatarUrl,
-      gender: userProfile.gender
-    });
-  }
-
-  setShowPhoneAuth(true); // 显示手机号授权界面
-};
-
-const handlePhoneAuth = async (e) => {
-  const { code: phoneCode } = e.detail;
-  const loginRes = await Taro.login(); // 获取新的登录code
-  await authService.bindPhone(loginRes.code, phoneCode);
   navigateToHome();
 };
-
-const handleSkipPhoneAuth = () => {
-  navigateToHome(); // 跳过手机号授权
-};
 ```
-
-> ⚠️ **注意**：开发者工具中 `getUserProfile` 返回的是降级数据（`is_demote: true`），真实数据只能在真机或体验版中获取。
 
 ------
 

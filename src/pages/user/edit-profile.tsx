@@ -68,23 +68,8 @@ const EditProfile = () => {
   const handleSubmit = async () => {
     if (loading) return;
 
-    // 验证
-    if (!formData.nickname.trim()) {
-      Taro.showToast({ title: '请输入昵称', icon: 'none' });
-      return;
-    }
-
-    if (!formData.first_name.trim()) {
-      Taro.showToast({ title: '请输入真实姓名', icon: 'none' });
-      return;
-    }
-
-    if (!formData.phone.trim()) {
-      Taro.showToast({ title: '请输入手机号', icon: 'none' });
-      return;
-    }
-
-    if (!/^1[3-9]\d{9}$/.test(formData.phone)) {
+    // 验证（资料允许为空，但手机号需格式正确）
+    if (formData.phone.trim() && !/^1[3-9]\d{9}$/.test(formData.phone)) {
       Taro.showToast({ title: '手机号格式不正确', icon: 'none' });
       return;
     }
@@ -183,7 +168,7 @@ const EditProfile = () => {
         </View>
 
         <View className='form-item'>
-          <Text className='form-label'>昵称 <Text className='required'>*</Text></Text>
+          <Text className='form-label'>昵称</Text>
           <Input
             className='form-input'
             placeholder='请输入昵称'
@@ -193,7 +178,7 @@ const EditProfile = () => {
         </View>
 
         <View className='form-item'>
-          <Text className='form-label'>真实姓名 <Text className='required'>*</Text></Text>
+          <Text className='form-label'>真实姓名</Text>
           <Input
             className='form-input'
             placeholder='请输入真实姓名'
@@ -203,7 +188,7 @@ const EditProfile = () => {
         </View>
 
         <View className='form-item'>
-          <Text className='form-label'>手机号 <Text className='required'>*</Text></Text>
+          <Text className='form-label'>手机号</Text>
           <Input
             className='form-input'
             type='number'

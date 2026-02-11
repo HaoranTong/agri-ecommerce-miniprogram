@@ -71,6 +71,19 @@
         margin-bottom: 8rpx;
       }
 
+      .user-verify {
+        font-size: 24rpx;
+        color: #999;
+      }
+
+      .user-verify.verified {
+        color: #2e7d32;
+      }
+
+      .user-verify.unverified {
+        color: #b26a00;
+      }
+
     }
 
     .edit-icon {

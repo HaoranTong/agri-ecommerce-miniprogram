@@ -678,7 +678,15 @@ export const userService = {
       throw new Error(message);
     }
 
-    return data?.data ?? data;
+    const payload = data?.data ?? data;
+    if (payload?.avatar) {
+      const current = getStoredUserInfo() || ({} as StoredUserInfo);
+      setStoredUserInfo({
+        ...current,
+        wechat_avatar: payload.avatar || current.wechat_avatar
+      });
+    }
+    return payload;
   },
   updateProfile: async (data: { 
     nickname?: string; 
@@ -826,21 +834,32 @@ export const agentApplicationService = {
   }
 };
 
+const isClientLogEnabled = () => {
+  try {
+    if (process.env.NODE_ENV === 'production') return false;
+    return Boolean(Taro.getStorageSync('ENABLE_CLIENT_LOG'));
+  } catch (error) {
+    return false;
+  }
+};
+
 export const debugService = {
-  logClient: async (event: string, payload?: Record<string, any>) =>
-    request<{ success: boolean }>(
-      {
-        url: API_ENDPOINTS.clientLog,
-        method: 'POST',
-        data: {
-          event,
-          payload: payload || null
-        },
-        showLoading: false,
-        suppressErrorToast: true,
-        suppressLog: true
-      }
-    )
+  logClient: async (event: string, payload?: Record<string, any>) => {
+    if (!isClientLogEnabled()) {
+      return Promise.resolve({ success: true } as { success: boolean });
+    }
+    return request<{ success: boolean }>({
+      url: API_ENDPOINTS.clientLog,
+      method: 'POST',
+      data: {
+        event,
+        payload: payload || null
+      },
+      showLoading: false,
+      suppressErrorToast: true,
+      suppressLog: true
+    });
+  }
 };
 
 export const orderService = {
