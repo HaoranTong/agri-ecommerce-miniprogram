@@ -1,7 +1,7 @@
 import { Input, Button, View, Text, Image } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useState, useEffect } from 'react';
-import { userService } from '../../services/api';
+import { authService, userService } from '../../services/api';
 import type { UserProfile } from '../../types';
 import './edit-profile.scss';
 
@@ -158,6 +158,46 @@ const EditProfile = () => {
     }
   };
 
+  const handleBindPhone = async (e: any) => {
+    if (loading) return;
+    try {
+      const phoneCode = e?.detail?.code;
+      const encryptedData = e?.detail?.encryptedData;
+      const iv = e?.detail?.iv;
+
+      if (!phoneCode && !(encryptedData && iv)) {
+        Taro.showToast({ title: '未获取到手机号授权', icon: 'none' });
+        return;
+      }
+
+      setLoading(true);
+      const loginRes = await Taro.login();
+      const code = loginRes.code;
+      if (!code) {
+        Taro.showToast({ title: '获取登录凭证失败', icon: 'none' });
+        return;
+      }
+
+      const result = await authService.bindPhone(
+        code,
+        phoneCode,
+        encryptedData && iv ? { encryptedData, iv } : undefined
+      );
+      const phone = result?.phone;
+      if (phone) {
+        setFormData((prev) => ({ ...prev, phone }));
+        Taro.showToast({ title: '手机号已验证', icon: 'success' });
+      } else {
+        Taro.showToast({ title: '手机号绑定失败', icon: 'none' });
+      }
+    } catch (error) {
+      console.error('[EditProfile] 绑定手机号失败:', error);
+      Taro.showToast({ title: '手机号绑定失败', icon: 'none' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View className='edit-profile-page'>
       <View className='form-section'>
@@ -197,6 +237,14 @@ const EditProfile = () => {
             onInput={(e) => handleInput('phone', e.detail.value)}
             maxlength={11}
           />
+          <Button
+            className='wechat-btn'
+            openType='getPhoneNumber'
+            onGetPhoneNumber={handleBindPhone}
+            loading={loading}
+          >
+            微信手机号验证
+          </Button>
         </View>
 
         <View className='form-item wechat-auth'>

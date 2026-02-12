@@ -2,7 +2,7 @@ import { Button, Input, Text, View } from '@tarojs/components';
 import Taro, { usePullDownRefresh } from '@tarojs/taro';
 import { useEffect, useMemo, useState } from 'react';
 
-import { commissionService, pointsService } from '../../services/api';
+import { commissionService, pointsService, userService } from '../../services/api';
 import type { CommissionPayoutRecord, CommissionSummary, PointsBalance, PointsExchangeRules } from '../../types';
 import { decimalCompare } from '../../utils/decimal';
 import HelpTooltip from '../../components/HelpTooltip';
@@ -104,6 +104,21 @@ const CommissionPayout = () => {
   const handleSubmit = async () => {
     if (submitting) return;
 
+    const profile = await userService.getProfile({ showLoading: false, suppressErrorToast: true }).catch(() => null);
+    const hasRealname = Boolean(profile?.first_name && profile.first_name.trim());
+    const hasPhone = Boolean(profile?.phone && profile.phone.trim());
+    if (!hasRealname || !hasPhone) {
+      const res = await Taro.showModal({
+        title: '需要实名认证',
+        content: '提现前请先填写真实姓名并验证手机号。',
+        confirmText: '去认证',
+        cancelText: '稍后'
+      });
+      if (res.confirm) {
+        Taro.navigateTo({ url: '/pages/user/edit-profile' });
+      }
+      return;
+    }
 
     const amount = parseFloat(form.amount);
     if (!amount || Number.isNaN(amount) || amount <= 0) {
@@ -155,6 +170,22 @@ const CommissionPayout = () => {
     if (exchangeSubmitting) return;
     if (!exchangeRules?.enable_points_exchange) {
       Taro.showToast({ title: '积分兑换未开启', icon: 'none' });
+      return;
+    }
+
+    const profile = await userService.getProfile({ showLoading: false, suppressErrorToast: true }).catch(() => null);
+    const hasRealname = Boolean(profile?.first_name && profile.first_name.trim());
+    const hasPhone = Boolean(profile?.phone && profile.phone.trim());
+    if (!hasRealname || !hasPhone) {
+      const res = await Taro.showModal({
+        title: '需要实名认证',
+        content: '积分兑换提现前请先填写真实姓名并验证手机号。',
+        confirmText: '去认证',
+        cancelText: '稍后'
+      });
+      if (res.confirm) {
+        Taro.navigateTo({ url: '/pages/user/edit-profile' });
+      }
       return;
     }
 
