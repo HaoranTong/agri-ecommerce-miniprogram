@@ -67,6 +67,12 @@ const GiftCardShareResult = () => {
   };
   const shareToken = shareTokenState || shareResult?.share_token || getStoredShareToken();
   const canShare = Boolean(shareToken);
+  const navigateToMy = () => {
+    Taro.switchTab({ url: '/pages/user/profile' });
+  };
+  const navigateToHome = () => {
+    Taro.switchTab({ url: '/pages/index/index' });
+  };
 
   const resolveClaimToken = useCallback(() => {
     const directToken = (router?.params?.token as string) || (router?.params?.giftcard_token as string) || '';
@@ -242,7 +248,11 @@ const GiftCardShareResult = () => {
       const payload = shareResult.qr_payload || '';
       
       if (!imageUrl && !payload) {
-        Taro.showToast({ title: '图片生成失败', icon: 'none' });
+        await Taro.showModal({
+          title: '生成失败',
+          content: '图片生成失败，请稍后重试。',
+          showCancel: false
+        });
         return;
       }
 
@@ -262,7 +272,11 @@ const GiftCardShareResult = () => {
           }
         } catch {
           // 如果下载失败，提示用户
-          Taro.showToast({ title: '图片下载失败，请稍后重试', icon: 'none' });
+          await Taro.showModal({
+            title: '保存失败',
+            content: '图片下载失败，请稍后重试。',
+            showCancel: false
+          });
           return;
         }
       } else {
@@ -272,7 +286,7 @@ const GiftCardShareResult = () => {
         
         // 使用Canvas生成二维码（需要获取Canvas上下文）
         // 这里先提示用户，实际实现需要Canvas API
-        Taro.showModal({
+        await Taro.showModal({
           title: '提示',
           content: '当前二维码为临时显示，完整功能需要后端生成带模板的图片。请截图保存或使用其他方式分享。',
           showCancel: false
@@ -286,16 +300,23 @@ const GiftCardShareResult = () => {
           filePath: tempFilePath
         });
         Taro.showToast({ title: '已保存到相册', icon: 'success' });
+        setTimeout(() => {
+          navigateToMy();
+        }, 800);
       }
     } catch (error: any) {
       if (error.errMsg?.includes('auth deny')) {
-        Taro.showModal({
+        await Taro.showModal({
           title: '需要授权',
           content: '保存图片需要相册权限，请在设置中开启',
           showCancel: false
         });
       } else {
-        Taro.showToast({ title: '保存失败', icon: 'none' });
+        await Taro.showModal({
+          title: '保存失败',
+          content: error?.errMsg || '保存失败，请稍后再试。',
+          showCancel: false
+        });
       }
     } finally {
       setSaving(false);
@@ -324,7 +345,20 @@ const GiftCardShareResult = () => {
     return {
       title,
       path,
-      imageUrl
+      imageUrl,
+      success: () => {
+        Taro.showToast({ title: '分享成功', icon: 'success' });
+        setTimeout(() => {
+          navigateToMy();
+        }, 800);
+      },
+      fail: (res: any) => {
+        Taro.showModal({
+          title: '分享失败',
+          content: res?.errMsg || '分享失败，请稍后再试。',
+          showCancel: false
+        });
+      }
     } as any;
   });
 
@@ -448,6 +482,14 @@ const GiftCardShareResult = () => {
         >
           {saving ? '保存中...' : '保存购物卡'}
         </Button>
+        <View className='quick-nav'>
+          <Button className='btn btn-ghost' onClick={navigateToHome}>
+            回首页
+          </Button>
+          <Button className='btn btn-ghost' onClick={navigateToMy}>
+            去我的
+          </Button>
+        </View>
       </View>
 
       <View className='tips'>

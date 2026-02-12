@@ -145,6 +145,14 @@ const OrderDetail = () => {
     Taro.switchTab({ url: '/pages/index/index' });
   };
 
+  const handleGoCart = () => {
+    Taro.switchTab({ url: '/pages/cart/index' });
+  };
+
+  const handleGoProfile = () => {
+    Taro.switchTab({ url: '/pages/user/profile' });
+  };
+
   const handleRequestReturn = () => {
     if (!order) return;
     if (!(order.status === 'processing' || order.status === 'completed')) {
@@ -265,12 +273,6 @@ const OrderDetail = () => {
 
   return (
     <View className='order-detail-page'>
-      {/* 顶部返回首页按钮 */}
-      <View className='top-home-btn' onClick={handleGoHome}>
-        <Text className='home-icon'>🏠</Text>
-        <Text className='home-text'>首页</Text>
-      </View>
-
       {/* 订单状态卡片 */}
       <View className='status-card' style={{ borderLeftColor: statusInfo.color }}>
         <View className='status-header'>
@@ -536,6 +538,18 @@ const OrderDetail = () => {
           </View>
         </View>
       )}
+
+      <View className='bottom-nav'>
+        <Button className='nav-btn' onClick={handleGoHome}>
+          首页
+        </Button>
+        <Button className='nav-btn' onClick={handleGoCart}>
+          购物车
+        </Button>
+        <Button className='nav-btn' onClick={handleGoProfile}>
+          我的
+        </Button>
+      </View>
     </View>
   );
 };

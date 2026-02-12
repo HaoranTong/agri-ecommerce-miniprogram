@@ -2,39 +2,8 @@
 
 .order-detail-page {
   min-height: 100vh;
-  padding: 24px 24px 160px;
+  padding: 24px 24px 220px;
   background: linear-gradient(135deg, #f5f7fa 0%, #e8eaf6 100%);
-}
-
-.top-home-btn {
-  position: fixed;
-  top: 16px;
-  right: 24px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border-radius: 40px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  z-index: 10;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-  &:active {
-    transform: scale(0.95);
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-  }
-
-  .home-icon {
-    font-size: 28px;
-    line-height: 1;
-  }
-
-  .home-text {
-    font-size: 24px;
-    font-weight: 600;
-  }
 }
 
 .status-card {
@@ -463,5 +432,30 @@
     color: #64748b;
     font-size: 24px;
     background: #f8fafc;
+  }
+}
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+  background: #fff;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
+  z-index: 20;
+
+  .nav-btn {
+    height: 72px;
+    line-height: 72px;
+    border-radius: 36px;
+    font-size: 28px;
+    font-weight: 600;
+    color: #2f7a3d;
+    background: #f6f8f9;
+    border: 2px solid #e1e5ea;
   }
 }

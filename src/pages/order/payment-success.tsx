@@ -98,6 +98,18 @@ const PaymentSuccess = () => {
     Taro.navigateTo({ url: '/pages/order/list' });
   };
 
+  const handleGoHome = () => {
+    Taro.switchTab({ url: '/pages/index/index' });
+  };
+
+  const handleGoCart = () => {
+    Taro.switchTab({ url: '/pages/cart/index' });
+  };
+
+  const handleGoProfile = () => {
+    Taro.switchTab({ url: '/pages/user/profile' });
+  };
+
   if (loading) {
     return <View className='payment-success-page loading'>加载中...</View>;
   }
@@ -193,6 +205,18 @@ const PaymentSuccess = () => {
         </Button>
         <Button className='secondary-btn' onClick={handleViewOrders}>
           查看订单
+        </Button>
+      </View>
+
+      <View className='bottom-nav'>
+        <Button className='nav-btn' onClick={handleGoHome}>
+          首页
+        </Button>
+        <Button className='nav-btn' onClick={handleGoCart}>
+          购物车
+        </Button>
+        <Button className='nav-btn' onClick={handleGoProfile}>
+          我的
         </Button>
       </View>
     </View>
