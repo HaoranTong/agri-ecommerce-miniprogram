@@ -76,11 +76,23 @@ const OrderDetail = () => {
     }
 
     try {
-      const data = await orderService.getOrderDetail(orderId);
+      const timeoutMs = 8000;
+      const result = await Promise.race([
+        orderService.getOrderDetail(orderId).then((data) => ({ ok: true as const, data })),
+        new Promise<{ ok: false; reason: 'timeout' }>((resolve) =>
+          setTimeout(() => resolve({ ok: false, reason: 'timeout' }), timeoutMs)
+        )
+      ]);
+      if (!result.ok) {
+        throw new Error('订单加载超时，请稍后重试');
+      }
+      const data = result.data;
       setOrder(data);
     } catch (error) {
       console.error('加载订单详情失败', error);
-      Taro.showToast({ title: '加载订单失败', icon: 'none' });
+      const message =
+        error instanceof Error ? error.message : '加载订单失败';
+      Taro.showToast({ title: message, icon: 'none' });
     } finally {
       setLoading(false);
     }
