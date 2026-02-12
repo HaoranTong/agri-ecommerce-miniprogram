@@ -1,7 +1,7 @@
 import { PropsWithChildren } from 'react';
 import Taro from '@tarojs/taro';
 import { debugService } from './services/api';
-import { setAttributionParams, type AttributionParams } from './utils/storage';
+import { getAttributionParams, getToken, setAttributionParams, type AttributionParams } from './utils/storage';
 import './app.scss';
 
 function App({ children }: PropsWithChildren) {
@@ -90,6 +90,32 @@ function App({ children }: PropsWithChildren) {
     }
   };
 
+  const redirectToLoginIfReferral = () => {
+    try {
+      const token = getToken();
+      if (token) return;
+
+      const attribution = getAttributionParams();
+      const referrerCode = attribution?.referrer_code || '';
+      const scene = attribution?.scene || '';
+      if (!referrerCode && !scene) return;
+
+      const pages = Taro.getCurrentPages();
+      const current = pages[pages.length - 1];
+      const currentRoute = current?.route || '';
+      if (currentRoute.includes('auth/login')) return;
+      if (currentRoute.includes('shopping-card/claim')) return;
+
+      const query: string[] = [];
+      if (referrerCode) query.push(`referrer_code=${encodeURIComponent(referrerCode)}`);
+      if (scene) query.push(`scene=${encodeURIComponent(scene)}`);
+      const qs = query.length ? `?${query.join('&')}` : '';
+      Taro.reLaunch({ url: `/pages/auth/login${qs}` });
+    } catch {
+      // ignore
+    }
+  };
+
   Taro.useLaunch(() => {
     console.log('App launched');
     try {
@@ -104,6 +130,7 @@ function App({ children }: PropsWithChildren) {
       // ignore
     }
     redirectToGiftCardClaim();
+    redirectToLoginIfReferral();
   });
 
   Taro.useDidShow(() => {
@@ -121,6 +148,7 @@ function App({ children }: PropsWithChildren) {
       // ignore
     }
     redirectToGiftCardClaim();
+    redirectToLoginIfReferral();
   });
 
   return <>{children}</>;

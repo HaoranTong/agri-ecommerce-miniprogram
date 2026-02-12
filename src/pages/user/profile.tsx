@@ -3,7 +3,7 @@ import Taro from '@tarojs/taro';
 import { useRef, useState } from 'react';
 
 import { giftCardService, userService } from '../../services/api';
-import { clearToken } from '../../utils/storage';
+import { clearToken, getToken } from '../../utils/storage';
 import type { UserProfile } from '../../types';
 import './profile.scss';
 
@@ -19,6 +19,10 @@ const UserProfile = () => {
     try {
       if (showSpinner) {
         setLoading(true);
+      }
+      if (!getToken()) {
+        Taro.reLaunch({ url: '/pages/auth/login' });
+        return;
       }
       const data = await userService.getProfile();
       setProfile(data);
