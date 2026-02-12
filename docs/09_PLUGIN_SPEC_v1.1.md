@@ -213,11 +213,13 @@ myshop-core/
 - `MYSHOP_MINIAPP_APP_ID`（小程序 AppID，支持与支付 AppID 复用）
 - `MYSHOP_MINIAPP_APP_SECRET`（小程序 AppSecret，用于 code2session）
 - `MYSHOP_ALLOW_TEST_LOGIN`（允许测试登录，默认 false）
+- `MYSHOP_REFERRAL_SCENE_FALLBACK`（允许后端从 scene 兜底解析推荐码，默认 false；开发阶段保持关闭，生产环境如需容错可开启）
 
 **关键说明：**
 
 - 回调验签使用平台公钥/平台证书公钥，需匹配 `Wechatpay-Serial`。
 - 回调体需用 API v3 Key 解密（AES-256-GCM）。
+- 测试脚本可通过 `myshop_allow_test_login` filter 强制开启测试登录（不影响生产，需显式挂载）。
 
   
 

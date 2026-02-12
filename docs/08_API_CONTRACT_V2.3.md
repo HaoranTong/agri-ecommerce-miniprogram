@@ -291,6 +291,7 @@
 
 > ✅ **更新说明**：登录接口支持可选 `nickname`/`avatar` 字段（可用于自愿补充），并可携带 `channel/scene/referrer_code/landing_page` 作为渠道归因与推荐绑定依据。完整/真实用户信息建议在个人中心通过 `PUT /user/profile` 维护。
 > ✅ **推荐绑定规则**：仅**首次注册/首次登录的新用户**在携带 `referrer_code`（或 `scene` 映射）时绑定推荐关系；已注册用户不会再次绑定。
+> ✅ **开发/生产差异**：开发环境不做后端 `scene -> referrer_code` 兜底解析，以便暴露问题；生产环境如需容错，可启用 `MYSHOP_REFERRAL_SCENE_FALLBACK`。
 
 **成功响应（200）**（`myshop-core/api/auth-controller.php` 当前实现）：
 

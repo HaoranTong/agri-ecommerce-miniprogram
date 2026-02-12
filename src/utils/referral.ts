@@ -10,7 +10,7 @@ export const parseReferrerFromScene = (scene?: string): string => {
   if (scene.startsWith('rc_')) {
     return scene.slice(3);
   }
-  if (/^U\\d+[A-Za-z0-9]{4}$/.test(scene)) {
+  if (/^U\d+[A-Za-z0-9]{4}$/.test(scene)) {
     return scene;
   }
   return '';
