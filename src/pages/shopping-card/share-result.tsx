@@ -73,6 +73,9 @@ const GiftCardShareResult = () => {
   const navigateToHome = () => {
     Taro.switchTab({ url: '/pages/index/index' });
   };
+  const navigateToCart = () => {
+    Taro.switchTab({ url: '/pages/cart/index' });
+  };
 
   const resolveClaimToken = useCallback(() => {
     const directToken = (router?.params?.token as string) || (router?.params?.giftcard_token as string) || '';
@@ -482,13 +485,19 @@ const GiftCardShareResult = () => {
         >
           {saving ? '保存中...' : '保存购物卡'}
         </Button>
-        <View className='quick-nav'>
-          <Button className='btn btn-ghost' onClick={navigateToHome}>
-            回首页
-          </Button>
-          <Button className='btn btn-ghost' onClick={navigateToMy}>
-            去我的
-          </Button>
+        <View className='bottom-nav'>
+          <View className='nav-item' onClick={navigateToHome}>
+            <Image className='nav-icon' src={require('../../assets/icons/home.png')} />
+            <Text className='nav-text'>首页</Text>
+          </View>
+          <View className='nav-item' onClick={navigateToCart}>
+            <Image className='nav-icon' src={require('../../assets/icons/order.png')} />
+            <Text className='nav-text'>购物车</Text>
+          </View>
+          <View className='nav-item' onClick={navigateToMy}>
+            <Image className='nav-icon' src={require('../../assets/icons/user.png')} />
+            <Text className='nav-text'>我的</Text>
+          </View>
         </View>
       </View>
 

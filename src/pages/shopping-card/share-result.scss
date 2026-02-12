@@ -160,22 +160,32 @@
         color: #667eea;
         border: 2rpx solid #667eea;
       }
-
-      &.btn-ghost {
-        background: #f6f7fb;
-        color: #667eea;
-        border: 2rpx solid #e1e5f2;
-        height: 72rpx;
-        line-height: 72rpx;
-        border-radius: 36rpx;
-        font-size: 28rpx;
-      }
     }
 
-    .quick-nav {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16rpx;
+    .bottom-nav {
+      display: flex;
+      justify-content: space-around;
+      padding: 12rpx 10rpx 4rpx;
+      border-top: 1rpx solid #f0f0f0;
+
+      .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6rpx;
+        padding: 6rpx 8rpx;
+      }
+
+      .nav-icon {
+        width: 40rpx;
+        height: 40rpx;
+      }
+
+      .nav-text {
+        font-size: 24rpx;
+        color: #2f7a3d;
+      }
     }
   }
 

@@ -540,15 +540,18 @@ const OrderDetail = () => {
       )}
 
       <View className='bottom-nav'>
-        <Button className='nav-btn' onClick={handleGoHome}>
-          首页
-        </Button>
-        <Button className='nav-btn' onClick={handleGoCart}>
-          购物车
-        </Button>
-        <Button className='nav-btn' onClick={handleGoProfile}>
-          我的
-        </Button>
+        <View className='nav-item' onClick={handleGoHome}>
+          <Image className='nav-icon' src={require('../../assets/icons/home.png')} />
+          <Text className='nav-text'>首页</Text>
+        </View>
+        <View className='nav-item' onClick={handleGoCart}>
+          <Image className='nav-icon' src={require('../../assets/icons/order.png')} />
+          <Text className='nav-text'>购物车</Text>
+        </View>
+        <View className='nav-item' onClick={handleGoProfile}>
+          <Image className='nav-icon' src={require('../../assets/icons/user.png')} />
+          <Text className='nav-text'>我的</Text>
+        </View>
       </View>
     </View>
   );
