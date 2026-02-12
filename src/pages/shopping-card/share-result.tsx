@@ -3,8 +3,8 @@ import Taro, { useRouter } from '@tarojs/taro';
 import QRCode from 'qrcode-generator';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { debugService, giftCardService, userService } from '../../services/api';
-import { getStoredUserInfo, getToken } from '../../utils/storage';
+import { debugService, giftCardService } from '../../services/api';
+import { getToken } from '../../utils/storage';
 import type { GiftCardShareResult } from '../../types';
 import './share-result.scss';
 
@@ -104,53 +104,7 @@ const GiftCardShareResult = () => {
     return token;
   }, [router?.params]);
 
-  const ensureShareEligibility = useCallback(async () => {
-    try {
-      const cached = getStoredUserInfo();
-      const cachedHasRealname = Boolean(cached?.has_realname);
-      const cachedHasPhone = Boolean(cached?.has_phone || cached?.phone);
-      if (cachedHasRealname && cachedHasPhone) {
-        return true;
-      }
-
-      const profile = await userService.getProfile({
-        showLoading: false,
-        timeout: 8000,
-        suppressErrorToast: true
-      });
-      const hasRealname = Boolean(profile.first_name && profile.first_name.trim());
-      const hasPhone = Boolean(profile.phone && profile.phone.trim());
-
-      if (hasRealname && hasPhone) {
-        return true;
-      }
-
-      const res = await Taro.showModal({
-        title: '请完善实名信息',
-        content: '生成分享二维码前需完善真实姓名和手机号。',
-        confirmText: '去完善',
-        cancelText: '稍后'
-      });
-
-      if (res.confirm) {
-        Taro.navigateTo({ url: '/pages/user/edit-profile' });
-      } else {
-        Taro.navigateBack();
-      }
-
-      return false;
-    } catch (error: any) {
-      console.error('校验实名信息失败', error);
-      const cached = getStoredUserInfo();
-      const cachedHasRealname = Boolean(cached?.has_realname);
-      const cachedHasPhone = Boolean(cached?.has_phone || cached?.phone);
-      if (cachedHasRealname && cachedHasPhone) {
-        return true;
-      }
-      Taro.showToast({ title: '网络超时，无法校验实名信息', icon: 'none' });
-      return false;
-    }
-  }, []);
+  const ensureShareEligibility = useCallback(async () => true, []);
 
   const loadShareResult = useCallback(async () => {
     if (!cardNumber || !styleId) {
