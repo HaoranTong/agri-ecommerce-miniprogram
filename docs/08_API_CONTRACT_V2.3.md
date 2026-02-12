@@ -665,7 +665,7 @@
   "poster_url": "https://yourdomain.com/uploads/posters/winter-2025.png",
   "personal_qr": "https://yourdomain.com/wp-content/uploads/myshop/poster-qr/qr-xxxxx.png",
   "personal_poster_url": "https://yourdomain.com/wp-content/uploads/myshop/personal-posters/poster-xxxxx.png",
-  "mini_program_path": "/pages/index/index?scene=invite",
+  "mini_program_path": "/pages/auth/login?referrer_code=U42ABC",
   "share_text": "扫码领取冬日好礼，好友下单你得积分！",
   "scene": "invite",
   "valid_until": "2025-12-31T23:59:59+08:00",
@@ -677,6 +677,7 @@
 ```
 
 > `valid_until` 过期后该海报会自动失效，接口将返回 404。
+> **推广/裂变入口规则**：当海报携带 `referrer_code`（或 `scene=invite`）时，`mini_program_path` 指向 `/pages/auth/login`，用于新用户首次登录绑定推荐关系；普通入口（无推荐码）仍进入首页。
 
 **失败示例（404）**：
 
@@ -1499,7 +1500,7 @@
     "share_history": [],
     "share_token": "SHR20251122XYZ",
     "share_url": "https://yourdomain.com/?giftcard_token=SHR20251122XYZ",
-    "mini_program_path": "/pages/shopping-card/claim?token=SHR20251122XYZ",
+    "mini_program_path": "/pages/auth/login?token=SHR20251122XYZ&referrer_code=U42ABCD",
     "qr_payload": "https://yourdomain.com/?giftcard_token=SHR20251122XYZ",
     "qr_image_url": "https://yourdomain.com/wp-content/uploads/myshop/giftcard/qr/giftcard_SHR20251122XYZ.png",
     "mini_program_qr": "https://yourdomain.com/wp-content/uploads/myshop/giftcard/qr/giftcard_SHR20251122XYZ.png"
@@ -1509,6 +1510,7 @@
 
 > 当前实现直接返回 `share_url`、`mini_program_path`、`qr_image_url`、`mini_program_qr` 等字段，前端可直接用于分享和渲染。
 > 购物卡分享的小程序码会在 `scene` 中携带推荐码（如 `gc_<token>_rc_<referrer_code>`），仅用于新用户首次登录绑定推荐关系。
+> **推广/裂变入口规则**：当购物卡分享携带推荐码时，`mini_program_path` 指向 `/pages/auth/login`，用于新用户首次登录绑定推荐关系；普通入口（无推荐码）仍进入首页。
 
 ------
 
@@ -1558,7 +1560,7 @@
     "share_history": [],
     "share_token": "SHR20251122XYZ",
     "share_url": "https://yourdomain.com/?giftcard_token=SHR20251122XYZ",
-    "mini_program_path": "/pages/shopping-card/claim?token=SHR20251122XYZ",
+    "mini_program_path": "/pages/auth/login?token=SHR20251122XYZ&referrer_code=U42ABCD",
     "qr_payload": "https://yourdomain.com/?giftcard_token=SHR20251122XYZ",
     "qr_image_url": "https://yourdomain.com/wp-content/uploads/myshop/giftcard/qr/giftcard_SHR20251122XYZ.png",
     "mini_program_qr": "https://yourdomain.com/wp-content/uploads/myshop/giftcard/qr/giftcard_SHR20251122XYZ.png"

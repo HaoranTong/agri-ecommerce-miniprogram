@@ -20,7 +20,7 @@
 > 2. 仅在手机号未绑定时展示手机号授权，避免重复弹窗
 >
 > **V2.0.3 变更记录**（2026-02-05）：
-> 1. 购物卡分享路径统一为 `/pages/shopping-card/claim?token=...`，分享按钮启用 `openType=share` + `enableShareAppMessage`
+> 1. 购物卡分享路径统一为 `/pages/auth/login?token=...`（登录后进入领取），分享按钮启用 `openType=share` + `enableShareAppMessage`
 > 2. 领取页“有效期”文案明确为“购物卡有效期”，补充说明文案并优化排版与安全区间距
 > 3. 购物卡管理“查看订单”统一跳转订单详情页（需后端支持兑换人访问）
 >
@@ -40,7 +40,7 @@
 > 1. 支付成功页、订单详情页底部新增“首页 / 购物车 / 我的”快捷导航
 >
 > **V2.0.8 变更记录**（2026-02-12）：
-> 1. 推荐二维码、邀请海报、购物卡分享入口统一先到登录页，登录后再进入对应页面
+> 1. 推荐二维码、邀请海报、购物卡分享入口统一先到登录页（携带 `referrer_code/scene/token`），登录后再进入对应页面；普通入口仍进入首页
 
 ------
 
@@ -576,7 +576,7 @@ export interface Address {
 - 入口位于 `shopping-card/mine.tsx`，“更多操作”或卡片按钮进入分享页
 - 分享页需先拉取后台模板列表（图案 + 默认祝福语），用户只能选择模板，不可上传自定义素材
 - 祝福语字段可沿用默认、编辑或清空；预览使用同一模板生成电子二维码和 PDF
-- 点击生成后调用 `giftCardService.createShareToken({ card_number, template, message })`，返回 `share_token`、二维码地址、PDF 下载地址
+- 点击生成后调用 `giftCardService.createShareToken({ card_number, template, message })`，返回 `share_token`、二维码地址、PDF 下载地址（`mini_program_path` 指向 `/pages/auth/login`）
 - 展示成功弹窗：包含模板预览、有效期、复制二维码/PDF 链接、可直接触发微信分享
 
 > 分享日志写入 `wp_myshop_gift_card_share_logs`（字段以 `docs/06_DATA_DICTIONARY_v1.2.md` 为准）；撤销接口 `giftCardService.revokeShare` 成功后刷新列表
@@ -585,8 +585,8 @@ export interface Address {
 
 ### 5. **虚拟购物卡领取（`src/pages/shopping-card/claim.tsx`）**
 
-- 分享二维码 / PDF 均跳转到同一领取入口
-- 若未登录，先走微信登录；登录后展示确认提示页（说明领取后卡片将自动进入“购物卡中心”，并提示如何查找/使用）
+- 分享二维码 / PDF 进入登录页，登录成功后跳转到领取入口
+- 登录后展示确认提示页（说明领取后卡片将自动进入“购物卡中心”，并提示如何查找/使用）
 - 用户点击“确认领取”后调用 `giftCardService.claim({ token })`，成功即绑定当前账号，并 `redirectTo('/pages/shopping-card/mine?highlight=new')`
 - 失败时默认由 `api.ts` 展示后端 `message`，如需自定义提示可使用 `errorHandler.ts`
 

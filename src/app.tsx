@@ -91,6 +91,7 @@ function App({ children }: PropsWithChildren) {
     }
   };
 
+  // Only force login for referral entry (referrer_code/scene). Normal entry stays on home.
   const redirectToLoginIfReferral = () => {
     try {
       const token = getToken();
