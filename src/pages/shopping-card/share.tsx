@@ -361,14 +361,16 @@ const GiftCardShare = () => {
     logShareDebug('share_app_message', {
       token,
       card_number: shareResult?.card_number,
-      path: `/pages/shopping-card/claim?token=${token}`
+      path: shareResult?.mini_program_path || `/pages/auth/login?token=${token}`
     });
     const title =
       shareResult.share_meta?.message?.trim() ||
       (shareResult.card_snapshot?.template_name
         ? `送你一张${shareResult.card_snapshot.template_name}礼品卡`
         : '我给你一张礼品卡，点开查看');
-    const path = `/pages/shopping-card/claim?token=${token}`;
+    const path = shareResult?.mini_program_path
+      ? `/${shareResult.mini_program_path.replace(/^\//, '')}`
+      : `/pages/auth/login?token=${token}`;
     const imageUrl = shareResult.mini_program_qr || shareResult.qr_image_url || '';
     return {
       title,

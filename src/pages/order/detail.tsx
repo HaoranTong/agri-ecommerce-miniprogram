@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { configService, orderService } from '../../services/api';
 import type { OrderDetail as OrderDetailType } from '../../types';
+import homeIcon from '../../assets/icons/home.png';
+import cartIcon from '../../assets/icons/order.png';
+import userIcon from '../../assets/icons/user.png';
 import HelpTooltip from '../../components/HelpTooltip';
 import './detail.scss';
 
@@ -76,17 +79,7 @@ const OrderDetail = () => {
     }
 
     try {
-      const timeoutMs = 8000;
-      const result = await Promise.race([
-        orderService.getOrderDetail(orderId).then((data) => ({ ok: true as const, data })),
-        new Promise<{ ok: false; reason: 'timeout' }>((resolve) =>
-          setTimeout(() => resolve({ ok: false, reason: 'timeout' }), timeoutMs)
-        )
-      ]);
-      if (!result.ok) {
-        throw new Error('订单加载超时，请稍后重试');
-      }
-      const data = result.data;
+      const data = await orderService.getOrderDetail(orderId);
       setOrder(data);
     } catch (error) {
       console.error('加载订单详情失败', error);
@@ -553,15 +546,15 @@ const OrderDetail = () => {
 
       <View className='bottom-nav'>
         <View className='nav-item' onClick={handleGoHome}>
-          <Image className='nav-icon' src={require('../../assets/icons/home.png')} />
+          <Image className='nav-icon' src={homeIcon} />
           <Text className='nav-text'>首页</Text>
         </View>
         <View className='nav-item' onClick={handleGoCart}>
-          <Image className='nav-icon' src={require('../../assets/icons/order.png')} />
+          <Image className='nav-icon' src={cartIcon} />
           <Text className='nav-text'>购物车</Text>
         </View>
         <View className='nav-item' onClick={handleGoProfile}>
-          <Image className='nav-icon' src={require('../../assets/icons/user.png')} />
+          <Image className='nav-icon' src={userIcon} />
           <Text className='nav-text'>我的</Text>
         </View>
       </View>

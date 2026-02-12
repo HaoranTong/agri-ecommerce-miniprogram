@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { configService, orderService } from '../../services/api';
 import type { OrderDetail } from '../../types';
+import homeIcon from '../../assets/icons/home.png';
+import cartIcon from '../../assets/icons/order.png';
+import userIcon from '../../assets/icons/user.png';
 import './payment-success.scss';
 
 // 订单状态翻译
@@ -210,15 +213,15 @@ const PaymentSuccess = () => {
 
       <View className='bottom-nav'>
         <View className='nav-item' onClick={handleGoHome}>
-          <Image className='nav-icon' src={require('../../assets/icons/home.png')} />
+          <Image className='nav-icon' src={homeIcon} />
           <Text className='nav-text'>首页</Text>
         </View>
         <View className='nav-item' onClick={handleGoCart}>
-          <Image className='nav-icon' src={require('../../assets/icons/order.png')} />
+          <Image className='nav-icon' src={cartIcon} />
           <Text className='nav-text'>购物车</Text>
         </View>
         <View className='nav-item' onClick={handleGoProfile}>
-          <Image className='nav-icon' src={require('../../assets/icons/user.png')} />
+          <Image className='nav-icon' src={userIcon} />
           <Text className='nav-text'>我的</Text>
         </View>
       </View>

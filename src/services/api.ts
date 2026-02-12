@@ -212,24 +212,46 @@ let maintenanceNotified = false;
 let loadingCount = 0;
 const REQUEST_TIMEOUT = MINI_ENV_VERSION === 'develop' ? 30000 : 15000;
 const MAX_CONCURRENT_REQUESTS = MINI_ENV_VERSION === 'develop' ? 4 : 6;
+const QUEUE_WAIT_TIMEOUT = MINI_ENV_VERSION === 'develop' ? 15000 : 8000;
 let activeRequests = 0;
-const requestQueue: Array<() => void> = [];
+type RequestQueueItem = { resolve: () => void; cancelled: boolean };
+const requestQueue: RequestQueueItem[] = [];
 
-const acquireRequestSlot = async () => {
+const acquireRequestSlot = () => {
   if (activeRequests < MAX_CONCURRENT_REQUESTS) {
     activeRequests += 1;
-    return;
+    return {
+      acquired: Promise.resolve(true),
+      cancel: () => undefined
+    };
   }
 
-  await new Promise<void>((resolve) => requestQueue.push(resolve));
-  activeRequests += 1;
+  let item: RequestQueueItem | null = null;
+  const acquired = new Promise<boolean>((resolve) => {
+    item = { resolve: () => resolve(true), cancelled: false };
+    requestQueue.push(item);
+  });
+
+  const cancel = () => {
+    if (!item) return;
+    item.cancelled = true;
+    const index = requestQueue.indexOf(item);
+    if (index >= 0) {
+      requestQueue.splice(index, 1);
+    }
+  };
+
+  return { acquired, cancel };
 };
 
 const releaseRequestSlot = () => {
   activeRequests = Math.max(0, activeRequests - 1);
-  const next = requestQueue.shift();
-  if (next) {
-    next();
+  while (requestQueue.length > 0) {
+    const next = requestQueue.shift();
+    if (next && !next.cancelled) {
+      next.resolve();
+      break;
+    }
   }
 };
 
@@ -460,12 +482,36 @@ export const request = async <T = any>({
     }
   };
 
-  await acquireRequestSlot();
-
+  const slot = acquireRequestSlot();
+  let slotAcquired = false;
   try {
+    const queueResult = await Promise.race([
+      slot.acquired,
+      new Promise<boolean>((resolve) => {
+        setTimeout(() => resolve(false), QUEUE_WAIT_TIMEOUT);
+      })
+    ]);
+    if (!queueResult) {
+      slot.cancel();
+      if (!suppressLog) {
+        console.error('[API Queue Timeout]', {
+          url: finalUrl,
+          method,
+          activeRequests,
+          queueLength: requestQueue.length
+        });
+      }
+      if (!suppressErrorToast) {
+        Taro.showToast({ title: '请求过多，请稍后重试', icon: 'none' });
+      }
+      throw new Error('request_queue_timeout');
+    }
+    slotAcquired = true;
     return await doRequest(0);
   } finally {
-    releaseRequestSlot();
+    if (slotAcquired) {
+      releaseRequestSlot();
+    }
     if (showLoading && loadingCount > 0) {
       loadingCount -= 1;
       if (loadingCount === 0) {

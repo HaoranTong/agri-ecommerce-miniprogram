@@ -6,6 +6,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { debugService, giftCardService } from '../../services/api';
 import { getToken } from '../../utils/storage';
 import type { GiftCardShareResult } from '../../types';
+import homeIcon from '../../assets/icons/home.png';
+import cartIcon from '../../assets/icons/order.png';
+import userIcon from '../../assets/icons/user.png';
 import './share-result.scss';
 
 // 生成二维码矩阵
@@ -487,20 +490,20 @@ const GiftCardShareResult = () => {
         >
           {saving ? '保存中...' : '保存购物卡'}
         </Button>
-        <View className='bottom-nav'>
-          <View className='nav-item' onClick={navigateToHome}>
-            <Image className='nav-icon' src={require('../../assets/icons/home.png')} />
-            <Text className='nav-text'>首页</Text>
-          </View>
-          <View className='nav-item' onClick={navigateToCart}>
-            <Image className='nav-icon' src={require('../../assets/icons/order.png')} />
-            <Text className='nav-text'>购物车</Text>
-          </View>
-          <View className='nav-item' onClick={navigateToMy}>
-            <Image className='nav-icon' src={require('../../assets/icons/user.png')} />
-            <Text className='nav-text'>我的</Text>
-          </View>
+      <View className='bottom-nav'>
+        <View className='nav-item' onClick={navigateToHome}>
+          <Image className='nav-icon' src={homeIcon} />
+          <Text className='nav-text'>首页</Text>
         </View>
+        <View className='nav-item' onClick={navigateToCart}>
+          <Image className='nav-icon' src={cartIcon} />
+          <Text className='nav-text'>购物车</Text>
+        </View>
+        <View className='nav-item' onClick={navigateToMy}>
+          <Image className='nav-icon' src={userIcon} />
+          <Text className='nav-text'>我的</Text>
+        </View>
+      </View>
       </View>
 
       <View className='tips'>
