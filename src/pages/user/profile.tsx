@@ -135,6 +135,11 @@ const UserProfile = () => {
           <Text className='menu-label'>个人中心</Text>
           <Text className='menu-arrow'>→</Text>
         </View>
+        <View className='menu-item' onClick={() => handleNavigate('/pages/user/edit-profile')}>
+          <View className='menu-icon'>✅</View>
+          <Text className='menu-label'>实名认证</Text>
+          <Text className='menu-arrow'>→</Text>
+        </View>
 
         <View className='menu-item' onClick={() => handleNavigate('/pages/order/list')}>
           <View className='menu-icon'>📦</View>
