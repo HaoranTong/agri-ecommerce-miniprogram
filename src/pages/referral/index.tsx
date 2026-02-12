@@ -56,9 +56,15 @@ const ReferralIndex = () => {
       .getLedger({ page: 1, per_page: 20, type: 'earn', channel_prefix: 'referral_reward' })
       .then((data) => setRewardLedger(data.items || []))
       .catch(() => setRewardLedger([]));
-    referralService.getQr().then((data) => {
-      if (data?.qr_url) setQrUrl(data.qr_url);
-    }).catch(() => undefined);
+    referralService
+      .getQr()
+      .then((data) => {
+        if (data?.qr_url) setQrUrl(data.qr_url);
+        if (data?.referral_code) {
+          setReferralCode((prev) => prev || data.referral_code);
+        }
+      })
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -370,7 +376,16 @@ const ReferralIndex = () => {
                   >
                     保存二维码
                   </Button>
-                  <Button className='panel-btn ghost' openType='share'>
+                  <Button
+                    className='panel-btn ghost'
+                    openType='share'
+                    disabled={!referralCode}
+                    onClick={() => {
+                      if (!referralCode) {
+                        Taro.showToast({ title: '邀请码加载中，请稍后再试', icon: 'none' });
+                      }
+                    }}
+                  >
                     分享
                   </Button>
                 </View>
@@ -398,7 +413,16 @@ const ReferralIndex = () => {
                     >
                       保存海报
                     </Button>
-                    <Button className='panel-btn ghost' openType='share'>
+                    <Button
+                      className='panel-btn ghost'
+                      openType='share'
+                      disabled={!referralCode}
+                      onClick={() => {
+                        if (!referralCode) {
+                          Taro.showToast({ title: '邀请码加载中，请稍后再试', icon: 'none' });
+                        }
+                      }}
+                    >
                       分享
                     </Button>
                   </View>

@@ -289,9 +289,25 @@ const OrderPayment = () => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       try {
-        const statusRes = await paymentService.getStatus(actualOrderId, 'wechat');
-        console.log('[Payment] 支付状态查询结果:', statusRes, '查询订单ID:', actualOrderId);
-        
+        const statusTimeoutMs = 6000;
+        const statusResult = await Promise.race([
+          paymentService
+            .getStatus(actualOrderId, 'wechat')
+            .then((res) => ({ ok: true as const, res }))
+            .catch((err) => ({ ok: false as const, err })),
+          new Promise<{ timeout: true }>((resolve) =>
+            setTimeout(() => resolve({ timeout: true }), statusTimeoutMs)
+          )
+        ]);
+
+        if ('timeout' in statusResult) {
+          console.warn('[Payment] 支付状态查询超时，强制跳转', { orderId: actualOrderId });
+        } else if (!statusResult.ok) {
+          console.error('[Payment] 支付状态查询失败:', statusResult.err);
+        } else {
+          console.log('[Payment] 支付状态查询结果:', statusResult.res, '查询订单ID:', actualOrderId);
+        }
+
         // 使用实际的订单ID跳转
         Taro.redirectTo({ url: `/pages/order/payment-success?orderId=${actualOrderId}` });
       } catch (statusError) {
