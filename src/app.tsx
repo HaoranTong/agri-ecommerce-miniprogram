@@ -2,6 +2,7 @@ import { PropsWithChildren } from 'react';
 import Taro from '@tarojs/taro';
 import { debugService } from './services/api';
 import { getAttributionParams, getToken, setAttributionParams, type AttributionParams } from './utils/storage';
+import { parseReferrerFromScene } from './utils/referral';
 import './app.scss';
 
 function App({ children }: PropsWithChildren) {
@@ -98,7 +99,9 @@ function App({ children }: PropsWithChildren) {
       const attribution = getAttributionParams();
       const referrerCode = attribution?.referrer_code || '';
       const scene = attribution?.scene || '';
-      if (!referrerCode && !scene) return;
+      const referrerFromScene = parseReferrerFromScene(scene);
+      const effectiveReferrer = referrerCode || referrerFromScene;
+      if (!effectiveReferrer) return;
 
       const pages = Taro.getCurrentPages();
       const current = pages[pages.length - 1];
@@ -107,7 +110,7 @@ function App({ children }: PropsWithChildren) {
       if (currentRoute.includes('shopping-card/claim')) return;
 
       const query: string[] = [];
-      if (referrerCode) query.push(`referrer_code=${encodeURIComponent(referrerCode)}`);
+      if (effectiveReferrer) query.push(`referrer_code=${encodeURIComponent(effectiveReferrer)}`);
       if (scene) query.push(`scene=${encodeURIComponent(scene)}`);
       const qs = query.length ? `?${query.join('&')}` : '';
       Taro.reLaunch({ url: `/pages/auth/login${qs}` });
