@@ -384,13 +384,22 @@ export const request = async <T = any>({
 
   const doRequest = async (attempt: number): Promise<T> => {
     try {
-      const response = await Taro.request<T>({
-        url: finalUrl,
-        method,
-        data,
-        header: headers,
-        timeout: typeof timeout === 'number' && timeout > 0 ? timeout : REQUEST_TIMEOUT
-      });
+      const requestTimeout =
+        typeof timeout === 'number' && timeout > 0 ? timeout : REQUEST_TIMEOUT;
+      const response = await Promise.race([
+        Taro.request<T>({
+          url: finalUrl,
+          method,
+          data,
+          header: headers,
+          timeout: requestTimeout
+        }),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error('request_timeout'));
+          }, requestTimeout + 500);
+        })
+      ]);
 
     const duration = Date.now() - startedAt;
     if (!suppressLog && duration >= 3000) {
